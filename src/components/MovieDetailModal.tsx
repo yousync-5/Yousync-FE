@@ -8,13 +8,14 @@ interface Video {
   id: string;
 }
 
-export default function MovieDetailModal() {
-  // 모달 상태 정의
-  const [isOpen, setIsOpen] = useState(false);
+export default function MovieDetailModal(): JSX.Element {
+  // 모달 열림/닫힘 상태
+  const [isOpen, setIsOpen] = useState<boolean>(false);
 
+  // 메인 영상 ID
   const mainVideoId = "7AI-Su1yiR4";
 
-  // 테스트용 
+  // 테스트용 관련 영상 ID 목록
   const relatedVideos: Video[] = [
     { id: "M7lc1UVf-VE" },
     { id: "ScMzIvxBSi4" },
@@ -22,11 +23,8 @@ export default function MovieDetailModal() {
   ];
 
   return (
-    <div
-      className={`min-h-screen flex items-center justify-center ${
-        isOpen ? "bg-transparent" : "bg-gray-100"
-      }`}
-    >
+    // 루트는 항상 bg-gray-100
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
       {/* 모달 열기 버튼 */}
       <button
         className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
@@ -37,16 +35,19 @@ export default function MovieDetailModal() {
 
       {isOpen && (
         <>
+          {/* ① 반투명 오버레이 */}
           <div
             className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
             onClick={() => setIsOpen(false)}
           />
 
+          {/* ② 모달 컨텐츠 */}
           <div
             className="fixed inset-0 flex items-center justify-center z-50 p-4"
-            onClick={(e: MouseEvent) => e.stopPropagation()}
+            onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
           >
             <div className="relative w-full max-w-4xl bg-[#181818] rounded-lg shadow-2xl p-6">
+              {/* 닫기 버튼 */}
               <button
                 className="absolute top-4 right-4 text-2xl text-white hover:text-gray-300"
                 onClick={() => setIsOpen(false)}
@@ -54,6 +55,7 @@ export default function MovieDetailModal() {
                 &times;
               </button>
 
+              {/* 메인 YouTube 영상 */}
               <div className="mx-auto w-full max-w-3xl aspect-video rounded-lg overflow-hidden">
                 <YouTube
                   videoId={mainVideoId}
@@ -66,6 +68,7 @@ export default function MovieDetailModal() {
                 />
               </div>
 
+              {/* 상세 정보 */}
               <div className="mt-6 text-white">
                 <div className="flex justify-between bg-[#181818] p-4 rounded-t-lg">
                   <span>
