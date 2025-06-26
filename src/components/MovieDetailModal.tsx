@@ -8,7 +8,6 @@ interface Video {
 }
 
 export default function MovieDetailModal() {
-  // 모달 열림/닫힘 상태
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
   const mainVideoId = "7AI-Su1yiR4";

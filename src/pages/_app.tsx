@@ -1,14 +1,14 @@
-import Modal from "@/components/MovieDetailModal";
+import MovieDetailModal from "@/components/MovieDetailModal";
 import { NavBar } from "@/components/NavBar";
-import type { AppProps } from "next/app";
 import "@/styles/globals.css";
+import type { AppProps } from "next/app";
 
 export default function App({ Component, pageProps }: AppProps) {
   //nav바
   return (
     <>
-    <Modal />
     <NavBar />
+    <MovieDetailModal />
     <Component {...pageProps} />
     </>
   );
