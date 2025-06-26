@@ -1,18 +1,13 @@
 import Image from "next/image";
 import { useState } from "react";
-import { Geist, Geist_Mono } from "next/font/google";
 import "@/styles/globals.css";
 import MovieDetailModal from "@/components/MovieDetailModal";
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+import { MovieList } from "@/components/MovieList";
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
+export interface VideoType {
+  youtubeId: string;
+  label?: string;
+}
 export default function Home() {
   const [selectedTab, setSelectedTab] = useState("인기 영상");
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
@@ -66,22 +61,8 @@ export default function Home() {
       </div>
 
       {/* Videos */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-        {videoData.map((video, idx) => (
-          <div key={idx} 
-          onClick={() => {openModal(video.youtubeId)}}
-          className="relative rounded-xl overflow-hidden">
-      <Image
-        src={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`}
-        alt="video thumbnail"
-        width={400}
-        height={180}
-        className="w-full object-cover"
-      />            
-            {video.label && <p className="mt-2 text-sm font-semibold">{video.label}</p>}
-          </div>
-        ))}
-      </div>
+      <MovieList videos={videoData} onVideoClick={openModal}/>
+      
       {/* Modal */}
       {selectedVideoId 
       && <MovieDetailModal 
