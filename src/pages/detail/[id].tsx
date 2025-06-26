@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import YouTube, { YouTubeEvent } from "react-youtube";
 import captionsData from "@/dummy/script.json";
-import pitchData from "@/dummy/pitch.json";
 
 import {
   ChevronLeftIcon,
