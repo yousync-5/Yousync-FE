@@ -1,11 +1,7 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
+ /** @type {import('next').NextConfig} */
+ module.exports = {
   reactStrictMode: true,
   images: {
-    domains: ["img.youtube.com"],
-  }
-};
-
-export default nextConfig;
+    domains: ['img.youtube.com', 'phinf.pstatic.net', 'encrypted-tbn0.gstatic.com'],
+  },
+}
