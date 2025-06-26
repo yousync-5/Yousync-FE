@@ -85,6 +85,7 @@ export default function MovieDetailModal({
                           width: "250",
                           height: "110",
                           playerVars: { controls: 1 },
+                          rel: 0,
                         }}
                       />
                     </div>
