@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import YouTube, { YouTubeEvent } from "react-youtube";
 import captionsData from "@/dummy/script.json";
+import { mergeWavBlobs } from "@/utils/mergeWavBlobs";
 
 import {
   ChevronLeftIcon,
@@ -12,6 +13,7 @@ import {
   PauseIcon,
   Bars3Icon,
 } from "@heroicons/react/24/solid";
+import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 
 interface Caption {
   startTime: number;
@@ -31,11 +33,15 @@ export default function Detail() {
   const redCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const captions: Caption[] = captionsData as Caption[];
+  const {startRecording, stopRecording, recording, getAllBlobs} = useVoiceRecorder();
 
   // 이전 자막 인덱스 & 게이지 프로그레스 & 하이라이트 제어
   const [prevIdx, setPrevIdx] = useState<number | null>(null);
   const [gaugeProgress, setGaugeProgress] = useState(0);
   const [highlightEnabled, setHighlightEnabled] = useState(true);
+
+  //오디오 url(결과 테스트용)
+  const [audioUrl, setAudioUrl] = useState<string|null>(null);
 
   const ytOpts = {
     width: "100%",
@@ -125,6 +131,7 @@ export default function Detail() {
     let pauseTimer: NodeJS.Timeout;
     let resumeTimer: NodeJS.Timeout;
     let enableTimer: NodeJS.Timeout;
+    let stopTimer: NodeJS.Timeout; 
 
     if (prevIdx !== null && currentIdx !== prevIdx) {
       // 하이라이트 완전 초기화
@@ -145,6 +152,18 @@ export default function Detail() {
           setPlaying(true);
           setGaugeProgress(0);
 
+          // 녹음시작
+          startRecording();
+
+          const currentCaption = captions[currentIdx];
+          const startTime = currentCaption?.startTime;
+          const endTime = currentCaption?.endTime;
+          const deltaTime = endTime - startTime;
+
+          stopTimer = setTimeout(() => {
+            stopRecording();
+          }, 1000 * deltaTime)
+
           // 0.2초 뒤 하이라이트 재활성화
           enableTimer = setTimeout(() => {
             setHighlightEnabled(true);
@@ -159,6 +178,7 @@ export default function Detail() {
       clearTimeout(pauseTimer);
       clearTimeout(resumeTimer);
       clearTimeout(enableTimer);
+      // clearTimeout(stopTimer);
     };
   }, [currentIdx]);
 
@@ -174,6 +194,18 @@ export default function Detail() {
   const computedCount = Math.floor((elapsed / duration) * chars.length);
   const highlightCount = highlightEnabled ? computedCount : 0;
 
+
+
+  // axios요청 할때는 영상이 끝났을때
+
+  const previewMergedWav = async () => {
+    const blobs = getAllBlobs();
+    if (blobs.length === 0) return;
+  
+    const mergedBlob = await mergeWavBlobs(blobs);
+    const url = URL.createObjectURL(mergedBlob);
+    setAudioUrl(url);
+  };
   return (
     <div className="flex flex-col flex-1 min-h-screen bg-black text-white">
       <div className="flex flex-1">
@@ -277,6 +309,11 @@ export default function Detail() {
               ref={redCanvasRef}
               className="w-full h-16 bg-gray-700 rounded"
             />
+            <div>
+            <button onClick={previewMergedWav} className="bg-red-500 text-white p-4 ">병합된 녹음 듣기</button>
+            {audioUrl && <audio src={audioUrl} controls/>}
+
+            </div>
           </div>
         </aside>
       </div>
