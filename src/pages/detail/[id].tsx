@@ -16,6 +16,8 @@ import {
   Bars3Icon,
 } from "@heroicons/react/24/solid";
 import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
+import { useAudioStream } from "@/hooks/useAudioStream";
+import { useAudioStore } from "@/store/useAudioStore";
 
 interface Caption {
   movie_id: number;
@@ -45,7 +47,7 @@ export interface Video {
   scripts: Caption[];
 }
 export default function Detail() {
-  const streamRef = useRef<MediaStream | null>(null);
+  // const streamRef = useRef<MediaStream | null>(null);
 
   const playerRef = useRef<YT.Player | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -72,6 +74,10 @@ export default function Detail() {
   
   // 해당 영화 정보
   const [movieData, setMovieData] = useState<Video | null>(null);
+  const {audioCtx} = useAudioStore();
+
+  // 오디오 스트림 초기화
+  useAudioStream();
 
   const router = useRouter();
   const movieId = router.query.id;
@@ -131,15 +137,15 @@ export default function Detail() {
 };
 
   // 컴포넌트가 마운트될 때 미리 마이크 권한 요청
-  useEffect(() => {
-    navigator.mediaDevices.getUserMedia({ audio: true })
-      .then((stream) => {
-        streamRef.current = stream; // 미리 스트림 확보
-      })
-    return () => {
-      streamRef.current?.getTracks().forEach(track => track.stop()); 
-    };
-  }, []);
+  // useEffect(() => {
+  //   navigator.mediaDevices.getUserMedia({ audio: true })
+  //     .then((stream) => {
+  //       streamRef.current = stream; // 미리 스트림 확보
+  //     })
+  //   return () => {
+  //     streamRef.current?.getTracks().forEach(track => track.stop()); 
+  //   };
+  // }, []);
 
   // 재생 시간 업데이트
   useEffect(() => {
@@ -280,8 +286,8 @@ export default function Detail() {
   const previewMergedWav = async () => {
     const blobs = getAllBlobs();
     if (blobs.length === 0) return;
-  
-    const mergedBlob = await mergeWavBlobs(blobs);
+    if (!audioCtx) return;
+    const mergedBlob = await mergeWavBlobs(blobs, audioCtx);
     const url = URL.createObjectURL(mergedBlob);
     setAudioUrl(url);
   };
