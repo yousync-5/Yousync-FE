@@ -2,11 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import YouTube, { YouTubeEvent } from "react-youtube";
-import captionsData from "@/dummy/script.json";
 import { mergeWavBlobs } from "@/utils/mergeWavBlobs";
-import { useRouter } from "next/router";
 import axios from "axios";
-
+import { useRouter } from "next/router";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -15,6 +13,7 @@ import {
   PauseIcon,
   Bars3Icon,
 } from "@heroicons/react/24/solid";
+
 import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 
 interface Caption {
@@ -44,9 +43,12 @@ interface Video {
   id: number;
   scripts: Caption[];
 }
-export default function Detail() {
-  const streamRef = useRef<MediaStream | null>(null);
 
+export default function Detail() {
+  const router = useRouter();
+  const movieId = router.query.id;
+  const streamRef = useRef<MediaStream | null>(null);
+  
   const playerRef = useRef<YT.Player | null>(null);
   const [playing, setPlaying] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -56,44 +58,36 @@ export default function Detail() {
   const blueCanvasRef = useRef<HTMLCanvasElement>(null);
   const redCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  // const captions: Caption[] = captionsData as Caption[];
   const [captions, setCaptions] = useState<Caption[]>([]);
-  const {startRecording, stopRecording, recording, getAllBlobs} = useVoiceRecorder();
+
+  useEffect(() => {
+    if (!movieId) return;
+  
+    const fetchCaptions = async () => {
+      try {
+        const captionsData = `${process.env.NEXT_PUBLIC_API_BASE_URL}/movies/${movieId}`;
+        const res = await axios.get<Video>(captionsData);
+        const movie = res.data;
+        console.log("영화 정보:", movie);
+        setCaptions(movie.scripts);
+      } catch (err) {
+        console.error("자막 스크립트를 불러올 수 없습니다. 서버관리자에게 문의해주세요", err);
+      }
+    };
+  
+    fetchCaptions();
+  }, [movieId]);
+  
+  const {startRecording, stopRecording,getAllBlobs} = useVoiceRecorder();
 
   // 이전 자막 인덱스 & 게이지 프로그레스 & 하이라이트 제어
   const [prevIdx, setPrevIdx] = useState<number | null>(null);
   const [gaugeProgress, setGaugeProgress] = useState(0);
   const [highlightEnabled, setHighlightEnabled] = useState(true);
-  
-  const [playingIdx, setPlayingIdx] = useState<number | null>(null);
 
   //오디오 url(결과 테스트용)
   const [audioUrl, setAudioUrl] = useState<string|null>(null);
-  
-  // 해당 영화 정보
-  const [movieData, setMovieData] = useState<Video | null>(null);
 
-  const router = useRouter();
-  const movieId = router.query.id;
-  const movieUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/movies/${movieId}`;
-
-  useEffect(() => {
-    if (!movieId || Array.isArray(movieId)) return;
-
-    console.log("초기 렌더링", movieUrl)
-    const fetchCaptions = async () => {
-      try {
-        const res = await axios.get<Video>(movieUrl);
-        const movie = res.data;
-        console.log("영화 정보:", movie);
-        setCaptions(movie?.scripts);
-        setMovieData(movie);
-      } catch (err) {
-        console.error("자막 스크립트를 불러올 수 없습니다. 서버관리자에게 문의해주세요", err);
-      }
-    };
-   fetchCaptions();
-  }, [movieId]);
   const ytOpts = {
     width: "100%",
     height: "100%",
@@ -224,27 +218,21 @@ export default function Detail() {
         setGaugeProgress(1);
 
         // 애니메이션 끝나면 재생 재개
-        resumeTimer = setTimeout(async () => {
+        resumeTimer = setTimeout(() => {
           playerRef.current?.playVideo();
           setPlaying(true);
           setGaugeProgress(0);
 
-          //이전 재생 중이던 대사 녹음 정지
-          if(recording  && playingIdx !== null) {
-            await stopRecording(playingIdx);
-          }
-          // 현재 재생 인덱스 설정 후 녹음 시작
-          setPlayingIdx(currentIdx);
           // 녹음시작
           startRecording();
 
           const currentCaption = captions[currentIdx];
-          const startTime = currentCaption?.start_time;
-          const endTime = currentCaption?.end_time;
-          const deltaTime = endTime - startTime;
+          const start_time = currentCaption?.start_time;
+          const end_time = currentCaption?.end_time;
+          const deltaTime = end_time - start_time;
 
-          stopTimer = setTimeout(async () => {
-            await stopRecording(currentIdx);
+          stopTimer = setTimeout(() => {
+            stopRecording();
           }, 1000 * deltaTime)
 
           // 0.2초 뒤 하이라이트 재활성화
@@ -261,7 +249,7 @@ export default function Detail() {
       clearTimeout(pauseTimer);
       clearTimeout(resumeTimer);
       clearTimeout(enableTimer);
-      clearTimeout(stopTimer);
+      // clearTimeout(stopTimer);
     };
   }, [currentIdx]);
 
@@ -277,6 +265,7 @@ export default function Detail() {
   const computedCount = Math.floor((elapsed / duration) * chars.length);
   const highlightCount = highlightEnabled ? computedCount : 0;
 
+  // axios요청 할때는 영상이 끝났을때
   const previewMergedWav = async () => {
     const blobs = getAllBlobs();
     if (blobs.length === 0) return;
@@ -285,31 +274,8 @@ export default function Detail() {
     const url = URL.createObjectURL(mergedBlob);
     setAudioUrl(url);
   };
-
-  // 서버로 .wav전송
-  const sendWav = () => {
-
-  }
-
-  //유튜브 id를 빼오는 함수
-  const extractYoutubeVideoId = (url: string) => {
-    try {
-      const parsed = new URL(url);
-      if(parsed.hostname === "www.youtube.com" || parsed.hostname === "youtube.com"){
-        return parsed.searchParams.get("v");
-      }
-      if(parsed.hostname === "youtu.be"){
-        return parsed.pathname.slice(1);
-      }
-      return null;
-    } catch (error) {
-      return null;
-    }
-  }
-  if(!movieData) return;
-  const videoId = extractYoutubeVideoId(movieData.youtube_url)
   return (
-    <div className="flex flex-col flex-1 min-h-screen bg-black text-white pt-20">
+    <div className="flex flex-col flex-1 min-h-screen bg-black text-white">
       <div className="flex flex-1">
         {/* Video Area */}
         <div
@@ -324,13 +290,17 @@ export default function Detail() {
               <button onClick={() => setExpanded(false)}>
                 <Bars3Icon className="w-7 h-7 text-white" />
               </button>
-           
+              <img
+                src="https://phinf.pstatic.net/image.nmv/blogucc28/2014/12/08/1637/0d4bc8c08ab22dd55a4fe98e3c9862ae86e1_ugcvideo_270P_01_16x9_logo.jpg?type=w2"
+                alt="profile"
+                className="w-9 h-9 rounded-full border-2 border-white"
+              />
             </div>
           )}
           <div className="relative w-full h-full">
             <div className="aspect-video w-full overflow-hidden relative">
               <YouTube
-                videoId={videoId || undefined}
+                videoId="3mUg7PmCsNs"
                 opts={ytOpts}
                 onReady={onReady}
                 className="absolute inset-0"
@@ -371,7 +341,11 @@ export default function Detail() {
             <button onClick={() => setExpanded(true)}>
               <Bars3Icon className="w-7 h-7 text-white" />
             </button>
-           
+            <img
+              src="https://phinf.pstatic.net/image.nmv/blogucc28/2014/12/08/1637/0d4bc8c08ab22dd55a4fe98e3c9862ae86e1_ugcvideo_270P_01_16x9_logo.jpg?type=w2"
+              alt="profile"
+              className="w-9 h-9 rounded-full border-2 border-white"
+            />
           </div>
           <div
             ref={captionContainerRef}
@@ -404,11 +378,8 @@ export default function Detail() {
               className="w-full h-16 bg-gray-700 rounded"
             />
             <div>
-            <button onClick={previewMergedWav} className="bg-red-500 text-white p-4 rounded-lg">병합된 녹음 듣기</button>
-            {audioUrl && <div>
-              <audio src={audioUrl} controls/>
-              <button className="bg-red-500 p-4 rounded-lg ">서버로 보내기</button>
-              </div>}
+            <button onClick={previewMergedWav} className="bg-red-500 text-white p-4 ">병합된 녹음 듣기</button>
+            {audioUrl && <audio src={audioUrl} controls/>}
 
             </div>
           </div>
