@@ -2,8 +2,10 @@
 
 import { useState, useRef, useEffect } from "react";
 import YouTube, { YouTubeEvent } from "react-youtube";
-import captionsData from "@/dummy/script.json";
+import { extractYoutubeVideoId } from "@/utils/extractYoutubeVideoId";
 import { mergeWavBlobs } from "@/utils/mergeWavBlobs";
+import { useRouter } from "next/router";
+import axios from "axios";
 
 import {
   ChevronLeftIcon,
@@ -16,12 +18,32 @@ import {
 import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 
 interface Caption {
-  startTime: number;
-  endTime: number;
+  movie_id: number;
+  actor_id: number;
+  start_time: number;
+  end_time: number;
   script: string;
-  korean: string;
+  translation: string;
+  url: string | null;
+  actor_pitch_values: number[];
+  background_audio_url: string;
+  id: number;
+  actor: {
+    name: string;
+    id: number;
+  };
 }
 
+export interface Video {
+  title: string;
+  category: string;
+  youtube_url: string;
+  total_time: number;
+  bookmark: boolean;
+  full_background_audio_url: string;
+  id: number;
+  scripts: Caption[];
+}
 export default function Detail() {
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -34,17 +56,44 @@ export default function Detail() {
   const blueCanvasRef = useRef<HTMLCanvasElement>(null);
   const redCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  const captions: Caption[] = captionsData as Caption[];
-  const {startRecording, stopRecording,getAllBlobs} = useVoiceRecorder();
+  // const captions: Caption[] = captionsData as Caption[];
+  const [captions, setCaptions] = useState<Caption[]>([]);
+  const {startRecording, stopRecording, recording, getAllBlobs} = useVoiceRecorder();
 
   // 이전 자막 인덱스 & 게이지 프로그레스 & 하이라이트 제어
   const [prevIdx, setPrevIdx] = useState<number | null>(null);
   const [gaugeProgress, setGaugeProgress] = useState(0);
   const [highlightEnabled, setHighlightEnabled] = useState(true);
+  
+  const [playingIdx, setPlayingIdx] = useState<number | null>(null);
 
   //오디오 url(결과 테스트용)
   const [audioUrl, setAudioUrl] = useState<string|null>(null);
+  
+  // 해당 영화 정보
+  const [movieData, setMovieData] = useState<Video | null>(null);
 
+  const router = useRouter();
+  const movieId = router.query.id;
+  const movieUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/movies/${movieId}`;
+
+  useEffect(() => {
+    if (!movieId || Array.isArray(movieId)) return;
+
+    console.log("초기 렌더링", movieUrl)
+    const fetchCaptions = async () => {
+      try {
+        const res = await axios.get<Video>(movieUrl);
+        const movie = res.data;
+        console.log("영화 정보:", movie);
+        setCaptions(movie?.scripts);
+        setMovieData(movie);
+      } catch (err) {
+        console.error("자막 스크립트를 불러올 수 없습니다. 서버관리자에게 문의해주세요", err);
+      }
+    };
+   fetchCaptions();
+  }, [movieId, movieUrl]);
   const ytOpts = {
     width: "100%",
     height: "100%",
@@ -70,12 +119,12 @@ export default function Detail() {
   return {
     next: () => {
       if (playerRef.current && nextIdx < captions.length) {
-        playerRef.current.seekTo(captions[nextIdx].startTime, true);
+        playerRef.current.seekTo(captions[nextIdx].start_time, true);
       }
     },
     prev: () => {
       if (playerRef.current && prevIdx >= 0) {
-        playerRef.current.seekTo(captions[prevIdx].startTime, true);
+        playerRef.current.seekTo(captions[prevIdx].start_time, true);
       }
     },
   };
@@ -85,7 +134,7 @@ export default function Detail() {
   useEffect(() => {
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then((stream) => {
-        streamRef.current = stream; // 미리 스트림 확보
+        streamRef.current = stream; 
       })
     return () => {
       streamRef.current?.getTracks().forEach(track => track.stop()); 
@@ -103,7 +152,7 @@ export default function Detail() {
   // 자막 자동 스크롤
   useEffect(() => {
     const idx = captions.findIndex(
-      (c) => currentSec >= c.startTime && currentSec < c.endTime
+      (c) => currentSec >= c.start_time && currentSec < c.end_time
     );
     if (idx >= 0 && captionContainerRef.current) {
       const el = captionContainerRef.current.children[idx] as HTMLElement;
@@ -112,45 +161,45 @@ export default function Detail() {
   }, [currentSec, captions]);
 
   // 파형 그리기 (sidebar)
-  useEffect(() => {
-    const drawWave = (
-      canvas: HTMLCanvasElement | null,
-      fn: (x: number, w: number, h: number) => number,
-      color: string
-    ) => {
-      if (!canvas) return;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      const w = canvas.offsetWidth,
-        h = canvas.offsetHeight;
-      canvas.width = w;
-      canvas.height = h;
-      ctx.clearRect(0, 0, w, h);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      for (let x = 0; x <= w; x++) {
-        const y = h / 2 + fn(x, w, h);
-        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-    };
+  // useEffect(() => {
+  //   const drawWave = (
+  //     canvas: HTMLCanvasElement | null,
+  //     fn: (x: number, w: number, h: number) => number,
+  //     color: string
+  //   ) => {
+  //     if (!canvas) return;
+  //     const ctx = canvas.getContext("2d");
+  //     if (!ctx) return;
+  //     const w = canvas.offsetWidth,
+  //       h = canvas.offsetHeight;
+  //     canvas.width = w;
+  //     canvas.height = h;
+  //     ctx.clearRect(0, 0, w, h);
+  //     ctx.strokeStyle = color;
+  //     ctx.lineWidth = 2;
+  //     ctx.beginPath();
+  //     for (let x = 0; x <= w; x++) {
+  //       const y = h / 2 + fn(x, w, h);
+  //       x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  //     }
+  //     ctx.stroke();
+  //   };
 
-    drawWave(
-      blueCanvasRef.current,
-      (x, w, h) => Math.sin((x / w) * 4 * Math.PI) * (h / 2 - 5),
-      "#3b82f6"
-    );
-    drawWave(
-      redCanvasRef.current,
-      (x, w, h) => Math.cos((x / w) * 4 * Math.PI) * (h / 2 - 5),
-      "#ef4444"
-    );
-  }, []);
+  //   drawWave(
+  //     blueCanvasRef.current,
+  //     (x, w, h) => Math.sin((x / w) * 4 * Math.PI) * (h / 2 - 5),
+  //     "#3b82f6"
+  //   );
+  //   drawWave(
+  //     redCanvasRef.current,
+  //     (x, w, h) => Math.cos((x / w) * 4 * Math.PI) * (h / 2 - 5),
+  //     "#ef4444"
+  //   );
+  // }, []);
 
   // 현재 자막
   const currentIdx = captions.findIndex(
-    (c) => currentSec >= c.startTime && currentSec < c.endTime
+    (c) => currentSec >= c.start_time && currentSec < c.end_time
   );
   const currentCaption = captions[currentIdx] || null;
 
@@ -175,21 +224,27 @@ export default function Detail() {
         setGaugeProgress(1);
 
         // 애니메이션 끝나면 재생 재개
-        resumeTimer = setTimeout(() => {
+        resumeTimer = setTimeout(async () => {
           playerRef.current?.playVideo();
           setPlaying(true);
           setGaugeProgress(0);
 
+          //이전 재생 중이던 대사 녹음 정지
+          if(recording  && playingIdx !== null) {
+            await stopRecording(playingIdx);
+          }
+          // 현재 재생 인덱스 설정 후 녹음 시작
+          setPlayingIdx(currentIdx);
           // 녹음시작
           startRecording();
 
           const currentCaption = captions[currentIdx];
-          const startTime = currentCaption?.startTime;
-          const endTime = currentCaption?.endTime;
+          const startTime = currentCaption?.start_time;
+          const endTime = currentCaption?.end_time;
           const deltaTime = endTime - startTime;
 
-          stopTimer = setTimeout(() => {
-            stopRecording();
+          stopTimer = setTimeout(async () => {
+            await stopRecording(currentIdx);
           }, 1000 * deltaTime)
 
           // 0.2초 뒤 하이라이트 재활성화
@@ -206,23 +261,22 @@ export default function Detail() {
       clearTimeout(pauseTimer);
       clearTimeout(resumeTimer);
       clearTimeout(enableTimer);
-      // clearTimeout(stopTimer);
+      clearTimeout(stopTimer);
     };
   }, [currentIdx]);
 
   // 글자별 하이라이트
   const chars = currentCaption?.script.split("") || [];
   const duration = currentCaption
-    ? currentCaption.endTime - currentCaption.startTime
+    ? currentCaption.end_time - currentCaption.start_time
     : 1;
   const elapsed =
-    currentCaption && currentSec >= currentCaption.startTime
-      ? Math.min(currentSec - currentCaption.startTime, duration)
+    currentCaption && currentSec >= currentCaption.start_time
+      ? Math.min(currentSec - currentCaption.start_time, duration)
       : 0;
   const computedCount = Math.floor((elapsed / duration) * chars.length);
   const highlightCount = highlightEnabled ? computedCount : 0;
 
-  // axios요청 할때는 영상이 끝났을때
   const previewMergedWav = async () => {
     const blobs = getAllBlobs();
     if (blobs.length === 0) return;
@@ -231,8 +285,38 @@ export default function Detail() {
     const url = URL.createObjectURL(mergedBlob);
     setAudioUrl(url);
   };
+
+  // 서버로 .wav전송
+  const sendWav = async () => {
+    if (!movieId || Array.isArray(movieId)) {
+      console.error('movieId가 유효하지 않습니다.');
+      return;
+    }
+  
+    const blobs = getAllBlobs();
+    if (blobs.length === 0) return;
+  
+    const audioBlob = await mergeWavBlobs(blobs);
+    const formData = new FormData();
+    formData.append('file', audioBlob, 'hiSHJH.wav');
+  
+    const uploadUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/movies/${movieId}/upload-audio`;
+  
+    try {
+      const res = await axios.post(uploadUrl, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+  
+      console.log('녹음 파일이 성공적으로 업로드되었습니다.', res.data);
+    } catch (err) {
+      console.error('녹음 파일 업로드 중 오류가 발생했습니다.', err);
+    }
+  };
+  
+  if (!movieData) return null;
+  const videoId = extractYoutubeVideoId(movieData.youtube_url)
   return (
-    <div className="flex flex-col flex-1 min-h-screen bg-black text-white">
+    <div className="flex flex-col flex-1 min-h-screen bg-black text-white pt-20">
       <div className="flex flex-1">
         {/* Video Area */}
         <div
@@ -247,17 +331,13 @@ export default function Detail() {
               <button onClick={() => setExpanded(false)}>
                 <Bars3Icon className="w-7 h-7 text-white" />
               </button>
-              <img
-                src="https://phinf.pstatic.net/image.nmv/blogucc28/2014/12/08/1637/0d4bc8c08ab22dd55a4fe98e3c9862ae86e1_ugcvideo_270P_01_16x9_logo.jpg?type=w2"
-                alt="profile"
-                className="w-9 h-9 rounded-full border-2 border-white"
-              />
+           
             </div>
           )}
           <div className="relative w-full h-full">
             <div className="aspect-video w-full overflow-hidden relative">
               <YouTube
-                videoId="3mUg7PmCsNs"
+                videoId={videoId || undefined}
                 opts={ytOpts}
                 onReady={onReady}
                 className="absolute inset-0"
@@ -298,11 +378,7 @@ export default function Detail() {
             <button onClick={() => setExpanded(true)}>
               <Bars3Icon className="w-7 h-7 text-white" />
             </button>
-            <img
-              src="https://phinf.pstatic.net/image.nmv/blogucc28/2014/12/08/1637/0d4bc8c08ab22dd55a4fe98e3c9862ae86e1_ugcvideo_270P_01_16x9_logo.jpg?type=w2"
-              alt="profile"
-              className="w-9 h-9 rounded-full border-2 border-white"
-            />
+           
           </div>
           <div
             ref={captionContainerRef}
@@ -318,8 +394,8 @@ export default function Detail() {
                 }`}
               >
                 <span className="text-xs font-mono mr-2">
-                  {String(Math.floor(c.startTime / 60)).padStart(2, "0")}:
-                  {String(Math.floor(c.startTime % 60)).padStart(2, "0")}
+                  {String(Math.floor(c.start_time / 60)).padStart(2, "0")}:
+                  {String(Math.floor(c.start_time % 60)).padStart(2, "0")}
                 </span>
                 {c.script}
               </div>
@@ -335,8 +411,11 @@ export default function Detail() {
               className="w-full h-16 bg-gray-700 rounded"
             />
             <div>
-            <button onClick={previewMergedWav} className="bg-red-500 text-white p-4 ">병합된 녹음 듣기</button>
-            {audioUrl && <audio src={audioUrl} controls/>}
+            <button onClick={previewMergedWav} className="bg-red-500 text-white p-4 rounded-lg">병합된 녹음 듣기</button>
+            {audioUrl && <div>
+              <audio src={audioUrl} controls/>
+              <button className="bg-red-500 p-4 rounded-lg " onClick={sendWav}>서버로 보내기</button>
+              </div>}
 
             </div>
           </div>
@@ -365,7 +444,7 @@ export default function Detail() {
             </p>
             {/* 한국어 자막 */}
             <p className="relative z-10 text-xl italic text-gray-300 mt-2">
-              {currentCaption.korean}
+              {currentCaption.translation}
             </p>
           </div>
         )}

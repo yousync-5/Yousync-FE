@@ -7,7 +7,7 @@ export const NavBar: React.FC = () => {
 
   const handleProfileClick = () => {
     // 회원가입 구현 전까지 임시 리디렉트
-    router.push('/mypage/1')
+    router.push('/mypage')
   }
 
   const handleLogoClick = () => {

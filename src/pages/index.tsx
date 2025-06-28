@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { useState } from "react";
 import "@/styles/globals.css";
 import MovieDetailModal from "@/components/MovieDetailModal";
