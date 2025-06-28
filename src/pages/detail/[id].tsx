@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import YouTube, { YouTubeEvent } from "react-youtube";
-import captionsData from "@/dummy/script.json";
 import { mergeWavBlobs } from "@/utils/mergeWavBlobs";
+import axios from "axios";
 
 import {
   ChevronLeftIcon,
@@ -13,6 +13,7 @@ import {
   PauseIcon,
   Bars3Icon,
 } from "@heroicons/react/24/solid";
+
 import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 
 interface Caption {
@@ -34,7 +35,19 @@ export default function Detail() {
   const blueCanvasRef = useRef<HTMLCanvasElement>(null);
   const redCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  const captions: Caption[] = captionsData as Caption[];
+  const [captions, setCaptions] = useState<Caption[]>([]);
+
+  const captionsData = `${process.env.NEXT_PUBLIC_API_BASE_URL}/movies`;
+
+  useEffect(() => {
+    const fetchCaptions = async () => {
+        const res = await axios.get<Caption[]>(captionsData);
+        setCaptions(res.data);
+      }
+  fetchCaptions();
+}, [captionsData]);
+
+
   const {startRecording, stopRecording,getAllBlobs} = useVoiceRecorder();
 
   // 이전 자막 인덱스 & 게이지 프로그레스 & 하이라이트 제어
