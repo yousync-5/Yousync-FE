@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import YouTube, { YouTubeEvent } from "react-youtube";
-import captionsData from "@/dummy/script.json";
 import { mergeWavBlobs } from "@/utils/mergeWavBlobs";
-
+import axios from "axios";
+import { useRouter } from "next/router";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -13,18 +13,42 @@ import {
   PauseIcon,
   Bars3Icon,
 } from "@heroicons/react/24/solid";
+
 import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 
 interface Caption {
-  startTime: number;
-  endTime: number;
+  movie_id: number;
+  actor_id: number;
+  start_time: number;
+  end_time: number;
   script: string;
-  korean: string;
+  translation: string;
+  url: string | null;
+  actor_pitch_values: number[];
+  background_audio_url: string;
+  id: number;
+  actor: {
+    name: string;
+    id: number;
+  };
+}
+
+interface Video {
+  title: string;
+  category: string;
+  youtube_url: string;
+  total_time: number;
+  bookmark: boolean;
+  full_background_audio_url: string;
+  id: number;
+  scripts: Caption[];
 }
 
 export default function Detail() {
+  const router = useRouter();
+  const movieId = router.query.id;
   const streamRef = useRef<MediaStream | null>(null);
-
+  
   const playerRef = useRef<YT.Player | null>(null);
   const [playing, setPlaying] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -34,7 +58,26 @@ export default function Detail() {
   const blueCanvasRef = useRef<HTMLCanvasElement>(null);
   const redCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  const captions: Caption[] = captionsData as Caption[];
+  const [captions, setCaptions] = useState<Caption[]>([]);
+
+  useEffect(() => {
+    if (!movieId) return;
+  
+    const fetchCaptions = async () => {
+      try {
+        const captionsData = `${process.env.NEXT_PUBLIC_API_BASE_URL}/movies/${movieId}`;
+        const res = await axios.get<Video>(captionsData);
+        const movie = res.data;
+        console.log("영화 정보:", movie);
+        setCaptions(movie.scripts);
+      } catch (err) {
+        console.error("자막 스크립트를 불러올 수 없습니다. 서버관리자에게 문의해주세요", err);
+      }
+    };
+  
+    fetchCaptions();
+  }, [movieId]);
+  
   const {startRecording, stopRecording,getAllBlobs} = useVoiceRecorder();
 
   // 이전 자막 인덱스 & 게이지 프로그레스 & 하이라이트 제어
@@ -70,12 +113,12 @@ export default function Detail() {
   return {
     next: () => {
       if (playerRef.current && nextIdx < captions.length) {
-        playerRef.current.seekTo(captions[nextIdx].startTime, true);
+        playerRef.current.seekTo(captions[nextIdx].start_time, true);
       }
     },
     prev: () => {
       if (playerRef.current && prevIdx >= 0) {
-        playerRef.current.seekTo(captions[prevIdx].startTime, true);
+        playerRef.current.seekTo(captions[prevIdx].start_time, true);
       }
     },
   };
@@ -103,7 +146,7 @@ export default function Detail() {
   // 자막 자동 스크롤
   useEffect(() => {
     const idx = captions.findIndex(
-      (c) => currentSec >= c.startTime && currentSec < c.endTime
+      (c) => currentSec >= c.start_time && currentSec < c.end_time
     );
     if (idx >= 0 && captionContainerRef.current) {
       const el = captionContainerRef.current.children[idx] as HTMLElement;
@@ -150,7 +193,7 @@ export default function Detail() {
 
   // 현재 자막
   const currentIdx = captions.findIndex(
-    (c) => currentSec >= c.startTime && currentSec < c.endTime
+    (c) => currentSec >= c.start_time && currentSec < c.end_time
   );
   const currentCaption = captions[currentIdx] || null;
 
@@ -184,9 +227,9 @@ export default function Detail() {
           startRecording();
 
           const currentCaption = captions[currentIdx];
-          const startTime = currentCaption?.startTime;
-          const endTime = currentCaption?.endTime;
-          const deltaTime = endTime - startTime;
+          const start_time = currentCaption?.start_time;
+          const end_time = currentCaption?.end_time;
+          const deltaTime = end_time - start_time;
 
           stopTimer = setTimeout(() => {
             stopRecording();
@@ -213,11 +256,11 @@ export default function Detail() {
   // 글자별 하이라이트
   const chars = currentCaption?.script.split("") || [];
   const duration = currentCaption
-    ? currentCaption.endTime - currentCaption.startTime
+    ? currentCaption.end_time - currentCaption.start_time
     : 1;
   const elapsed =
-    currentCaption && currentSec >= currentCaption.startTime
-      ? Math.min(currentSec - currentCaption.startTime, duration)
+    currentCaption && currentSec >= currentCaption.start_time
+      ? Math.min(currentSec - currentCaption.start_time, duration)
       : 0;
   const computedCount = Math.floor((elapsed / duration) * chars.length);
   const highlightCount = highlightEnabled ? computedCount : 0;
@@ -318,8 +361,8 @@ export default function Detail() {
                 }`}
               >
                 <span className="text-xs font-mono mr-2">
-                  {String(Math.floor(c.startTime / 60)).padStart(2, "0")}:
-                  {String(Math.floor(c.startTime % 60)).padStart(2, "0")}
+                  {String(Math.floor(c.start_time / 60)).padStart(2, "0")}:
+                  {String(Math.floor(c.start_time % 60)).padStart(2, "0")}
                 </span>
                 {c.script}
               </div>
@@ -365,7 +408,7 @@ export default function Detail() {
             </p>
             {/* 한국어 자막 */}
             <p className="relative z-10 text-xl italic text-gray-300 mt-2">
-              {currentCaption.korean}
+              {currentCaption.translation}
             </p>
           </div>
         )}
