@@ -1,28 +1,14 @@
 import { useState, useEffect } from "react";
 import MovieDetailModal from "@/components/MovieDetailModal";
 import { MovieList } from "@/components/MovieList";
-import { Movie } from "@/hooks/useMoives";
 import axios from "axios";
-
+import { Video } from "./detail/[id]";
+import { extractYoutubeVideoId } from "@/utils/extractYoutubeVideoId";
 interface VideoType {
   youtubeId: string;
 }
 
-//유튜브 id를 빼오는 함수
-const extractYoutubeVideoId = (url: string) => {
-  try {
-    const parsed = new URL(url);
-    if(parsed.hostname === "www.youtube.com" || parsed.hostname === "youtube.com"){
-      return parsed.searchParams.get("v");
-    }
-    if(parsed.hostname === "youtu.be"){
-      return parsed.pathname.slice(1);
-    }
-    return null;
-  } catch (error) {
-    return null;
-  }
-}
+
 
 export default function Home() {
   const [selectedTab, setSelectedTab] = useState("인기 영상");
@@ -34,10 +20,10 @@ export default function Home() {
   useEffect(() => {
     const fetchMovies = async () => {
       try {
-        const res = await axios.get<Movie[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/movies`);
+        const res = await axios.get<Video[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/movies`);
 
         const videoItems = res.data
-          .filter(movie => movie.id >= 1 && movie.id <= 6)
+          .filter(movie => movie.id >= 1 && movie.id)
           .map(movie => ({
             youtubeId: extractYoutubeVideoId(movie.youtube_url) || "",
           }))
