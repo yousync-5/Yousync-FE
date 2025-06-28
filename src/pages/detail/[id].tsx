@@ -23,6 +23,8 @@ interface Caption {
 }
 
 export default function Detail() {
+  const streamRef = useRef<MediaStream | null>(null);
+
   const playerRef = useRef<YT.Player | null>(null);
   const [playing, setPlaying] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -33,7 +35,7 @@ export default function Detail() {
   const redCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const captions: Caption[] = captionsData as Caption[];
-  const {startRecording, stopRecording, recording, getAllBlobs} = useVoiceRecorder();
+  const {startRecording, stopRecording,getAllBlobs} = useVoiceRecorder();
 
   // 이전 자막 인덱스 & 게이지 프로그레스 & 하이라이트 제어
   const [prevIdx, setPrevIdx] = useState<number | null>(null);
@@ -52,17 +54,43 @@ export default function Detail() {
   const onReady = (e: YouTubeEvent) => {
     playerRef.current = e.target;
   };
+
   const togglePlay = () => {
     if (!playerRef.current) return;
     if (playing) playerRef.current.pauseVideo();
     else playerRef.current.playVideo();
     setPlaying(!playing);
   };
-  const seekBy = (sec: number) => {
-    if (!playerRef.current) return;
-    const t = playerRef.current.getCurrentTime() ?? 0;
-    playerRef.current.seekTo(t + sec, true);
+
+  // 이전으로 이동, 다음으로 이동 함수
+  const seekBy = (currentIdx: number) => {
+  const nextIdx = currentIdx + 1;
+  const prevIdx = currentIdx - 1;
+
+  return {
+    next: () => {
+      if (playerRef.current && nextIdx < captions.length) {
+        playerRef.current.seekTo(captions[nextIdx].startTime, true);
+      }
+    },
+    prev: () => {
+      if (playerRef.current && prevIdx >= 0) {
+        playerRef.current.seekTo(captions[prevIdx].startTime, true);
+      }
+    },
   };
+};
+
+  // 컴포넌트가 마운트될 때 미리 마이크 권한 요청
+  useEffect(() => {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then((stream) => {
+        streamRef.current = stream; // 미리 스트림 확보
+      })
+    return () => {
+      streamRef.current?.getTracks().forEach(track => track.stop()); 
+    };
+  }, []);
 
   // 재생 시간 업데이트
   useEffect(() => {
@@ -81,7 +109,7 @@ export default function Detail() {
       const el = captionContainerRef.current.children[idx] as HTMLElement;
       el.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
-  }, [currentSec]);
+  }, [currentSec, captions]);
 
   // 파형 그리기 (sidebar)
   useEffect(() => {
@@ -194,10 +222,7 @@ export default function Detail() {
   const computedCount = Math.floor((elapsed / duration) * chars.length);
   const highlightCount = highlightEnabled ? computedCount : 0;
 
-
-
   // axios요청 할때는 영상이 끝났을때
-
   const previewMergedWav = async () => {
     const blobs = getAllBlobs();
     if (blobs.length === 0) return;
@@ -241,7 +266,7 @@ export default function Detail() {
             </div>
           </div>
           <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center space-x-6 bg-black/30 rounded-md px-4 py-2 z-50 pointer-events-auto">
-            <button onClick={() => seekBy(-10)}>
+          <button onClick={() => seekBy(currentIdx).prev()}>
               <ChevronLeftIcon className="w-6 h-6 text-white" />
             </button>
             <button onClick={togglePlay}>
@@ -259,7 +284,7 @@ export default function Detail() {
             >
               <ArrowPathIcon className="w-6 h-6 text-white" />
             </button>
-            <button onClick={() => seekBy(10)}>
+            <button onClick={() => seekBy(currentIdx).next()}>
               <ChevronRightIcon className="w-6 h-6 text-white" />
             </button>
           </div>
