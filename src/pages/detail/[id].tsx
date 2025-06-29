@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useRef, useEffect } from "react";
 import YouTube, { YouTubeEvent } from "react-youtube";
 import { extractYoutubeVideoId } from "@/utils/extractYoutubeVideoId";
@@ -75,7 +74,7 @@ export default function Detail() {
 
   const router = useRouter();
   const movieId = router.query.id;
-  const movieUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/movies/${movieId}/`;
+  const movieUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/movies/${movieId}`;
 
   useEffect(() => {
     if (!movieId || Array.isArray(movieId)) return;
