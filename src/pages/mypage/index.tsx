@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import YouTube from 'react-youtube'
 import { FaArrowRight, FaFilter} from 'react-icons/fa'
-import { CategoryModal } from '@/components/CategoryModal'
+import { ActorNameModal } from '@/components/ActorNameModal'
 
 export default function ProfilePage() {
   const shortIds = [
@@ -105,7 +105,8 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <CategoryModal 
+      {/* ActorNameModal */}
+      <ActorNameModal 
         isOpen={isActorModalOpen} 
         onClose={handleActorModalClose} 
       />
