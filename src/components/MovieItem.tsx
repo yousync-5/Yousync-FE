@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef } from "react";
 import YouTube, { YouTubeEvent } from "react-youtube";
 
 interface MovieItemProps {
@@ -10,27 +10,24 @@ interface MovieItemProps {
 
 export const MovieItem = ({ video, onVideoClick }: MovieItemProps) => {
   const playerRef = useRef<YT.Player | null>(null);
-  const [isHovered, setIsHovered] = useState(false);
-  const [playerReady, setPlayerReady] = useState(false);
-  const handlePlayVideo = () => {
-    setIsHovered(true);
-    if (playerRef.current) {
-      playerRef.current.seekTo(15);
-      playerRef.current.playVideo();
-    }
-  };
 
-  const handlePauseVideo = () => {
-    setIsHovered(false);
-    if (playerRef.current) {
-      playerRef.current.pauseVideo();
-      playerRef.current.seekTo(15);
-    }
-  };
+const handlePlayVideo = () => {
+  if (playerRef.current) {
+    playerRef.current.seekTo(15, true); 
+    playerRef.current.playVideo();
+  }
+};
+
+const handlePauseVideo = () => {
+  if (playerRef.current) {
+    playerRef.current.pauseVideo();
+    playerRef.current.seekTo(15, true); 
+  }
+};
+
 
   const onPlayerReady = (event: YouTubeEvent) => {
     playerRef.current = event.target;
-    setPlayerReady(true);
   };
 
   return (
@@ -50,17 +47,16 @@ export const MovieItem = ({ video, onVideoClick }: MovieItemProps) => {
               width: "400",
               height: "180",
               playerVars: {
-                autoplay: 0, //초기 자동재생 막기
-                mute: 1, //  // 음소거 (autoplay를 브라우저가 허용하게 함)
-                controls: 0, // 컨트롤 숨기기
+                autoplay: 0,
+                mute: 1,
+                controls: 0,
                 modestbranding: 1,
                 rel: 0,
                 showinfo: 0,
               },
-            }} 
+            }}
             onReady={onPlayerReady}
           />
-          {/* 클릭 막는 투명 레이어 */}
           <div
             onClick={() => onVideoClick(video.youtubeId)}
             className="absolute top-0 left-0 w-full h-full z-10 cursor-pointer"
