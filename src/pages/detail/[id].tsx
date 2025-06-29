@@ -75,7 +75,7 @@ export default function Detail() {
 
   const router = useRouter();
   const movieId = router.query.id;
-  const movieUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/movies/${movieId}`;
+  const movieUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/movies/${movieId}/`;
 
   useEffect(() => {
     if (!movieId || Array.isArray(movieId)) return;
@@ -300,7 +300,7 @@ export default function Detail() {
     const formData = new FormData();
     formData.append('file', audioBlob, 'hiSHJH.wav');
   
-    const uploadUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/movies/${movieId}/upload-audio`;
+    const uploadUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/movies/${movieId}/upload-audio/`;
   
     try {
       const res = await axios.post(uploadUrl, formData, {
