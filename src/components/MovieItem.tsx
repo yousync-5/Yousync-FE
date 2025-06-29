@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import React, { useRef, useState } from "react";
-=======
 import React, { useRef } from "react";
->>>>>>> e8967c84206837269296150e181637b4bc6a2d78
 import YouTube, { YouTubeEvent } from "react-youtube";
 
 interface MovieItemProps {
@@ -14,29 +10,6 @@ interface MovieItemProps {
 
 export const MovieItem = ({ video, onVideoClick }: MovieItemProps) => {
   const playerRef = useRef<YT.Player | null>(null);
-<<<<<<< HEAD
-  const [isHovered, setIsHovered] = useState(false);
-  const [playerReady, setPlayerReady] = useState(false);
-  const handlePlayVideo = () => {
-    setIsHovered(true);
-    if (playerRef.current) {
-      playerRef.current.seekTo(15);
-      playerRef.current.playVideo();
-    }
-  };
-
-  const handlePauseVideo = () => {
-    setIsHovered(false);
-    if (playerRef.current) {
-      playerRef.current.pauseVideo();
-      playerRef.current.seekTo(15);
-    }
-  };
-
-  const onPlayerReady = (event: YouTubeEvent) => {
-    playerRef.current = event.target;
-    setPlayerReady(true);
-=======
 
 const handlePlayVideo = () => {
   if (playerRef.current) {
@@ -55,7 +28,6 @@ const handlePauseVideo = () => {
 
   const onPlayerReady = (event: YouTubeEvent) => {
     playerRef.current = event.target;
->>>>>>> e8967c84206837269296150e181637b4bc6a2d78
   };
 
   return (
@@ -75,29 +47,16 @@ const handlePauseVideo = () => {
               width: "400",
               height: "180",
               playerVars: {
-<<<<<<< HEAD
-                autoplay: 0, //초기 자동재생 막기
-                mute: 1, //  // 음소거 (autoplay를 브라우저가 허용하게 함)
-                controls: 0, // 컨트롤 숨기기
-=======
                 autoplay: 0,
                 mute: 1,
                 controls: 0,
->>>>>>> e8967c84206837269296150e181637b4bc6a2d78
                 modestbranding: 1,
                 rel: 0,
                 showinfo: 0,
               },
-<<<<<<< HEAD
-            }} 
-            onReady={onPlayerReady}
-          />
-          {/* 클릭 막는 투명 레이어 */}
-=======
             }}
             onReady={onPlayerReady}
           />
->>>>>>> e8967c84206837269296150e181637b4bc6a2d78
           <div
             onClick={() => onVideoClick(video.youtubeId)}
             className="absolute top-0 left-0 w-full h-full z-10 cursor-pointer"

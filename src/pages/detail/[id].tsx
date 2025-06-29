@@ -93,11 +93,7 @@ export default function Detail() {
       }
     };
    fetchCaptions();
-<<<<<<< HEAD
-  }, [movieId]);
-=======
   }, [movieId, movieUrl]);
->>>>>>> e8967c84206837269296150e181637b4bc6a2d78
   const ytOpts = {
     width: "100%",
     height: "100%",
@@ -291,14 +287,6 @@ export default function Detail() {
   };
 
   // 서버로 .wav전송
-<<<<<<< HEAD
-  const sendWav = () => {
-
-  }
-
-  
-  if(!movieData) return;
-=======
   const sendWav = async () => {
     if (!movieId || Array.isArray(movieId)) {
       console.error('movieId가 유효하지 않습니다.');
@@ -326,7 +314,6 @@ export default function Detail() {
   };
   
   if (!movieData) return null;
->>>>>>> e8967c84206837269296150e181637b4bc6a2d78
   const videoId = extractYoutubeVideoId(movieData.youtube_url)
   return (
     <div className="flex flex-col flex-1 min-h-screen bg-black text-white pt-20">
@@ -427,11 +414,7 @@ export default function Detail() {
             <button onClick={previewMergedWav} className="bg-red-500 text-white p-4 rounded-lg">병합된 녹음 듣기</button>
             {audioUrl && <div>
               <audio src={audioUrl} controls/>
-<<<<<<< HEAD
-              <button className="bg-red-500 p-4 rounded-lg ">서버로 보내기</button>
-=======
               <button className="bg-red-500 p-4 rounded-lg " onClick={sendWav}>서버로 보내기</button>
->>>>>>> e8967c84206837269296150e181637b4bc6a2d78
               </div>}
 
             </div>
