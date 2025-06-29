@@ -34,7 +34,7 @@ export function useVoiceRecorder() {
   // ✅ onstop 이벤트가 호출됨 (→ 여기서 Blob으로 만들기 적절)
 
   // Blob(녹음된 오디오)를 Promise로 반환, 녹음이 안된 경우에는 null 반환
-  const stopRecording = async (): Promise<Blob | null> => {
+  const stopRecording = async (playingIdx: number): Promise<Blob | null> => {
     return new Promise((resolve) => {
       if (!mediaRecorderRef.current) return resolve(null);// 녹음기가 없는 상태면 null 반환, 종료
       

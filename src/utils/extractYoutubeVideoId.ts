@@ -8,7 +8,7 @@ export function extractYoutubeVideoId(url: string){
           return parsed.pathname.slice(1);
         }
         return null;
-      } catch (error) {
+      } catch {
         return null;
       }
 }
