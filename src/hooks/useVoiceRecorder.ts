@@ -3,7 +3,8 @@ import { useRef, useState } from 'react';
 export function useVoiceRecorder() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const allBlobsRef = useRef<Blob[]>([]);
+  // const allBlobsRef = useRef<Blob[]>([]);
+  const allBlobsRef = useRef<Record<number, Blob>>({});
   const [recording, setRecording] = useState(false);
 
   // 🔁 요약 흐름
@@ -34,7 +35,7 @@ export function useVoiceRecorder() {
   // ✅ onstop 이벤트가 호출됨 (→ 여기서 Blob으로 만들기 적절)
 
   // Blob(녹음된 오디오)를 Promise로 반환, 녹음이 안된 경우에는 null 반환
-  const stopRecording = async (): Promise<Blob | null> => {
+  const stopRecording = async (idx: number): Promise<Blob | null> => {
     return new Promise((resolve) => {
       if (!mediaRecorderRef.current) return resolve(null);// 녹음기가 없는 상태면 null 반환, 종료
       
@@ -43,7 +44,8 @@ export function useVoiceRecorder() {
         const blob = new Blob(chunksRef.current, { type: 'audio/wav' }); 
         console.log('🎧 Blob 생성 완료:', blob);
 
-        allBlobsRef.current.push(blob);// 각 녹음 저장
+        // allBlobsRef.current.push(blob);// 각 녹음 저장
+        allBlobsRef.current[idx] = blob; //덮어쓰기
         resolve(blob); // Promise 성공적으로 종료, Blob반환
         setRecording(false);
       };
@@ -55,6 +57,9 @@ export function useVoiceRecorder() {
     startRecording,
     stopRecording,
     recording,
-    getAllBlobs: () => allBlobsRef.current,
+    // getAllBlobs: () => allBlobsRef.current,  // 외부에서 전체 가져오기
+    getAllBlobs:()=>Object.entries(allBlobsRef.current)
+    .sort(([a], [b]) => Number(a) - Number(b))
+    .map(([, blob]) => blob),
   };
 }
