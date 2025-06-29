@@ -1,3 +1,4 @@
+// components/ActorNameModal.tsx
 'use client';
 
 import React from 'react';
@@ -7,7 +8,7 @@ interface ModalProps {
   onClose: () => void;
 }
 
-export const CategoryModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
+export const ActorNameModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   const maleActors = [

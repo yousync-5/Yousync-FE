@@ -57,7 +57,7 @@ export const MovieItem = ({ video, onVideoClick }: MovieItemProps) => {
                 rel: 0,
                 showinfo: 0,
               },
-            }} 
+            }}
             onReady={onPlayerReady}
           />
           {/* 클릭 막는 투명 레이어 */}
