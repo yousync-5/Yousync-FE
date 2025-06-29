@@ -93,7 +93,11 @@ export default function Detail() {
       }
     };
    fetchCaptions();
+<<<<<<< HEAD
   }, [movieId]);
+=======
+  }, [movieId, movieUrl]);
+>>>>>>> e8967c84206837269296150e181637b4bc6a2d78
   const ytOpts = {
     width: "100%",
     height: "100%",
@@ -134,7 +138,7 @@ export default function Detail() {
   useEffect(() => {
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then((stream) => {
-        streamRef.current = stream; // 미리 스트림 확보
+        streamRef.current = stream; 
       })
     return () => {
       streamRef.current?.getTracks().forEach(track => track.stop()); 
@@ -161,41 +165,41 @@ export default function Detail() {
   }, [currentSec, captions]);
 
   // 파형 그리기 (sidebar)
-  useEffect(() => {
-    const drawWave = (
-      canvas: HTMLCanvasElement | null,
-      fn: (x: number, w: number, h: number) => number,
-      color: string
-    ) => {
-      if (!canvas) return;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      const w = canvas.offsetWidth,
-        h = canvas.offsetHeight;
-      canvas.width = w;
-      canvas.height = h;
-      ctx.clearRect(0, 0, w, h);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      for (let x = 0; x <= w; x++) {
-        const y = h / 2 + fn(x, w, h);
-        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-    };
+  // useEffect(() => {
+  //   const drawWave = (
+  //     canvas: HTMLCanvasElement | null,
+  //     fn: (x: number, w: number, h: number) => number,
+  //     color: string
+  //   ) => {
+  //     if (!canvas) return;
+  //     const ctx = canvas.getContext("2d");
+  //     if (!ctx) return;
+  //     const w = canvas.offsetWidth,
+  //       h = canvas.offsetHeight;
+  //     canvas.width = w;
+  //     canvas.height = h;
+  //     ctx.clearRect(0, 0, w, h);
+  //     ctx.strokeStyle = color;
+  //     ctx.lineWidth = 2;
+  //     ctx.beginPath();
+  //     for (let x = 0; x <= w; x++) {
+  //       const y = h / 2 + fn(x, w, h);
+  //       x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  //     }
+  //     ctx.stroke();
+  //   };
 
-    drawWave(
-      blueCanvasRef.current,
-      (x, w, h) => Math.sin((x / w) * 4 * Math.PI) * (h / 2 - 5),
-      "#3b82f6"
-    );
-    drawWave(
-      redCanvasRef.current,
-      (x, w, h) => Math.cos((x / w) * 4 * Math.PI) * (h / 2 - 5),
-      "#ef4444"
-    );
-  }, []);
+  //   drawWave(
+  //     blueCanvasRef.current,
+  //     (x, w, h) => Math.sin((x / w) * 4 * Math.PI) * (h / 2 - 5),
+  //     "#3b82f6"
+  //   );
+  //   drawWave(
+  //     redCanvasRef.current,
+  //     (x, w, h) => Math.cos((x / w) * 4 * Math.PI) * (h / 2 - 5),
+  //     "#ef4444"
+  //   );
+  // }, []);
 
   // 현재 자막
   const currentIdx = captions.findIndex(
@@ -287,12 +291,42 @@ export default function Detail() {
   };
 
   // 서버로 .wav전송
+<<<<<<< HEAD
   const sendWav = () => {
 
   }
 
   
   if(!movieData) return;
+=======
+  const sendWav = async () => {
+    if (!movieId || Array.isArray(movieId)) {
+      console.error('movieId가 유효하지 않습니다.');
+      return;
+    }
+  
+    const blobs = getAllBlobs();
+    if (blobs.length === 0) return;
+  
+    const audioBlob = await mergeWavBlobs(blobs);
+    const formData = new FormData();
+    formData.append('file', audioBlob, 'hiSHJH.wav');
+  
+    const uploadUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/movies/${movieId}/upload-audio`;
+  
+    try {
+      const res = await axios.post(uploadUrl, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+  
+      console.log('녹음 파일이 성공적으로 업로드되었습니다.', res.data);
+    } catch (err) {
+      console.error('녹음 파일 업로드 중 오류가 발생했습니다.', err);
+    }
+  };
+  
+  if (!movieData) return null;
+>>>>>>> e8967c84206837269296150e181637b4bc6a2d78
   const videoId = extractYoutubeVideoId(movieData.youtube_url)
   return (
     <div className="flex flex-col flex-1 min-h-screen bg-black text-white pt-20">
@@ -393,7 +427,11 @@ export default function Detail() {
             <button onClick={previewMergedWav} className="bg-red-500 text-white p-4 rounded-lg">병합된 녹음 듣기</button>
             {audioUrl && <div>
               <audio src={audioUrl} controls/>
+<<<<<<< HEAD
               <button className="bg-red-500 p-4 rounded-lg ">서버로 보내기</button>
+=======
+              <button className="bg-red-500 p-4 rounded-lg " onClick={sendWav}>서버로 보내기</button>
+>>>>>>> e8967c84206837269296150e181637b4bc6a2d78
               </div>}
 
             </div>
