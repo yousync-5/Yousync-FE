@@ -7,6 +7,11 @@ import { useRouter } from "next/router";
 import axios from "axios";
 import ServerPitchGraph from "@/components/ServerPitchGraph"
 
+export default interface CaptionState {
+  currentIdx: number;
+  captions: Caption[];
+}
+
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -72,16 +77,16 @@ export default function Detail() {
   const [movieData, setMovieData] = useState<Video | null>(null);
 
   const router = useRouter();
-  const movieId = router.query.id;
-  const movieUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/movies/${movieId}`;
+  const token_id = router.query.id;
+  const tokens = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${token_id}`;
 
   useEffect(() => {
-    if (!movieId || Array.isArray(movieId)) return;
+    if (!token_id || Array.isArray(token_id)) return;
 
-    console.log("초기 렌더링", movieUrl)
+    console.log("초기 렌더링", tokens)
     const fetchCaptions = async () => {
       try {
-        const res = await axios.get<Video>(movieUrl);
+        const res = await axios.get<Video>(tokens);
         const movie = res.data;
         console.log("영화 정보:", movie);
         setCaptions(movie?.scripts);
@@ -91,7 +96,7 @@ export default function Detail() {
       }
     };
    fetchCaptions();
-  }, [movieId, movieUrl]);
+  }, [token_id, tokens]);
   const ytOpts = {
     width: "100%",
     height: "100%",
@@ -286,7 +291,7 @@ export default function Detail() {
 
   // 서버로 .wav전송
   const sendWav = async () => {
-    if (!movieId || Array.isArray(movieId)) {
+    if (!token_id || Array.isArray(token_id)) {
       console.error('movieId가 유효하지 않습니다.');
       return;
     }
@@ -298,7 +303,7 @@ export default function Detail() {
     const formData = new FormData();
     formData.append('file', audioBlob, 'hiSHJH.wav');
   
-    const uploadUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/movies/${movieId}/upload-audio/`;
+    const uploadUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${token_id}/upload-audio/`;
   
     try {
       const res = await axios.post(uploadUrl, formData, {
@@ -401,7 +406,7 @@ export default function Detail() {
           </div>
           <div className="px-4 pb-4 space-y-2 flex-none relative -bottom-2">
             <div className="w-full h-16 bg-gray-700 rounded">
-             <ServerPitchGraph currentIdx={currentIdx} captions={captions} />
+              <ServerPitchGraph captionState={{ currentIdx, captions }} />
             </div>
 
             <canvas
