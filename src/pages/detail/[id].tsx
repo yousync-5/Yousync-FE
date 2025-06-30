@@ -7,10 +7,6 @@ import { useRouter } from "next/router";
 import axios from "axios";
 import ServerPitchGraph from "@/components/ServerPitchGraph"
 
-export default interface CaptionState {
-  currentIdx: number;
-  captions: Caption[];
-}
 
 import {
   ChevronLeftIcon,
@@ -78,15 +74,15 @@ export default function Detail() {
 
   const router = useRouter();
   const token_id = router.query.id;
-  const tokens = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${token_id}`;
+  const movieUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${token_id}`;
 
   useEffect(() => {
     if (!token_id || Array.isArray(token_id)) return;
 
-    console.log("초기 렌더링", tokens)
+    console.log("초기 렌더링", movieUrl)
     const fetchCaptions = async () => {
       try {
-        const res = await axios.get<Video>(tokens);
+        const res = await axios.get<Video>(movieUrl);
         const movie = res.data;
         console.log("영화 정보:", movie);
         setCaptions(movie?.scripts);
@@ -96,11 +92,11 @@ export default function Detail() {
       }
     };
    fetchCaptions();
-  }, [token_id, tokens]);
+  }, [token_id, movieUrl]);
   const ytOpts = {
     width: "100%",
     height: "100%",
-    playerVars: { controls: 0, disablekb: 1, wmode: "opaque" },
+    playerVars: { controls: 0, disablekb: 1, wmode: "opaque", rel: 0 },
   };
 
   const onReady = (e: YouTubeEvent) => {
@@ -406,7 +402,10 @@ export default function Detail() {
           </div>
           <div className="px-4 pb-4 space-y-2 flex-none relative -bottom-2">
             <div className="w-full h-16 bg-gray-700 rounded">
-              <ServerPitchGraph captionState={{ currentIdx, captions }} />
+            <ServerPitchGraph captionState={{ currentIdx, captions }} />
+
+
+
             </div>
 
             <canvas

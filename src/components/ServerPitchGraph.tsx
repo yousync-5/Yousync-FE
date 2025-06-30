@@ -1,98 +1,131 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import axios from "axios";
-import { PitchItem } from "@/type/PitchdataType";
-import { CaptionState } from "@/type/CaptionTypes";
+import { PitchItem,Caption } from "@/type/PitchdataType";
 
 const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
-
+interface CaptionState {
+  currentIdx: number;
+  captions: Caption[];
+}
 
 interface ServerPitchGraphProps {
   captionState: CaptionState;
 }
 
-export default function ServerPitchGraph({ captionState }: ServerPitchGraphProps) {
+export default function ServerPitchGraph({ captionState = { currentIdx: 0, captions: [] } }: ServerPitchGraphProps)  {
+  const { currentIdx, captions } = captionState;
   const [pitchData, setPitchData] = useState<PitchItem[]>([]);
-
-  
   useEffect(() => {
-  const fetchData = async () => {
-    try {
-      const res = await axios.get<PitchItem[]>("http://127.0.0.1:5000/api/pitch");
-      setPitchData(res.data);
-    } catch (err) {
-      console.error("에러:", err);
+    console.log("[ServerPitchGraph] 전달받은 captionState:", captionState);
+  }, [captionState]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await axios.get<PitchItem[]>("http://127.0.0.1:5000/api/pitch");
+        console.log("받아온 전체 피치 데이터:", res.data);
+        setPitchData(res.data);
+      } catch (err) {
+        console.error("에러:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const currentCaption = captions[currentIdx];
+
+  const filteredData = useMemo(() => {
+  if (!currentCaption || pitchData.length === 0) {
+    console.warn("현재 caption이 없거나 pitch 데이터가 없습니다.");
+    return [];
+  }
+
+  const pitchItem = pitchData[0];  // 서버에서 내려온 데이터는 배열이므로 [0]번째 항목 사용
+  const { start_time: totalStart, end_time: totalEnd, actor_pitch_values } = pitchItem;
+
+  // 전체 시간 길이를 피치값 개수로 나누어 간격(interval) 계산
+  const totalDuration = totalEnd - totalStart;
+  const interval = totalDuration / actor_pitch_values.length;
+
+  const captionStart = currentCaption.start_time;
+  const captionEnd = currentCaption.end_time;
+
+  // 결과 배열
+  const result = [];
+
+  actor_pitch_values.forEach((pitch_hz, index) => {
+    const currentTime = totalStart + interval * index;
+
+    // 현재 caption 범위 안에 있는 값들만 선택
+    if (currentTime >= captionStart && currentTime <= captionEnd) {
+      result.push({
+        x: currentTime - captionStart,  // 상대적 시간으로
+        y: pitch_hz,
+      });
     }
+  });
+
+  return result;
+}, [pitchData, currentCaption]);
+
+
+
+  useEffect(() => {
+    console.log("그래프 데이터(filteredData):", filteredData);
+  }, [filteredData]);
+
+  const series = [
+    {
+      name: "Pitch (Hz)",
+      data: filteredData,
+    },
+  ];
+
+  const options = {
+    chart: {
+      id: "pitch-graph",
+      toolbar: { show: false },
+    },
+    stroke: {
+      width: 2,
+    },
+    tooltip:{
+        enabled: false,
+    },
+
+    xaxis: {
+      labels: { show: false },
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+    },
+    yaxis: {
+      tickAmount: 0,
+      labels: { show: false },
+      axisTicks: { show: false },
+      axisBorder: { show: false },
+    },
+    grid: {
+      yaxis: { lines: { show: false } },
+    },
+    annotations: {
+      yaxis: [
+        {
+          y: 330,
+          borderColor: "rgba(255, 255, 255, 0.3)",
+          borderWidth: 1,
+        },
+      ],
+    },
   };
 
-  fetchData();
-}, []);
-
-
-let graphData: { x: number; y: number }[] = [];
-
-if (pitchData.length > 0 && pitchData[0].time_values) {
-  const item = pitchData[0];
-  graphData = item.actor_pitch_values.map((pitch, index) => ({
-    x: item.time_values[index],
-    y: pitch,
-  }));
-}
-
-const series = [
-  {
-    name: "Pitch",
-    data: graphData,
-  },
-];
-
-const options = {
-  chart: {
-    id: "pitch-graph",
-    toolbar: { show: false }
-  },
-  stroke: {
-    width: 2
-  },
-
-  xaxis: {
-    title: { text: "" },
-    labels: { show: false },
-    axisBorder: { show: false }, 
-    axisTicks: { show: false }, 
-  },
-  yaxis: {
-    tickAmount: 0,
-    labels: { show: false },
-    axisTicks: { show: false },
-    axisBorder: { show: false }
-},
-grid: {
-  yaxis: {
-    lines: { show: false }
-  }
-},
-annotations: {
-  yaxis: [
-    {
-      y: 330,
-      borderColor: "rgba(255, 255, 255, 0.3)",
-      borderWidth: 1,                         
-      strokeDashArray: 0
-    }
-  ]
-}
-
-};
-
-return (
+  return (
     <ApexChart
       options={options}
       series={series}
       type="line"
       height={70}
     />
-  )
+  );
 }
