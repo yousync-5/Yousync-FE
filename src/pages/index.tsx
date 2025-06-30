@@ -4,10 +4,7 @@ import { MovieList } from "@/components/MovieList";
 import axios from "axios";
 import { Video } from "./detail/[id]";
 import { extractYoutubeVideoId } from "@/utils/extractYoutubeVideoId";
-interface VideoType {
-  youtubeId: string;
-}
-
+import { VideoType } from "@/type/VideoType"
 
 
 export default function Home() {
@@ -15,7 +12,9 @@ export default function Home() {
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [videos, setVideos] = useState<VideoType[]>([]);
 
+
   const tabs = ["인기 배우", "인기 영상", "미국 배우", "영국 배우", "남자 배우", "여자 배우"];
+
 
   useEffect(() => {
     const fetchMovies = async () => {
@@ -45,6 +44,12 @@ export default function Home() {
   const closeModal = () => {
     setSelectedVideoId(null);
   };
+
+  useEffect(() => {
+
+
+
+  })
 
   return (
     <div className="bg-neutral-950 min-h-screen text-white px-6 py-4 font-sans">

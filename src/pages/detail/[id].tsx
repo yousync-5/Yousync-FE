@@ -5,6 +5,7 @@ import { extractYoutubeVideoId } from "@/utils/extractYoutubeVideoId";
 import { mergeWavBlobs } from "@/utils/mergeWavBlobs";
 import { useRouter } from "next/router";
 import axios from "axios";
+import ServerPitchGraph from "@/components/ServerPitchGraph"
 
 import {
   ChevronLeftIcon,
@@ -52,10 +53,8 @@ export default function Detail() {
   const [currentSec, setCurrentSec] = useState(0);
 
   const captionContainerRef = useRef<HTMLDivElement>(null);
-  const blueCanvasRef = useRef<HTMLCanvasElement>(null);
   const redCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  // const captions: Caption[] = captionsData as Caption[];
   const [captions, setCaptions] = useState<Caption[]>([]);
   const {startRecording, stopRecording, recording, getAllBlobs} = useVoiceRecorder();
 
@@ -400,11 +399,11 @@ export default function Detail() {
               </div>
             ))}
           </div>
-          <div className="px-4 pb-4 space-y-2 flex-none relative -bottom-8">
-            <canvas
-              ref={blueCanvasRef}
-              className="w-full h-16 bg-gray-700 rounded"
-            />
+          <div className="px-4 pb-4 space-y-2 flex-none relative -bottom-2">
+            <div className="w-full h-16 bg-gray-700 rounded">
+             <ServerPitchGraph currentIdx={currentIdx} captions={captions} />
+            </div>
+
             <canvas
               ref={redCanvasRef}
               className="w-full h-16 bg-gray-700 rounded"
