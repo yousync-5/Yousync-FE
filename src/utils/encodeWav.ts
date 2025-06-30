@@ -1,5 +1,5 @@
 export function encodeWav(audioBuffer: AudioBuffer): Blob {
-  console.log("힘들다6")
+  console.log("")
 
     const numOfChan = audioBuffer.numberOfChannels,
           length = audioBuffer.length * numOfChan * 2 + 44,

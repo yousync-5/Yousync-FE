@@ -20,7 +20,7 @@ export default function Home() {
   useEffect(() => {
     const fetchMovies = async () => {
       try {
-        const res = await axios.get<Video[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/movies/`);
+        const res = await axios.get<Video[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/`);
 
         const videoItems = res.data
           .filter(movie => movie.id >= 1 && movie.id)
