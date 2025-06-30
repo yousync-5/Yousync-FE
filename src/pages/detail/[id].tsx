@@ -300,8 +300,8 @@ export default function Detail() {
   
     const blobs = getAllBlobs();
     if (blobs.length === 0) return;
-  
-    const audioBlob = await mergeWavBlobs(blobs);
+    if(!audioCtx) return;
+    const audioBlob = await mergeWavBlobs(blobs, audioCtx);
     const formData = new FormData();
     formData.append('file', audioBlob, 'hiSHJH.wav');
   
