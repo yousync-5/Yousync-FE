@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import YouTube from 'react-youtube'
-import { FaArrowRight, FaUser, FaFilter} from 'react-icons/fa'
+import { FaArrowRight, FaFilter} from 'react-icons/fa'
 import { ActorNameModal } from '@/components/ActorNameModal'
 
 export default function ProfilePage() {

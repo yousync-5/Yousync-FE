@@ -1,4 +1,3 @@
-// components/MovieDetailModal.tsx
 "use client";
 
 import React, { MouseEvent } from "react";
