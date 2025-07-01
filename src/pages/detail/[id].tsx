@@ -92,11 +92,11 @@ export default function Detail() {
   // 점수 
   const [myScore, setMyScore] = useState(null);
   const router = useRouter();
-  const movieId = router.query.id;
-  const movieUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${movieId}`;
+  const token_id = router.query.id;
+  const movieUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${token_id}`;
 
   useEffect(() => {
-    if (!movieId || Array.isArray(movieId)) return;
+    if (!token_id || Array.isArray(token_id)) return;
 
     console.log("초기 렌더링", movieUrl)
     const fetchCaptions = async () => {
@@ -111,7 +111,7 @@ export default function Detail() {
       }
     };
    fetchCaptions();
-  }, [movieId, movieUrl]);
+  }, [token_id, movieUrl]);
   const ytOpts = {
     width: "100%",
     height: "100%",
@@ -283,7 +283,7 @@ export default function Detail() {
 
   // 서버로 .wav전송
   const sendWav = async () => {
-    if (!movieId || Array.isArray(movieId)) {
+    if (!token_id || Array.isArray(token_id)) {
       console.error('movieId가 유효하지 않습니다.');
       return;
     }
@@ -295,7 +295,7 @@ export default function Detail() {
     const formData = new FormData();
     formData.append('file', audioBlob, 'hiSHJH.wav');
   
-    const uploadUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${movieId}/upload-audio`;
+    const uploadUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/movies/${token_id}/upload-audio/`;
   
     try {
       const res = await axios.post<tokenInfo>(uploadUrl, formData, {
