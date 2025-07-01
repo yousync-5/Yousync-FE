@@ -23,7 +23,7 @@ export default function ServerPitchGraph({ captionState = { currentIdx: 0, capti
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get<PitchItem[]>("http://127.0.0.1:5000/api/pitch");
+        const res = await axios.get<PitchItem[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${token_id}`;
         console.log("받아온 전체 피치 데이터:", res.data);
         setPitchData(res.data);
       } catch (err) {

@@ -34,7 +34,7 @@ export default function Home() {
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const tabs = ["인기 배우", "인기 영상", "미국 배우", "영국 배우", "남자 배우", "여자 배우"];
   const selectedTokenData = selectedVideoId ? tokenMap[selectedVideoId] : null;
-
+  
   useEffect(() => {
     const fetchAllTokenData = async () => {
       try {

@@ -6,8 +6,8 @@ export interface PitchItem {
   script: string;
   translation: string;
   url: string;
-  actor_pitch_values: number[];
-  time_values: number[]; 
+  actor_pitch_values: number[]; // 서버 데이터 추가본
+  time_values: number[]; // 서버 데이터 추가본
   background_audio_url: string;
   id: number;
   actor: {
