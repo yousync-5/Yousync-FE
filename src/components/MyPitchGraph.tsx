@@ -16,56 +16,17 @@ export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
   const pitchIndexRef = useRef(0); //x축 인덱스
   const options = {
     chart: {
-      id: "realtime-pitch",
-      animations: {
-        enabled: true,
-        easing: "linear",
-        dynamicAnimation: {speed: 100},
-      },
-      toolbar: {show: false},
-      zoom: {enabled: false},
+      id: "pitch-graph",
+      toolbar: { show: false },
+    },
+    stroke: { width: 2 },
+    curve: "smooth",
+    tooltip: { enabled: false },
+    xaxis: { labels: { show: false }, axisBorder: { show: false }, axisTicks: { show: false } },
+    yaxis: { labels: { show: false }, axisBorder: { show: false }, axisTicks: { show: false } },
+    grid: { yaxis: { lines: { show: false } } },
+  };
 
-      //padding 추가
-      // offsetY: 0, // 위로 조금 올리기
-    },
-    xaxis: {
-      labels: {show: false},
-      type: "numeric" as const,
-      axisTicks: {
-        show: false,
-      },
-      // axisBorder : {
-      //   show: false,
-      // }
-    },
-    yaxis: {
-      min: 70, 
-      max: 500, 
-      tickAmount: 0,
-      labels: {show: false},
-      axisTicks: {show: false},
-      axisBorder: {show: false},
-    },
-    grid: {
-      xaxis: {
-        lines: {show: false},
-      },
-      yaxis: {
-        lines: {show: false},
-      },
-    },
-    stroke: {curve: "smooth" as const, width: 2},
-    annotations: {
-      yaxis: [
-        {
-          y: 330,
-          borderColor: "rgba(50, 205, 50, 0,3)",
-          borderWidth: 1,
-          strokeDashArray: 0,
-        }
-      ]
-    }
-  }
   useEffect(() => {
     setSeries([{name: "Pitch", data: []}]);
     pitchIndexRef.current = 0;

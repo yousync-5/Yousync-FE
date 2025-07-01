@@ -38,3 +38,33 @@ export interface CaptionState {
   captions: Caption[];
 }
 
+
+export interface ServerPitch {
+  time: number;
+  hz: number | null;
+}
+
+export interface ScriptItem {
+  token_id: number;
+  start_time: number;
+  end_time: number;
+  script: string;
+  translation: string | null;
+  id: number;
+}
+
+export interface TokenDetailResponse {
+  token_name: string;
+  actor_name: string;
+  category: string;
+  start_time: number;
+  end_time: number;
+  s3_textgrid_url: string;
+  s3_pitch_url: string;
+  s3_bgvoice_url: string;
+  youtube_url: string;
+  id: number;
+  pitch: ServerPitch[]; // 이 부분이 핵심!
+  bgvoice_url: string;
+  scripts: ScriptItem[];
+}

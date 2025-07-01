@@ -7,7 +7,7 @@ import { useState } from "react";
 interface MovieListProps {
   videos: VideoType[];
   onVideoClick: (youtubeId: string) => void;
-  onVideoHover: (youtubeId: string | null) => void; // ★ 추가!
+  onVideoHover: (youtubeId: string | null) => void; 
 }
 
 // n개씩 끊어서 2차원 배열로 분할
