@@ -1,54 +1,88 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import MovieDetailModal from "@/components/MovieDetailModal";
 import { MovieList } from "@/components/MovieList";
 import axios from "axios";
-import { Video } from "./detail/[id]";
 import { extractYoutubeVideoId } from "@/utils/extractYoutubeVideoId";
-interface VideoType {
+import { VideoType } from "@/type/VideoType";
+
+interface VideoDetail {
+  id: number;
+  youtube_url: string;
+  actor_name: string;
+  category: string;
+  start_time: number;
+  end_time: number;
+  scripts: string[];
+  s3_pitch_url: string;
+  s3_bgvoice_url: string;
+  s3_textgrid_url: string;
   youtubeId: string;
 }
 
-
+interface TokenMap {
+  [youtubeId: string]: VideoDetail;
+}
 
 export default function Home() {
   const [selectedTab, setSelectedTab] = useState("인기 영상");
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [videos, setVideos] = useState<VideoType[]>([]);
-
+  const [tokenMap, setTokenMap] = useState<TokenMap>({});
+  const [isReady, setIsReady] = useState(false); 
+  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const tabs = ["인기 배우", "인기 영상", "미국 배우", "영국 배우", "남자 배우", "여자 배우"];
+  const selectedTokenData = selectedVideoId ? tokenMap[selectedVideoId] : null;
 
   useEffect(() => {
-    const fetchMovies = async () => {
+    const fetchAllTokenData = async () => {
       try {
-        const res = await axios.get<Video[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/`);
+        const res = await axios.get<VideoDetail[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/`);
 
-        const videoItems = res.data
-          .filter(movie => movie.id >= 1 && movie.id)
-          .map(movie => ({
-            youtubeId: extractYoutubeVideoId(movie.youtube_url) || "",
-          }))
-          .filter(video => video.youtubeId !== "");
+        const validItems = res.data
+          .map((item) => {
+            const youtubeId = extractYoutubeVideoId(item.youtube_url);
+            return youtubeId ? { ...item, youtubeId } : null;
+          })
+          .filter((item): item is VideoDetail => !!item);
 
-        setVideos(videoItems);
+        const videoList = validItems.map((item) => ({
+          id: item.id,
+          title: item.actor_name,
+          youtubeId: item.youtubeId,
+        }));
+        setVideos(videoList);
+
+        const map: TokenMap = {};
+        validItems.forEach((item) => {
+          map[item.youtubeId] = item;
+        });
+        setTokenMap(map);
+        setIsReady(true); 
       } catch (error) {
-        console.error("Error fetching movies:", error);
+        console.error("Error fetching all tokens:", error);
       }
     };
 
-    fetchMovies();
+    fetchAllTokenData();
   }, []);
 
   const openModal = (youtubeId: string) => {
-    setSelectedVideoId(youtubeId);
-  };
+  if (hoverTimeout) clearTimeout(hoverTimeout);
+  setSelectedVideoId(youtubeId);
+};
 
-  const closeModal = () => {
+const closeModal = () => {
+  const timeout = setTimeout(() => {
     setSelectedVideoId(null);
-  };
+  }, 200);
+  setHoverTimeout(timeout);
+};
 
-  return (
-    <div className="bg-neutral-950 min-h-screen text-white px-6 py-4 font-sans">
-      {/* Search */}
+return (
+  <div className="bg-neutral-950 min-h-screen text-white px-6 py-4 font-sans">
+    {/* Search */}
       <div className="flex justify-center mb-6 mt-24">
         <div className="flex items-center border-2 border-white rounded-full px-4 py-2 w-full max-w-xl">
           <input
@@ -73,14 +107,25 @@ export default function Home() {
       </div>
 
       {/* Videos */}
-      <MovieList videos={videos} onVideoClick={openModal} />
+      {isReady && (
+        <MovieList
+          title={selectedTab}
+          videos={videos.map((video) => ({
+            id: video.id,
+            title: video.title,
+            youtubeId: video.youtubeId,
+          }))}
+          onVideoClick={openModal}
+        />
+      )}
 
       {/* Modal */}
-      {selectedVideoId && (
+      {selectedVideoId && selectedTokenData && (
         <MovieDetailModal
           youtubeId={selectedVideoId}
           isOpen={!!selectedVideoId}
           onClose={closeModal}
+          tokenData={selectedTokenData}
         />
       )}
     </div>

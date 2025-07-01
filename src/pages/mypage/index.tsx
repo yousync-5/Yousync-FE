@@ -36,8 +36,15 @@ export default function ProfilePage() {
   const optsVideo = {
     height: '180',
     width: '320',
-    playerVars: { autoplay: 0 },
+    playerVars: {
+    autoplay: 0,        
+    controls: 0,       
+    modestbranding: 1,  
+    rel: 0,             
+    disablekb: 1,        
+    fs: 0,              
   }
+}
 
   return (
     <div className="bg-neutral-900 min-h-screen">
@@ -84,7 +91,6 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* 하단: 일반 유튜브 영상 */}
         <div className="w-full max-w-6xl flex justify-center">
           <div className="grid grid-cols-3 gap-8">
             {videoIds.map((videoId) => (
@@ -94,7 +100,6 @@ export default function ProfilePage() {
                 style={{ width: 320, height: 180 }}
               >
                 <YouTube videoId={videoId} opts={optsVideo} />
-                {/* 유튜브 플레이 버튼 느낌 */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="bg-black/50 rounded-full p-3">
                   </div>

@@ -5,6 +5,8 @@ import { extractYoutubeVideoId } from "@/utils/extractYoutubeVideoId";
 import { mergeWavBlobs } from "@/utils/mergeWavBlobs";
 import { useRouter } from "next/router";
 import axios from "axios";
+import ServerPitchGraph from "@/components/ServerPitchGraph"
+
 
 import {
   ChevronLeftIcon,
@@ -66,10 +68,7 @@ export default function Detail() {
   const [currentSec, setCurrentSec] = useState(0);
 
   const captionContainerRef = useRef<HTMLDivElement>(null);
-  const blueCanvasRef = useRef<HTMLCanvasElement>(null);
-  const redCanvasRef = useRef<HTMLCanvasElement>(null);
 
-  // const captions: Caption[] = captionsData as Caption[];
   const [captions, setCaptions] = useState<Caption[]>([]);
   const {startRecording, stopRecording, recording, getAllBlobs} = useVoiceRecorder();
 
@@ -95,11 +94,11 @@ export default function Detail() {
   // 점수 
   const [myScore, setMyScore] = useState(null);
   const router = useRouter();
-  const movieId = router.query.id;
-  const movieUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${movieId}`;
+  const token_id = router.query.id;
+  const movieUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${token_id}`;
 
   useEffect(() => {
-    if (!movieId || Array.isArray(movieId)) return;
+    if (!token_id || Array.isArray(token_id)) return;
 
     console.log("초기 렌더링", movieUrl)
     const fetchCaptions = async () => {
@@ -114,11 +113,11 @@ export default function Detail() {
       }
     };
    fetchCaptions();
-  }, [movieId, movieUrl]);
+  }, [token_id, movieUrl]);
   const ytOpts = {
     width: "100%",
     height: "100%",
-    playerVars: { controls: 0, disablekb: 1, wmode: "opaque" },
+    playerVars: { controls: 0, disablekb: 1, wmode: "opaque", rel: 0 },
   };
 
   const onReady = (e: YouTubeEvent) => {
@@ -286,7 +285,7 @@ export default function Detail() {
 
   // 서버로 .wav전송
   const sendWav = async () => {
-    if (!movieId || Array.isArray(movieId)) {
+    if (!token_id || Array.isArray(token_id)) {
       console.error('movieId가 유효하지 않습니다.');
       return;
     }
@@ -298,7 +297,7 @@ export default function Detail() {
     const formData = new FormData();
     formData.append('file', audioBlob, 'hiSHJH.wav');
   
-    const uploadUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${movieId}/upload-audio/`;
+    const uploadUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/movies/${token_id}/upload-audio/`;
   
     try {
       const res = await axios.post<tokenInfo>(uploadUrl, formData, {
@@ -401,15 +400,10 @@ export default function Detail() {
               </div>
             ))}
           </div>
-          <div className="px-4 pb-4 space-y-2 flex-none relative -bottom-8">
-            <canvas
-              ref={blueCanvasRef}
-              className="w-full h-16 bg-gray-700 rounded"
-            />
-            {/* <canvas
-              ref={redCanvasRef}
-              className="w-full h-16 bg-gray-700 rounded"
-            /> */}
+          <div className="px-4 pb-4 space-y-2 flex-none relative -bottom-2">
+            <div className="w-full h-16 bg-gray-700 rounded">
+            <ServerPitchGraph captionState={{ currentIdx, captions }} />
+            </div>
             <div
               className="w-full h-16 bg-gray-700 rounded"
             >
