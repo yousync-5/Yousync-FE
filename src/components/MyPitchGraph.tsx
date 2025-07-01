@@ -14,6 +14,8 @@ export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
   const [series, setSeries] = useState([{name: "Pitch", data: [] as {x: number, y: number}[]}]);
   const detectPitchRef = useRef<ReturnType<typeof Pitchfinder.YIN> | null>(null);
   const pitchIndexRef = useRef(0); //x축 인덱스
+  const MAX_POINTS = 200;
+
   const options = {
     chart: {
       id: "realtime-pitch",
@@ -89,11 +91,11 @@ export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
       const pitch = detectPitchRef.current(buffer);
 
       // 사람 목소리 범위 필터(80~1000Hz)
-      if(pitch && pitch > 80 && pitch < 1000){
+      if(typeof pitch === 'number' && !isNaN(pitch) && pitch > 80 && pitch < 1000){
         setMyPitch(pitch);
         setSeries(prev => [{
           ...prev[0],
-          data: [...prev[0].data, {x: pitchIndexRef.current++, y: pitch}]
+          data: [...prev[0].data.slice(-MAX_POINTS), {x: pitchIndexRef.current++, y: pitch}]
         }])
       }
     }, 100);
