@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import YouTube from "react-youtube";
+import React from "react";
 
 interface MovieItemProps {
   video: {
@@ -8,43 +7,22 @@ interface MovieItemProps {
     title: string;
   };
   onVideoClick: (youtubeId: string) => void;
+  onVideoHover: (youtubeId: string | null) => void;
 }
 
-const MovieItem = ({ video, onVideoClick }: MovieItemProps) => {
-  const [isHovered, setIsHovered] = useState(false);
-
+const MovieItem = ({ video, onVideoClick, onVideoHover }: MovieItemProps) => {
   return (
     <div
-      className="flex-shrink-0 w-[220px] h-[320px] rounded-lg overflow-hidden bg-neutral-900 cursor-pointer hover:scale-105 transition-transform"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      className="flex-shrink-0 w-full aspect-[220/320] rounded-lg overflow-hidden bg-neutral-900 cursor-pointer hover:scale-105 transition-transform"
+      onMouseEnter={() => onVideoHover(video.youtubeId)}
+      onMouseLeave={() => onVideoHover(null)}
       onClick={() => onVideoClick(video.youtubeId)}
     >
-      {isHovered ? (
-        <YouTube
-          videoId={video.youtubeId}
-          opts={{
-            width: "100%",
-            height: "100%",
-            playerVars: {
-              autoplay: 1,
-              mute: 1,
-              controls: 0,
-              modestbranding: 1,
-              rel: 0,
-              showinfo: 0,
-              disablekb: 1,
-            },
-          }}
-          className="w-full h-full"
-        />
-      ) : (
-        <img
-          src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`}
-          alt={video.title}
-          className="w-full h-full object-cover"
-        />
-      )}
+      <img
+        src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`}
+        alt={video.title}
+        className="w-full h-full object-cover"
+      />
     </div>
   );
 };

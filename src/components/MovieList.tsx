@@ -1,4 +1,3 @@
-// src/components/MovieList.tsx
 "use client";
 
 import MovieItem from "./MovieItem";
@@ -8,6 +7,7 @@ import { useState } from "react";
 interface MovieListProps {
   videos: VideoType[];
   onVideoClick: (youtubeId: string) => void;
+  onVideoHover: (youtubeId: string | null) => void; // ★ 추가!
 }
 
 // n개씩 끊어서 2차원 배열로 분할
@@ -19,7 +19,7 @@ const chunkArray = <T,>(array: T[], chunkSize: number): T[][] => {
   return result;
 };
 
-export default function MovieList({ videos, onVideoClick }: MovieListProps) {
+export default function MovieList({ videos, onVideoClick, onVideoHover }: MovieListProps) {
   const rows = chunkArray<VideoType>(videos, 6);
   const [page, setPage] = useState(0);
   const totalPages = Math.ceil(rows.length / 3);
@@ -52,13 +52,10 @@ export default function MovieList({ videos, onVideoClick }: MovieListProps) {
       <div className="space-y-12 px-6">
         {visibleRows.map((row, rowIdx) => (
           <div key={rowIdx} className="space-y-3">
-            {/* 한 줄 인디케이터 */}
+            {/* 한 줄 인디케이터 (사용시 스타일 추가) */}
             <div className="flex justify-center space-x-1 mb-2">
               {Array.from({ length: Math.ceil(row.length / 2) }).map((_, dotIdx) => (
-                <div
-                  key={dotIdx}
-                  
-                ></div>
+                <div key={dotIdx}></div>
               ))}
             </div>
             <div
@@ -66,7 +63,11 @@ export default function MovieList({ videos, onVideoClick }: MovieListProps) {
             >
               {row.map((video) => (
                 <div key={video.youtubeId} className="aspect-video w-full max-w-[250px]">
-                  <MovieItem video={video} onVideoClick={onVideoClick} />
+                  <MovieItem
+                    video={video}
+                    onVideoClick={onVideoClick}
+                    onVideoHover={onVideoHover} // ★ 여기에서 hover 프롭 넘김
+                  />
                 </div>
               ))}
             </div>

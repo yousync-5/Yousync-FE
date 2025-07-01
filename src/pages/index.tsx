@@ -67,23 +67,23 @@ export default function Home() {
 
     fetchAllTokenData();
   }, []);
-const openModal = (youtubeId: string) => {
-  if (hoverTimeout) clearTimeout(hoverTimeout);
-  if (selectedVideoId !== null) return; 
-  setSelectedVideoId(youtubeId);
-};
 
+  const openModal = (youtubeId: string) => {
+    if (hoverTimeout) clearTimeout(hoverTimeout);
+    if (selectedVideoId !== null) return; // 이미 열려 있으면 무시
+    setSelectedVideoId(youtubeId);
+  };
 
-const closeModal = () => {
-  const timeout = setTimeout(() => {
-    setSelectedVideoId(null);
-  }, 200);
-  setHoverTimeout(timeout);
-};
+  const closeModal = () => {
+    const timeout = setTimeout(() => {
+      setSelectedVideoId(null);
+    }, 200);
+    setHoverTimeout(timeout);
+  };
 
-return (
-  <div className="bg-neutral-950 min-h-screen text-white px-6 py-4 font-sans">
-    {/* Search */}
+  return (
+    <div className="bg-neutral-950 min-h-screen text-white px-6 py-4 font-sans">
+      {/* Search */}
       <div className="flex justify-center mb-6 mt-24">
         <div className="flex items-center border-2 border-white rounded-full px-4 py-2 w-full max-w-xl">
           <input
@@ -111,12 +111,12 @@ return (
       {isReady && (
         <MovieList
           title={selectedTab}
-          videos={videos.map((video) => ({
-            id: video.id,
-            title: video.title,
-            youtubeId: video.youtubeId,
-          }))}
+          videos={videos}
           onVideoClick={openModal}
+          onVideoHover={(youtubeId) => {
+            if (youtubeId) openModal(youtubeId);
+            else closeModal();
+          }}
         />
       )}
 
