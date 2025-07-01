@@ -1,8 +1,10 @@
 "use client";
 
-import React, { MouseEvent, useState, useEffect } from "react";
+import React, { useEffect, useState, MouseEvent } from "react";
 import YouTube from "react-youtube";
 import axios from "axios";
+import { MovieItem } from "./MovieItem";
+// import {extractYoutubeVideoId} from "@/utils/extractYoutubeVideoId";
 
 interface TokenResponse {
   token_name: string;
@@ -13,12 +15,10 @@ interface TokenResponse {
   s3_textgrid_url: string;
   s3_pitch_url: string;
   s3_bgvoice_url: string;
-  youtube_url: number;
+  youtube_url: string;
   id: number;
-  scripts: unknown[];
+  scripts: string[];
 }
-
-interface Video { id: string }
 
 interface VideoModalProps {
   youtubeId: string;
@@ -26,39 +26,61 @@ interface VideoModalProps {
   onClose: () => void;
 }
 
-const fetchToken = async (tokenId: number): Promise<TokenResponse | null> => {
+interface Video {
+  id: string;
+}
+
+const extractYoutubeId = (url: string): string | null => {
+  const match = url.match(/(?:v=)([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+};
+
+// 유튜브 ID로 토큰 찾기
+const fetchTokenByYoutubeId = async (
+  youtubeId: string
+): Promise<TokenResponse | null> => {
   try {
-    const { data: movieDetailModalInfo } = await axios.get<TokenResponse>(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${tokenId}`
+    const res = await axios.get<TokenResponse[]>(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens?skip=0&limit=1000`
     );
-    return movieDetailModalInfo;
-  } catch (error) {
-    console.error('서버 에러, 관리자에게 문의해주세요.', error);
+
+    const matched = res.data.find((token) => {
+      const id = extractYoutubeId(token.youtube_url);
+      return id === youtubeId;
+    });
+
+    return matched || null;
+  } catch (err) {
+    console.error("유튜브 ID로 토큰 찾기 실패:", err);
     return null;
   }
 };
 
-const relatedVideos: Video[] = [
-  { id: "M7lc1UVf-VE" },
-  { id: "ScMzIvxBSi4" },
-  { id: "E7wJTI-1dvQ" },
-];
-
-export default function MovieDetailModal({ youtubeId, isOpen, onClose }: VideoModalProps) {
-  const [tokenInfo, setTokenInfo] = useState<TokenResponse | null>(null);
-  const [loading, setLoading] = useState(false);
+export default function MovieDetailModal({
+  youtubeId,
+  isOpen,
+  onClose,
+}: VideoModalProps) {
+  const [tokenData, setTokenData] = useState<TokenResponse | null>(null);
 
   useEffect(() => {
-    if (isOpen && youtubeId) {
-      setLoading(true);
-      fetchToken(Number(youtubeId)).then((data) => {
-        setTokenInfo(data);
-        setLoading(false);
-      });
-    }
-  }, [isOpen, youtubeId]);
+    const fetchData = async () => {
+      if (!youtubeId || !isOpen) return;
+
+      const token = await fetchTokenByYoutubeId(youtubeId);
+      setTokenData(token);
+    };
+
+    fetchData();
+  }, [youtubeId, isOpen]);
 
   if (!isOpen) return null;
+
+  const relatedVideos: Video[] = [
+    { id: "M7lc1UVf-VE" },
+    { id: "ScMzIvxBSi4" },
+    { id: "E7wJTI-1dvQ" },
+  ];
 
   return (
     <div className="fixed inset-0 z-51 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -69,7 +91,7 @@ export default function MovieDetailModal({ youtubeId, isOpen, onClose }: VideoMo
         onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
       >
         <button
-          className="absolute top-4 right-4 text-2xl text-white hover:text-gray-300"
+          className="absolute top-4 right-4 text-2xl text-white hover:text-gray-120"
           onClick={onClose}
         >
           &times;
@@ -85,36 +107,44 @@ export default function MovieDetailModal({ youtubeId, isOpen, onClose }: VideoMo
         </div>
 
         {/* 상세 정보 */}
-        {loading && <div className="mt-4 text-white text-center">로딩 중...</div>}
-
-        {tokenInfo && (
+        {tokenData && (
           <div className="mt-6 text-white">
             <div className="flex justify-between bg-[#181818] p-4 rounded-t-lg">
               <span>
                 <span className="font-semibold">재생 시간:</span>{" "}
-                {(tokenInfo.end_time - tokenInfo.start_time).toFixed(1)}초
+                {(tokenData.end_time - tokenData.start_time).toFixed(2)}초
               </span>
               <span>
-                <span className="font-semibold">카테고리:</span> {tokenInfo.category}
+                <span className="font-semibold">카테고리:</span>{" "}
+                {tokenData.category}
               </span>
             </div>
             <div className="bg-[#181818] p-4 rounded-b-lg shadow-inner">
               <p>
-                <span className="font-semibold">배우 이름:</span> {tokenInfo.actor_name}
+                <span className="font-semibold">배우 이름:</span>{" "}
+                {tokenData.actor_name}
               </p>
             </div>
           </div>
         )}
 
+        {/* 관련 영상 */}
         <div className="mt-6">
           <p className="text-white font-semibold mb-2">배우의 다른 영상</p>
           <div className="flex space-x-4 overflow-x-auto px-4">
             {relatedVideos.map(({ id }) => (
-              <div key={id} className="flex-shrink-0 w-70 rounded-lg overflow-hidden">
+              <div
+                key={id}
+                className="flex-shrink-0 w-70 rounded-lg overflow-hidden"
+              >
                 <YouTube
                   videoId={id}
                   className="w-full h-full"
-                  opts={{ width: "250", height: "110", playerVars: { controls: 1, rel: 0 } }}
+                  opts={{
+                    width: "250",
+                    height: "110",
+                    playerVars: { controls: 1, rel: 0 },
+                  }}
                 />
               </div>
             ))}

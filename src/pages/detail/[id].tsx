@@ -19,6 +19,7 @@ import {
 import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 import { useAudioStream } from "@/hooks/useAudioStream";
 import { useAudioStore } from "@/store/useAudioStore";
+import { MyPitchGraph } from "@/components/MyPitchGraph";
 
 interface Caption {
   movie_id: number;
@@ -47,6 +48,15 @@ export interface Video {
   id: number;
   scripts: Caption[];
 }
+
+interface tokenInfo {
+  message: string;
+  job_id: string;
+  status: string;
+}
+interface myScore {
+
+}
 export default function Detail() {
   // const streamRef = useRef<MediaStream | null>(null);
 
@@ -56,7 +66,6 @@ export default function Detail() {
   const [currentSec, setCurrentSec] = useState(0);
 
   const captionContainerRef = useRef<HTMLDivElement>(null);
-  const redCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const [captions, setCaptions] = useState<Caption[]>([]);
   const {startRecording, stopRecording, recording, getAllBlobs} = useVoiceRecorder();
@@ -78,12 +87,16 @@ export default function Detail() {
   // 오디오 스트림 초기화
   useAudioStream();
 
+  // 결과 토큰 id
+  const [tokenId, setTokenId] = useState<tokenInfo|null>(null);
+  // 점수 
+  const [myScore, setMyScore] = useState(null);
   const router = useRouter();
-  const token_id = router.query.id;
-  const movieUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${token_id}`;
+  const movieId = router.query.id;
+  const movieUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${movieId}`;
 
   useEffect(() => {
-    if (!token_id || Array.isArray(token_id)) return;
+    if (!movieId || Array.isArray(movieId)) return;
 
     console.log("초기 렌더링", movieUrl)
     const fetchCaptions = async () => {
@@ -98,7 +111,7 @@ export default function Detail() {
       }
     };
    fetchCaptions();
-  }, [token_id, movieUrl]);
+  }, [movieId, movieUrl]);
   const ytOpts = {
     width: "100%",
     height: "100%",
@@ -135,17 +148,6 @@ export default function Detail() {
   };
 };
 
-
-  // useEffect(() => {
-  //   navigator.mediaDevices.getUserMedia({ audio: true })
-  //     .then((stream) => {
-  //       streamRef.current = stream; // 미리 스트림 확보
-  //     })
-  //   return () => {
-  //     streamRef.current?.getTracks().forEach(track => track.stop()); 
-  //   };
-  // }, []);
-
   // 재생 시간 업데이트
   useEffect(() => {
     const id = setInterval(() => {
@@ -164,43 +166,31 @@ export default function Detail() {
       el.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
   }, [currentSec, captions]);
+  
+  // 1. 서버로부터 결과 기다리기 
+  // 2. 결과 받으면 result 페이지로 redirect
+  // 3. token_id를 의존성에 넣어야할것같음, 근데 이건 언제?
+  useEffect(() => { 
+    if (!tokenId) return;
+    const sse = new EventSource(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/analysis-progress/${tokenId.job_id}`)
+    sse.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      console.log("SSE 수신 : ", data);
 
-  // 파형 그리기 (sidebar)
-  // useEffect(() => {
-  //   const drawWave = (
-  //     canvas: HTMLCanvasElement | null,
-  //     fn: (x: number, w: number, h: number) => number,
-  //     color: string
-  //   ) => {
-  //     if (!canvas) return;
-  //     const ctx = canvas.getContext("2d");
-  //     if (!ctx) return;
-  //     const w = canvas.offsetWidth,
-  //       h = canvas.offsetHeight;
-  //     canvas.width = w;
-  //     canvas.height = h;
-  //     ctx.clearRect(0, 0, w, h);
-  //     ctx.strokeStyle = color;
-  //     ctx.lineWidth = 2;
-  //     ctx.beginPath();
-  //     for (let x = 0; x <= w; x++) {
-  //       const y = h / 2 + fn(x, w, h);
-  //       x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-  //     }
-  //     ctx.stroke();
-  //   };
-
-  //   drawWave(
-  //     blueCanvasRef.current,
-  //     (x, w, h) => Math.sin((x / w) * 4 * Math.PI) * (h / 2 - 5),
-  //     "#3b82f6"
-  //   );
-  //   drawWave(
-  //     redCanvasRef.current,
-  //     (x, w, h) => Math.cos((x / w) * 4 * Math.PI) * (h / 2 - 5),
-  //     "#ef4444"
-  //   );
-  // }, []);
+      if(data.status === "completed"){
+        //여기서 setScore해야
+        sse.close();
+      }
+      
+    }
+    sse.onerror = (e) => {
+      console.error("SSE 에러 발생", e);
+      sse.close(); //오류 발생시 연결 종료
+    }
+    return () => {
+      sse.close(); // 컴포넌트 언마운트시 종료
+    }
+  }, [tokenId])
 
   // 현재 자막
   const currentIdx = captions.findIndex(
@@ -293,7 +283,7 @@ export default function Detail() {
 
   // 서버로 .wav전송
   const sendWav = async () => {
-    if (!token_id || Array.isArray(token_id)) {
+    if (!movieId || Array.isArray(movieId)) {
       console.error('movieId가 유효하지 않습니다.');
       return;
     }
@@ -305,14 +295,16 @@ export default function Detail() {
     const formData = new FormData();
     formData.append('file', audioBlob, 'hiSHJH.wav');
   
-    const uploadUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${token_id}/upload-audio/`;
+    const uploadUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${movieId}/upload-audio`;
   
     try {
-      const res = await axios.post(uploadUrl, formData, {
+      const res = await axios.post<tokenInfo>(uploadUrl, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
   
       console.log('녹음 파일이 성공적으로 업로드되었습니다.', res.data);
+      setTokenId(res.data);
+      
     } catch (err) {
       console.error('녹음 파일 업로드 중 오류가 발생했습니다.', err);
     }
@@ -409,15 +401,12 @@ export default function Detail() {
           <div className="px-4 pb-4 space-y-2 flex-none relative -bottom-2">
             <div className="w-full h-16 bg-gray-700 rounded">
             <ServerPitchGraph captionState={{ currentIdx, captions }} />
-
-
-
             </div>
-
-            <canvas
-              ref={redCanvasRef}
+            <div
               className="w-full h-16 bg-gray-700 rounded"
-            />
+            >
+              <MyPitchGraph currentIdx={currentIdx}/>
+            </div>
             <div>
             <button onClick={previewMergedWav} className="bg-red-500 text-white p-4 rounded-lg">병합된 녹음 듣기</button>
             {audioUrl && <div>

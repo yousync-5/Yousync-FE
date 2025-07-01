@@ -53,7 +53,7 @@ export default function ServerPitchGraph({ captionState = { currentIdx: 0, capti
   const captionEnd = currentCaption.end_time;
 
   // 결과 배열
-  const result = [];
+  const result: { x: number; y: number }[] = [];
 
   actor_pitch_values.forEach((pitch_hz, index) => {
     const currentTime = totalStart + interval * index;
