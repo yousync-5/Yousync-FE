@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from 'react'
-import {motion, AnimatePresence, frame} from 'framer-motion';
 import {
     CircularProgressbarWithChildren,
     buildStyles,
@@ -8,57 +7,40 @@ import 'react-circular-progressbar/dist/styles.css';
 
 export const Timer = ({currentIdx}: {currentIdx : number}) => {
     //1. 카운트 다운 변수 필요할듯
-    const [countDown, setCountDown] = useState<number>(3);
-    const [start, setStart] = useState<string | null>(null);
     const timerRef = useRef<number | null>(null);
     const [percentage, setPercentage] = useState<number>(100);
 
-    // 숫자 초기화
-    // 처음에는 채워지는 로직이 없는데.. 왜 두번째 세번째는...
     useEffect(() => {
-        setCountDown(3);
-        setStart(null);
         setPercentage(100);
-
-        // 한 프레임 뒤에 애니메이션 시작
+      
         const timeout = setTimeout(() => {
-            let start = performance.now();
+          requestAnimationFrame(() => {
+            // 이 안에서 시작하면, 반드시 100으로 렌더링된 다음에 애니메이션 시작됨
+            const start = performance.now();
             const duration = 3000;
-
+      
             function animateFrame(now: number) {
-            const elapsed = now - start;
-            const progress = Math.min(1, elapsed / duration);
-            const value = 100 * (1 - progress);
-
-            setPercentage(value);
-
-            if (progress < 1) {
+              const elapsed = now - start;
+              const progress = Math.min(1, elapsed / duration);
+              const value = 100 * (1 - progress);
+      
+              setPercentage(value);
+      
+              if (progress < 1) {
                 timerRef.current = requestAnimationFrame(animateFrame);
+              }
             }
-            }
-
+      
             if (timerRef.current !== null) cancelAnimationFrame(timerRef.current);
             timerRef.current = requestAnimationFrame(animateFrame);
+          });
         }, 0);
-
+      
         return () => {
-            clearTimeout(timeout);
-            if (timerRef.current !== null) cancelAnimationFrame(timerRef.current);
+          clearTimeout(timeout);
+          if (timerRef.current !== null) cancelAnimationFrame(timerRef.current);
         };
-    }, [currentIdx])
-
-    // // 숫자 타이머 
-    // useEffect(() => {
-    //     setStart(null);
-    //     if (countDown === 0) {
-    //         setStart("시작");
-    //         return
-    //     };
-    //     const timeId = setTimeout(() => {
-    //         setCountDown((cnt) => cnt - 1)
-    //     }, 1000)
-    //     return () => clearInterval(timeId)
-    // }, [countDown]) // deps에 넣어야..?
+      }, [currentIdx]);
 
     // 부드러운 퍼센트 감소
     // useEffect(() => {
@@ -118,22 +100,10 @@ export const Timer = ({currentIdx}: {currentIdx : number}) => {
         styles={buildStyles({
           pathColor: '#46c288', // emerald-500: #46c288
           trailColor: '#1f2937', // gray-800
+          pathTransition: 'none',
         })}
       >
-        {/* <div className='mt-4 text-emerald-500 text-4xl h-10 overflow-hidden'>
-            <AnimatePresence mode='wait'>
-                <motion.div
-                    key={start ?? countDown}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
-                >
-                  
-                </motion.div>
-            </AnimatePresence>
-            </div> */}
-            </CircularProgressbarWithChildren>
+    </CircularProgressbarWithChildren>
 
         </div>
     </div>
