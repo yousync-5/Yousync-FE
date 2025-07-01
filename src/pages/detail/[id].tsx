@@ -18,6 +18,8 @@ import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 import { useAudioStream } from "@/hooks/useAudioStream";
 import { useAudioStore } from "@/store/useAudioStore";
 import { MyPitchGraph } from "@/components/MyPitchGraph";
+import { Timer } from "@/components/Timer";
+import { div } from "framer-motion/client";
 
 interface Caption {
   movie_id: number;
@@ -205,7 +207,7 @@ export default function Detail() {
     let resumeTimer: NodeJS.Timeout;
     let enableTimer: NodeJS.Timeout;
     let stopTimer: NodeJS.Timeout; 
-
+    
     if (prevIdx !== null && currentIdx !== prevIdx) {
       // 하이라이트 완전 초기화
       setHighlightEnabled(false);
@@ -427,31 +429,40 @@ export default function Detail() {
 
       {/* Footer */}
       <footer className="bg-black p-4 text-center">
-        {currentCaption && (
-          <div className="relative inline-block w-full max-w-4xl mx-auto text-center">
-            {/* 게이지 */}
-            <div
-              className="absolute inset-y-0 left-0 bg-blue-500/40 transition-all duration-1000"
-              style={{ width: `${gaugeProgress * 100}%` }}
-            />
-            {/* 영어 대사 */}
-            <p className="relative z-10 text-4xl font-extrabold leading-tight">
-              {chars.map((ch, i) => (
-                <span
-                  key={i}
-                  className={i < highlightCount ? "text-green-400" : "text-white"}
-                >
-                  {ch}
-                </span>
-              ))}
-            </p>
-            {/* 한국어 자막 */}
-            <p className="relative z-10 text-xl italic text-gray-300 mt-2">
-              {currentCaption.translation}
-            </p>
-          </div>
-        )}
-      </footer>
+  {currentCaption && (
+    <div className="w-full flex justify-center">
+      {/* 타이머 + 대사 묶기 */}
+      <div className="flex items-center space-x-4">
+        {/* 타이머 */}
+        <Timer currentIdx={currentIdx} />
+
+        {/* 대사 */}
+        <div className="relative text-left">
+          {/* 게이지 */}
+          <div
+            className="absolute inset-y-0 left-0 bg-blue-500/40 transition-all duration-1000"
+            style={{ width: `${gaugeProgress * 100}%` }}
+          />
+          {/* 영어 대사 */}
+          <p className="relative z-10 text-4xl font-extrabold leading-tight whitespace-nowrap">
+            {chars.map((ch, i) => (
+              <span
+                key={i}
+                className={i < highlightCount ? "text-green-400" : "text-white"}
+              >
+                {ch}
+              </span>
+            ))}
+          </p>
+          {/* 한국어 자막 */}
+          <p className="relative z-10 text-xl italic text-gray-300 mt-2">
+            {currentCaption.translation}
+          </p>
+        </div>
+      </div>
+    </div>
+  )}
+</footer>
     </div>
   );
 }
