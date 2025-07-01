@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import MovieDetailModal from "@/components/MovieDetailModal";
-import { MovieList } from "@/components/MovieList";
+import MovieList from "@/components/MovieList";
 import axios from "axios";
 import { extractYoutubeVideoId } from "@/utils/extractYoutubeVideoId";
 import { VideoType } from "@/type/VideoType";
@@ -67,11 +67,12 @@ export default function Home() {
 
     fetchAllTokenData();
   }, []);
-
-  const openModal = (youtubeId: string) => {
+const openModal = (youtubeId: string) => {
   if (hoverTimeout) clearTimeout(hoverTimeout);
+  if (selectedVideoId !== null) return; 
   setSelectedVideoId(youtubeId);
 };
+
 
 const closeModal = () => {
   const timeout = setTimeout(() => {
