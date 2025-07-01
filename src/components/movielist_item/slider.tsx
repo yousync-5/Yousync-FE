@@ -1,18 +1,23 @@
-// src/components/MovieList.tsx (Slider로 대체)
 import React, { useState, useEffect } from "react";
 import { FaAngleLeft, FaAngleRight } from "react-icons/fa";
-import { VideoType } from "@/type/VideoType";
+import { MovieList } from "@/components/MovieList";
 
-interface MovieListProps {
+interface SliderItem {
+  id: number | string;
+  youtubeId: string;
   title: string;
-  videos?: VideoType[]; // undefined 허용
-  onVideoClick: (youtubeId: string) => void;
+  date?: string;
+  rating?: number;
 }
 
-export default function MovieList({ videos, onVideoClick }: MovieListProps) {
-  const items = videos || [];
+interface SliderProps {
+  title: string;
+  items: SliderItem[];
+  onCardClick?: (id: number | string) => void;
+}
 
-  // 반응형: 카드 개수 자동 조절
+export default function Slider({ title, items, onCardClick }: SliderProps) {
+  // 반응형: 카드 개수 자동 조절 (모바일2, 태블릿4, 데스크탑6)
   const getCardsPerPage = () =>
     typeof window !== "undefined"
       ? window.innerWidth < 480
@@ -46,6 +51,7 @@ export default function MovieList({ videos, onVideoClick }: MovieListProps) {
   return (
     <section className="w-full bg-black py-6 px-0 select-none">
       <div className="flex items-center justify-between px-6 mb-3">
+        <h2 className="text-2xl font-bold text-white">{title}</h2>
         <div className="flex items-center gap-1">
           {Array.from({ length: totalPages }).map((_, i) => (
             <span
@@ -65,24 +71,32 @@ export default function MovieList({ videos, onVideoClick }: MovieListProps) {
           <FaAngleLeft />
         </button>
         <div className="w-full flex gap-6 justify-center overflow-hidden">
-          {visibleItems.map((video) => (
+          {visibleItems.map((item) => (
             <div
-              key={video.youtubeId}
+              key={item.id}
               className="
                 group relative bg-black rounded-lg overflow-hidden cursor-pointer 
                 aspect-[16/9] min-w-[180px] max-w-[280px] w-full transition-all duration-200 
                 hover:scale-105 z-0 hover:z-50
               "
-              onClick={() => onVideoClick(video.youtubeId)}
+              onClick={() => onCardClick?.(item.id)}
             >
               <img
-                src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`}
+                src={`https://img.youtube.com/vi/${item.youtubeId}/mqdefault.jpg`}
+                alt={item.title}
                 className="object-cover w-full h-full pointer-events-none"
                 draggable={false}
               />
               {/* hover시 오버레이+정보 */}
               <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end">
                 <div className="p-4">
+                  <div className="text-lg font-bold text-white mb-1">{item.title}</div>
+                  {item.date && (
+                    <div className="text-xs text-green-400">{item.date}</div>
+                  )}
+                  {item.rating !== undefined && (
+                    <div className="text-xs text-yellow-300">{item.rating}</div>
+                  )}
                 </div>
               </div>
             </div>

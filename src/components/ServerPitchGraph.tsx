@@ -17,12 +17,11 @@ interface ServerPitch {
 
 interface TokenDetailResponse {
   pitch: ServerPitch[];
-  // ... (생략)
 }
 
 interface ServerPitchGraphProps {
   captionState: CaptionState;
-  token_id: number; // **추가: 토큰 아이디 prop 필요**
+  token_id: number; 
 }
 
 export default function ServerPitchGraph({

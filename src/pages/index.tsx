@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import MovieDetailModal from "@/components/MovieDetailModal";
-import MovieList from "@/components/MovieList";
 import axios from "axios";
 import { extractYoutubeVideoId } from "@/utils/extractYoutubeVideoId";
 import { VideoType } from "@/type/VideoType";
+// import MovieList from "@/components/MovieList";
+import Movie from "@/components/Movie";
 
 interface VideoDetail {
   id: number;
@@ -109,17 +110,14 @@ export default function Home() {
 
       {/* Videos */}
       {isReady && (
-        <MovieList
-          title={selectedTab}
-          videos={videos}
+        <Movie
+          bestVideos={videos}
+          latestVideos={videos}
+          nowPlayingVideos={videos}
           onVideoClick={openModal}
-          onVideoHover={(youtubeId) => {
-            if (youtubeId) openModal(youtubeId);
-            else closeModal();
-          }}
         />
       )}
-
+      
       {/* Modal */}
       {selectedVideoId && selectedTokenData && (
         <MovieDetailModal

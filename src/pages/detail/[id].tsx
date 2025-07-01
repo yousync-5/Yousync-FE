@@ -21,7 +21,6 @@ import { useAudioStream } from "@/hooks/useAudioStream";
 import { useAudioStore } from "@/store/useAudioStore";
 import { MyPitchGraph } from "@/components/MyPitchGraph";
 import { Timer } from "@/components/Timer";
-import { div } from "framer-motion/client";
 
 interface Caption {
   movie_id: number;
@@ -56,9 +55,9 @@ interface tokenInfo {
   job_id: string;
   status: string;
 }
-interface myScore {
+// interface myScore {
 
-}
+// }
 export default function Detail() {
   // const streamRef = useRef<MediaStream | null>(null);
 
@@ -92,10 +91,10 @@ export default function Detail() {
   // 결과 토큰 id
   const [tokenId, setTokenId] = useState<tokenInfo|null>(null);
   // 점수 
-  const [myScore, setMyScore] = useState(null);
+  // const [myScore, setMyScore] = useState(null);
   const router = useRouter();
   const token_id = router.query.id;
-  const movieUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${token_id}`;
+  const movieUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${token_id}/`;
 
   useEffect(() => {
     if (!token_id || Array.isArray(token_id)) return;
@@ -303,7 +302,7 @@ export default function Detail() {
     const formData = new FormData();
     formData.append('file', audioBlob, 'hiSHJH.wav');
   
-    const uploadUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/movies/${token_id}/upload-audio/`;
+    const uploadUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${token_id}/upload-audio`;
   
     try {
       const res = await axios.post<tokenInfo>(uploadUrl, formData, {
