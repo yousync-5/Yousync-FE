@@ -49,8 +49,7 @@ export default function Home() {
           .filter((item): item is VideoDetail => !!item);
 
         const videoList = validItems.map((item) => ({
-          id: item.id,
-          title: item.actor_name,
+          videoId: item.id,
           youtubeId: item.youtubeId,
         }));
         setVideos(videoList);
@@ -117,7 +116,7 @@ export default function Home() {
           onVideoClick={openModal}
         />
       )}
-      
+
       {/* Modal */}
       {selectedVideoId && selectedTokenData && (
         <MovieDetailModal

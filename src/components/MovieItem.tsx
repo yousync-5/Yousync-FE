@@ -1,4 +1,3 @@
-// src/components/MovieItem.tsx
 import React from "react";
 
 interface MovieItemProps {

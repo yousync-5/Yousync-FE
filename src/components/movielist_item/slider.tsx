@@ -1,22 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { FaAngleLeft, FaAngleRight } from "react-icons/fa";
-import { MovieList } from "@/components/MovieList";
+// import { MovieList } from "@/components/MovieList";
 
 interface SliderItem {
   id: number | string;
   youtubeId: string;
-  title: string;
   date?: string;
   rating?: number;
 }
 
 interface SliderProps {
-  title: string;
   items: SliderItem[];
   onCardClick?: (id: number | string) => void;
 }
 
-export default function Slider({ title, items, onCardClick }: SliderProps) {
+export default function Slider({items, onCardClick }: SliderProps) {
   // 반응형: 카드 개수 자동 조절 (모바일2, 태블릿4, 데스크탑6)
   const getCardsPerPage = () =>
     typeof window !== "undefined"
@@ -51,7 +49,6 @@ export default function Slider({ title, items, onCardClick }: SliderProps) {
   return (
     <section className="w-full bg-black py-6 px-0 select-none">
       <div className="flex items-center justify-between px-6 mb-3">
-        <h2 className="text-2xl font-bold text-white">{title}</h2>
         <div className="flex items-center gap-1">
           {Array.from({ length: totalPages }).map((_, i) => (
             <span
@@ -83,14 +80,12 @@ export default function Slider({ title, items, onCardClick }: SliderProps) {
             >
               <img
                 src={`https://img.youtube.com/vi/${item.youtubeId}/mqdefault.jpg`}
-                alt={item.title}
                 className="object-cover w-full h-full pointer-events-none"
                 draggable={false}
               />
               {/* hover시 오버레이+정보 */}
               <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end">
                 <div className="p-4">
-                  <div className="text-lg font-bold text-white mb-1">{item.title}</div>
                   {item.date && (
                     <div className="text-xs text-green-400">{item.date}</div>
                   )}

@@ -2,12 +2,15 @@
 
 import React, { MouseEvent } from "react";
 import YouTube from "react-youtube";
+import { FaMicrophone } from "react-icons/fa";
+import Link from "next/link";
 
 interface Video {
   id: string;
 }
 
 interface TokenData {
+  id?: string | number;
   youtubeId: string;
   actor_name: string;
   category: string;
@@ -32,7 +35,7 @@ export default function MovieDetailModal({
   onClose,
   tokenData,
 }: VideoModalProps) {
-  if (!isOpen || !tokenData) return null; 
+  if (!isOpen || !tokenData) return null;
 
   const relatedVideos: Video[] = [
     { id: "M7lc1UVf-VE" },
@@ -66,21 +69,38 @@ export default function MovieDetailModal({
           />
         </div>
 
-        {/* 상세 정보 */}
-        <div className="mt-6 text-white">
-          <div className="flex justify-between bg-[#181818] p-4 rounded-t-lg">
-            <span>
-              <span className="font-semibold">재생 시간:</span>{" "}
-              {(Number(tokenData.end_time) - Number(tokenData.start_time)).toFixed(2)}초
-            </span>
-            <span>
-              <span className="font-semibold">카테고리:</span> {tokenData.category}
-            </span>
-          </div>
-          <div className="bg-[#181818] p-4 rounded-b-lg shadow-inner">
-            <p>
+        {/* 텍스트/버튼: 50%씩, 평행 정렬 */}
+        <div className="flex w-full mt-6 mb-2 bg-[#181818] p-4 rounded-lg">
+          {/* 왼쪽: 텍스트 정보 */}
+          <div className="w-1/2">
+            <div className="font-semibold mb-1 text-2xl">
+              재생 시간: {(Number(tokenData.end_time) - Number(tokenData.start_time)).toFixed(2)}초
+            </div>
+            <div className="mb-1 text-2xl">
               <span className="font-semibold">배우 이름:</span> {tokenData.actor_name}
-            </p>
+            </div>
+            <div className="text-2xl">
+              <span className="font-semibold">카테고리:</span> {tokenData.category}
+            </div>
+          </div>
+          {/* 오른쪽: 버튼 */}
+          <div className="w-1/2 flex justify-end items-start">
+            <Link
+              href="/detail/1"
+              className="
+                flex items-center gap-2
+                px-6 py-2 rounded-full
+                bg-red-600 hover:bg-red-700
+                text-white font-semibold
+                shadow
+                transition
+                focus:outline-none
+                text-base
+              "
+            >
+              <FaMicrophone className="text-xl" />
+              더빙하기
+            </Link>
           </div>
         </div>
 

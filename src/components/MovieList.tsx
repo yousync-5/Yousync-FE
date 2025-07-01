@@ -1,11 +1,9 @@
-// src/components/MovieList.tsx (Slider로 대체)
 import React, { useState, useEffect } from "react";
 import { FaAngleLeft, FaAngleRight } from "react-icons/fa";
 import { VideoType } from "@/type/VideoType";
 
 interface MovieListProps {
-  title: string;
-  videos?: VideoType[]; // undefined 허용
+  videos?: VideoType[];
   onVideoClick: (youtubeId: string) => void;
 }
 
