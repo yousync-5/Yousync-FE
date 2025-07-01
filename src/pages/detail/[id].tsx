@@ -6,7 +6,7 @@ import { mergeWavBlobs } from "@/utils/mergeWavBlobs";
 import { useRouter } from "next/router";
 import axios from "axios";
 import ServerPitchGraph from "@/components/ServerPitchGraph"
-
+import type { CaptionState } from "@/type/PitchdataType";
 
 import {
   ChevronLeftIcon,
@@ -131,6 +131,7 @@ export default function Detail() {
     setPlaying(!playing);
   };
 
+
   // 이전으로 이동, 다음으로 이동 함수
   const seekBy = (currentIdx: number) => {
   const nextIdx = currentIdx + 1;
@@ -199,6 +200,11 @@ export default function Detail() {
     (c) => currentSec >= c.start_time && currentSec < c.end_time
   );
   const currentCaption = captions[currentIdx] || null;
+
+  const captionState: CaptionState = {
+    currentIdx,
+    captions,
+  };
 
   // 자막 변경 시: 완전 초기화 → 2초 일시정지 → 게이지 채우기 → 1초 후 재생 → 0.2초 뒤 하이라이트
   useEffect(() => {
@@ -402,7 +408,7 @@ export default function Detail() {
           </div>
           <div className="px-4 pb-4 space-y-2 flex-none relative -bottom-2">
             <div className="w-full h-16 bg-gray-700 rounded">
-            <ServerPitchGraph captionState={{ currentIdx, captions }} />
+              <ServerPitchGraph captionState={captionState} token_id={Number(router.query.id)} />
             </div>
             <div
               className="w-full h-16 bg-gray-700 rounded"

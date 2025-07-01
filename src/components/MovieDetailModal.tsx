@@ -7,7 +7,7 @@ interface Video {
   id: string;
 }
 
-export interface TokenData {
+interface TokenData {
   youtubeId: string;
   actor_name: string;
   category: string;
@@ -23,7 +23,7 @@ interface VideoModalProps {
   youtubeId: string;
   isOpen: boolean;
   onClose: () => void;
-  tokenData?: TokenData; 
+  tokenData?: TokenData; // 옵셔널 처리로 안전성 확보
 }
 
 export default function MovieDetailModal({
@@ -32,7 +32,7 @@ export default function MovieDetailModal({
   onClose,
   tokenData,
 }: VideoModalProps) {
-  if (!isOpen || !tokenData) return null; 
+  if (!isOpen || !tokenData) return null; // ✅ 안전하게 조건 처리
 
   const relatedVideos: Video[] = [
     { id: "M7lc1UVf-VE" },

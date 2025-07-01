@@ -7,14 +7,16 @@ interface MovieItemProps {
     title: string;
   };
   onVideoClick: (youtubeId: string) => void;
+  onVideoHover: (youtubeId: string | null) => void;
 }
 
-const MovieItem = ({ video, onVideoClick }: MovieItemProps) => {
+const MovieItem = ({ video, onVideoClick, onVideoHover }: MovieItemProps) => {
   return (
     <div
-      className="flex-shrink-0 w-[220px] h-[320px] rounded-lg overflow-hidden bg-neutral-900 cursor-pointer hover:scale-105 transition-transform"
-      onMouseEnter={() => onVideoClick(video.youtubeId)}
-      onMouseLeave={() => onVideoClick("")}
+      className="flex-shrink-0 w-full aspect-[220/320] rounded-lg overflow-hidden bg-neutral-900 cursor-pointer hover:scale-105 transition-transform"
+      onMouseEnter={() => onVideoHover(video.youtubeId)}
+      onMouseLeave={() => onVideoHover(null)}
+      onClick={() => onVideoClick(video.youtubeId)}
     >
       <img
         src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`}
