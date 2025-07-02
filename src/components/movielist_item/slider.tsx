@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { FaAngleLeft, FaAngleRight } from "react-icons/fa";
 
 interface SliderItem {
@@ -11,59 +11,20 @@ interface SliderItem {
 interface SliderProps {
   items: SliderItem[];
   onCardClick?: (id: number | string) => void;
-  onAllPagesVisited?: () => void; 
 }
 
-export default function Slider({ items, onCardClick, onAllPagesVisited }: SliderProps) {
-  // 반응형 카드 개수 계산
-  const getCardsPerPage = () =>
-    typeof window !== "undefined"
-      ? window.innerWidth < 480
-        ? 2
-        : window.innerWidth < 1024
-        ? 4
-        : 6
-      : 6;
+export default function Slider({ items, onCardClick }: SliderProps) {
+  const [page, setPage] = useState(0); // 0 or 1
 
-  const [page, setPage] = useState(0);
-  const [cardsPerPage, setCardsPerPage] = useState(getCardsPerPage());
-  const [visitedPages, setVisitedPages] = useState<Set<number>>(new Set());
+  const totalPages = 2;
+  const cardsPerPage = Math.ceil(items.length / totalPages);
 
-  const totalPages = Math.ceil(items.length / cardsPerPage);
+  const goPrev = () => setPage((prev) => (prev === 0 ? 1 : 0));
+  const goNext = () => setPage((prev) => (prev === 1 ? 0 : 1));
 
-  // 창 크기 바뀔 때 반응형 카드 개수 자동 적용
-  useEffect(() => {
-    const handleResize = () => setCardsPerPage(getCardsPerPage());
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  // 페이지 이동마다 방문 페이지 누적 기록
-  useEffect(() => {
-    setVisitedPages(prev => {
-      const newSet = new Set(prev);
-      newSet.add(page);
-      return newSet;
-    });
-  }, [page]);
-
-  // 모든 페이지 방문 시 부모로 단 1회 알림
-  useEffect(() => {
-    if (visitedPages.size === totalPages && totalPages > 0) {
-      onAllPagesVisited?.();
-    }
-    // eslint-disable-next-line
-  }, [visitedPages, totalPages]);
-
-  const goPrev = () =>
-    setPage((prev) => (prev <= 0 ? totalPages - 1 : prev - 1));
-  const goNext = () =>
-    setPage((prev) => (prev >= totalPages - 1 ? 0 : prev + 1));
-
-  // 핵심: 현재 페이지에서 보여줄 카드 "N개만 slice"!
   const visibleItems = items.slice(
     page * cardsPerPage,
-    page * cardsPerPage + cardsPerPage
+    Math.min((page + 1) * cardsPerPage, items.length)
   );
 
   return (
@@ -71,7 +32,7 @@ export default function Slider({ items, onCardClick, onAllPagesVisited }: Slider
       {/* 페이지 인디케이터 */}
       <div className="flex items-center justify-end w-full px-6 mb-3">
         <div className="flex items-center gap-1">
-          {Array.from({ length: totalPages }).map((_, i) => (
+          {[0, 1].map((i) => (
             <span
               key={i}
               className={`w-4 h-1 rounded transition-all duration-200 mr-1 ${
@@ -89,7 +50,6 @@ export default function Slider({ items, onCardClick, onAllPagesVisited }: Slider
         >
           <FaAngleLeft />
         </button>
-        {/* 오직 visibleItems만 map! (누적/append/concat X) */}
         <div className="w-full flex gap-6 justify-center overflow-hidden">
           {visibleItems.map((item) => (
             <div

@@ -5,15 +5,13 @@ import { VideoType } from "@/type/VideoType";
 interface MovieListProps {
   videos?: VideoType[];
   onVideoClick: (youtubeId: string) => void;
-  selectedVideoId?: string | number | null;
-  onAllPagesVisited?: () => void;  // ⭐ 부모에서 받을 콜백 (선택)
+  onAllPagesVisited?: () => void; 
 }
 
 export default function MovieList({
   videos,
   onVideoClick,
-  selectedVideoId,
-  onAllPagesVisited,        // ⭐ 받기
+  onAllPagesVisited,        
 }: MovieListProps) {
   const items = videos || [];
 
@@ -46,7 +44,6 @@ export default function MovieList({
     });
   }, [page]);
 
-  // ⭐ 모든 페이지 방문 시 단 1회 콜백
   useEffect(() => {
     if (visitedPages.size === totalPages && totalPages > 0) {
       onAllPagesVisited?.();
@@ -87,7 +84,6 @@ export default function MovieList({
         </button>
         <div className="w-full flex gap-6 justify-center overflow-visible">
           {visibleItems.map((video) => {
-            const isSelected = video.youtubeId === selectedVideoId;
             return (
               <div
                 key={video.youtubeId}
@@ -95,10 +91,8 @@ export default function MovieList({
                   group relative bg-black rounded-lg overflow-visible cursor-pointer 
                   aspect-[16/9] min-w-[180px] max-w-[280px] w-full transition-all duration-300 
                   hover:scale-105 hover:z-20
-                  ${isSelected ? "scale-125 shadow-2xl ring-4 ring-red-400 z-50" : ""}
                 `}
                 style={{
-                  zIndex: isSelected ? 50 : 0,
                   minWidth: "180px",
                   maxWidth: "280px"
                 }}
