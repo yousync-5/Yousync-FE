@@ -6,9 +6,15 @@ interface MovieListProps {
   videos?: VideoType[];
   onVideoClick: (youtubeId: string) => void;
   selectedVideoId?: string | number | null;
+  onAllPagesVisited?: () => void;  // ⭐ 부모에서 받을 콜백 (선택)
 }
 
-export default function MovieList({ videos, onVideoClick, selectedVideoId }: MovieListProps) {
+export default function MovieList({
+  videos,
+  onVideoClick,
+  selectedVideoId,
+  onAllPagesVisited,        // ⭐ 받기
+}: MovieListProps) {
   const items = videos || [];
 
   const getCardsPerPage = () =>
@@ -22,6 +28,9 @@ export default function MovieList({ videos, onVideoClick, selectedVideoId }: Mov
 
   const [page, setPage] = useState(0);
   const [cardsPerPage, setCardsPerPage] = useState(getCardsPerPage());
+  const [visitedPages, setVisitedPages] = useState<Set<number>>(new Set());
+
+  const totalPages = Math.ceil(items.length / cardsPerPage);
 
   useEffect(() => {
     const handleResize = () => setCardsPerPage(getCardsPerPage());
@@ -29,7 +38,21 @@ export default function MovieList({ videos, onVideoClick, selectedVideoId }: Mov
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const totalPages = Math.ceil(items.length / cardsPerPage);
+  useEffect(() => {
+    setVisitedPages(prev => {
+      const newSet = new Set(prev);
+      newSet.add(page);
+      return newSet;
+    });
+  }, [page]);
+
+  // ⭐ 모든 페이지 방문 시 단 1회 콜백
+  useEffect(() => {
+    if (visitedPages.size === totalPages && totalPages > 0) {
+      onAllPagesVisited?.();
+    }
+    // eslint-disable-next-line
+  }, [visitedPages, totalPages]);
 
   const goPrev = () =>
     setPage((prev) => (prev <= 0 ? totalPages - 1 : prev - 1));
@@ -62,7 +85,6 @@ export default function MovieList({ videos, onVideoClick, selectedVideoId }: Mov
         >
           <FaAngleLeft />
         </button>
-        {/* 핵심! overflow-visible로 선택 카드가 튀어나옴 */}
         <div className="w-full flex gap-6 justify-center overflow-visible">
           {visibleItems.map((video) => {
             const isSelected = video.youtubeId === selectedVideoId;
@@ -88,7 +110,6 @@ export default function MovieList({ videos, onVideoClick, selectedVideoId }: Mov
                   draggable={false}
                   alt=""
                 />
-                {/* 오버레이 */}
                 <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end">
                   <div className="p-4"></div>
                 </div>

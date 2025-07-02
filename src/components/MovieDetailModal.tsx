@@ -10,7 +10,7 @@ interface VideoModalProps {
   youtubeId: string;
   isOpen: boolean;
   onClose: () => void;
-  tokenData: TokenDetailResponse; // ❗ 필수로 변경 (undefined 불가)
+  tokenData: TokenDetailResponse; 
 }
 
 export default function MovieDetailModal({

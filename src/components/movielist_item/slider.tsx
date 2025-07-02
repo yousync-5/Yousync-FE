@@ -11,10 +11,11 @@ interface SliderItem {
 interface SliderProps {
   items: SliderItem[];
   onCardClick?: (id: number | string) => void;
+  onAllPagesVisited?: () => void; 
 }
 
-export default function Slider({ items, onCardClick }: SliderProps) {
-  // 반응형: 카드 개수 자동 조절 (모바일2, 태블릿4, 데스크탑6)
+export default function Slider({ items, onCardClick, onAllPagesVisited }: SliderProps) {
+  // 반응형 카드 개수 계산
   const getCardsPerPage = () =>
     typeof window !== "undefined"
       ? window.innerWidth < 480
@@ -26,20 +27,40 @@ export default function Slider({ items, onCardClick }: SliderProps) {
 
   const [page, setPage] = useState(0);
   const [cardsPerPage, setCardsPerPage] = useState(getCardsPerPage());
+  const [visitedPages, setVisitedPages] = useState<Set<number>>(new Set());
 
+  const totalPages = Math.ceil(items.length / cardsPerPage);
+
+  // 창 크기 바뀔 때 반응형 카드 개수 자동 적용
   useEffect(() => {
     const handleResize = () => setCardsPerPage(getCardsPerPage());
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const totalPages = Math.ceil(items.length / cardsPerPage);
+  // 페이지 이동마다 방문 페이지 누적 기록
+  useEffect(() => {
+    setVisitedPages(prev => {
+      const newSet = new Set(prev);
+      newSet.add(page);
+      return newSet;
+    });
+  }, [page]);
+
+  // 모든 페이지 방문 시 부모로 단 1회 알림
+  useEffect(() => {
+    if (visitedPages.size === totalPages && totalPages > 0) {
+      onAllPagesVisited?.();
+    }
+    // eslint-disable-next-line
+  }, [visitedPages, totalPages]);
 
   const goPrev = () =>
     setPage((prev) => (prev <= 0 ? totalPages - 1 : prev - 1));
   const goNext = () =>
     setPage((prev) => (prev >= totalPages - 1 ? 0 : prev + 1));
 
+  // 핵심: 현재 페이지에서 보여줄 카드 "N개만 slice"!
   const visibleItems = items.slice(
     page * cardsPerPage,
     page * cardsPerPage + cardsPerPage
@@ -47,7 +68,7 @@ export default function Slider({ items, onCardClick }: SliderProps) {
 
   return (
     <section className="w-full bg-black py-6 px-0 select-none">
-      {/* 상단: 오른쪽 끝 정렬 도트 */}
+      {/* 페이지 인디케이터 */}
       <div className="flex items-center justify-end w-full px-6 mb-3">
         <div className="flex items-center gap-1">
           {Array.from({ length: totalPages }).map((_, i) => (
@@ -60,7 +81,7 @@ export default function Slider({ items, onCardClick }: SliderProps) {
           ))}
         </div>
       </div>
-      {/* 카드 슬라이드 */}
+      {/* 카드 리스트 */}
       <div className="relative flex items-center px-4">
         <button
           onClick={goPrev}
@@ -68,6 +89,7 @@ export default function Slider({ items, onCardClick }: SliderProps) {
         >
           <FaAngleLeft />
         </button>
+        {/* 오직 visibleItems만 map! (누적/append/concat X) */}
         <div className="w-full flex gap-6 justify-center overflow-hidden">
           {visibleItems.map((item) => (
             <div
@@ -83,8 +105,8 @@ export default function Slider({ items, onCardClick }: SliderProps) {
                 src={`https://img.youtube.com/vi/${item.youtubeId}/mqdefault.jpg`}
                 className="object-cover w-full h-full pointer-events-none"
                 draggable={false}
+                alt=""
               />
-              {/* hover시 오버레이+정보 */}
               <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end">
                 <div className="p-4">
                   {item.date && (
