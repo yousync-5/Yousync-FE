@@ -49,7 +49,7 @@ const videos = tokens.map(({ id, youtubeId, actor_name }) => ({
   };
 
   return (
-    <div className="bg-neutral-950 min-h-screen text-white px-6 py-4 font-sans">
+    <div className="bg-neutral-950 min-h-screen text-white px-6 py-4 font-sans overflow-x-hidden">
       {/* Search */}
       <div className="flex justify-center mb-6 mt-24">
         <div className="flex items-center border-2 border-white rounded-full px-4 py-2 w-full max-w-xl">
