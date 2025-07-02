@@ -7,7 +7,7 @@ interface MovieProps {
   bestVideos: VideoType[];
   latestVideos: VideoType[];
   nowPlayingVideos: VideoType[];
-  selectedVideoId?: string | number | null; // ⭐ 추가!
+  selectedVideoId?: string | number | null; 
 }
 
 export default function Movie({
@@ -15,24 +15,20 @@ export default function Movie({
   latestVideos,
   nowPlayingVideos,
   onVideoClick,
-  selectedVideoId,
 }: MovieProps) {
   return (
     <div className="w-full">
       <MovieList
         videos={bestVideos}
         onVideoClick={onVideoClick}
-        selectedVideoId={selectedVideoId}
       />
       <MovieList
         videos={latestVideos}
         onVideoClick={onVideoClick}
-        selectedVideoId={selectedVideoId}
       />
       <MovieList
         videos={nowPlayingVideos}
         onVideoClick={onVideoClick}
-        selectedVideoId={selectedVideoId}
       />
     </div>
   );
