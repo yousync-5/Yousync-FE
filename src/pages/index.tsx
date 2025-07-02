@@ -23,10 +23,12 @@ export default function Home() {
   const { data: tokens = [], isLoading, error } = useVideos();
 
   // 카드(리스트)에는 최소 정보만 뽑아 사용 (필요하면)
-  const videos = tokens.map(({ youtubeId, actor_name }) => ({
-    youtubeId,
-    actor_name,
-  }));
+const videos = tokens.map(({ id, youtubeId, actor_name }) => ({
+  videoId: id,
+  youtubeId,
+  actor_name,
+}));
+
 
   // 모달 tokenData는 전체 TokenDetailResponse에서 찾음
   const selectedTokenData: TokenDetailResponse | undefined =
