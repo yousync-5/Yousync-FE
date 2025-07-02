@@ -94,7 +94,7 @@ export default function Detail() {
   // const [myScore, setMyScore] = useState(null);
   const router = useRouter();
   const token_id = router.query.id;
-  const movieUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${token_id}/`;
+  const movieUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${token_id}`;
 
   useEffect(() => {
     if (!token_id || Array.isArray(token_id)) return;

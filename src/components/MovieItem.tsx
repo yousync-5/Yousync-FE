@@ -5,7 +5,7 @@ interface MovieItemProps {
     title: string;
   };
   onVideoClick: (youtubeId: string) => void;
-  selected?: boolean; // ⭐ 추가!
+  selected?: boolean; 
 }
 
 const MovieItem = ({ video, onVideoClick, selected }: MovieItemProps) => {
@@ -21,7 +21,7 @@ const MovieItem = ({ video, onVideoClick, selected }: MovieItemProps) => {
       onClick={() => onVideoClick(video.youtubeId)}
       style={{ minWidth: "240px", maxWidth: "320px" }}
     >
-      <img
+      <image
         src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`}
         alt={video.title}
         className="w-full h-full object-cover"
