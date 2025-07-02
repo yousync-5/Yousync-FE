@@ -43,7 +43,7 @@ export default function MovieList({ videos, onVideoClick, selectedVideoId }: Mov
 
   return (
     <section className="w-full bg-black py-6 px-0 select-none">
-      <div className="flex items-center justify-between px-6 mb-3">
+      <div className="flex items-center justify-end w-full px-6 mb-3">
         <div className="flex items-center gap-1">
           {Array.from({ length: totalPages }).map((_, i) => (
             <span
