@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { FaAngleLeft, FaAngleRight } from "react-icons/fa";
-// import { MovieList } from "@/components/MovieList";
 
 interface SliderItem {
   id: number | string;
@@ -14,7 +13,7 @@ interface SliderProps {
   onCardClick?: (id: number | string) => void;
 }
 
-export default function Slider({items, onCardClick }: SliderProps) {
+export default function Slider({ items, onCardClick }: SliderProps) {
   // 반응형: 카드 개수 자동 조절 (모바일2, 태블릿4, 데스크탑6)
   const getCardsPerPage = () =>
     typeof window !== "undefined"
@@ -48,7 +47,8 @@ export default function Slider({items, onCardClick }: SliderProps) {
 
   return (
     <section className="w-full bg-black py-6 px-0 select-none">
-      <div className="flex items-center justify-between px-6 mb-3">
+      {/* 상단: 오른쪽 끝 정렬 도트 */}
+      <div className="flex items-center justify-end w-full px-6 mb-3">
         <div className="flex items-center gap-1">
           {Array.from({ length: totalPages }).map((_, i) => (
             <span
@@ -60,6 +60,7 @@ export default function Slider({items, onCardClick }: SliderProps) {
           ))}
         </div>
       </div>
+      {/* 카드 슬라이드 */}
       <div className="relative flex items-center px-4">
         <button
           onClick={goPrev}

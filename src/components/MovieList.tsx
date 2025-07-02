@@ -5,12 +5,12 @@ import { VideoType } from "@/type/VideoType";
 interface MovieListProps {
   videos?: VideoType[];
   onVideoClick: (youtubeId: string) => void;
+  selectedVideoId?: string | number | null;
 }
 
-export default function MovieList({ videos, onVideoClick }: MovieListProps) {
+export default function MovieList({ videos, onVideoClick, selectedVideoId }: MovieListProps) {
   const items = videos || [];
 
-  // 반응형: 카드 개수 자동 조절
   const getCardsPerPage = () =>
     typeof window !== "undefined"
       ? window.innerWidth < 480
@@ -62,29 +62,39 @@ export default function MovieList({ videos, onVideoClick }: MovieListProps) {
         >
           <FaAngleLeft />
         </button>
-        <div className="w-full flex gap-6 justify-center overflow-hidden">
-          {visibleItems.map((video) => (
-            <div
-              key={video.youtubeId}
-              className="
-                group relative bg-black rounded-lg overflow-hidden cursor-pointer 
-                aspect-[16/9] min-w-[180px] max-w-[280px] w-full transition-all duration-200 
-                hover:scale-105 z-0 hover:z-50
-              "
-              onClick={() => onVideoClick(video.youtubeId)}
-            >
-              <img
-                src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`}
-                className="object-cover w-full h-full pointer-events-none"
-                draggable={false}
-              />
-              {/* hover시 오버레이+정보 */}
-              <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end">
-                <div className="p-4">
+        {/* 핵심! overflow-visible로 선택 카드가 튀어나옴 */}
+        <div className="w-full flex gap-6 justify-center overflow-visible">
+          {visibleItems.map((video) => {
+            const isSelected = video.youtubeId === selectedVideoId;
+            return (
+              <div
+                key={video.youtubeId}
+                className={`
+                  group relative bg-black rounded-lg overflow-visible cursor-pointer 
+                  aspect-[16/9] min-w-[180px] max-w-[280px] w-full transition-all duration-300 
+                  hover:scale-105 hover:z-20
+                  ${isSelected ? "scale-125 shadow-2xl ring-4 ring-red-400 z-50" : ""}
+                `}
+                style={{
+                  zIndex: isSelected ? 50 : 0,
+                  minWidth: "180px",
+                  maxWidth: "280px"
+                }}
+                onClick={() => onVideoClick(video.youtubeId)}
+              >
+                <img
+                  src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`}
+                  className="object-cover w-full h-full pointer-events-none"
+                  draggable={false}
+                  alt=""
+                />
+                {/* 오버레이 */}
+                <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end">
+                  <div className="p-4"></div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         <button
           onClick={goNext}

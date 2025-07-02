@@ -1,76 +1,41 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import MovieDetailModal from "@/components/MovieDetailModal";
-import axios from "axios";
-import { extractYoutubeVideoId } from "@/utils/extractYoutubeVideoId";
-import { VideoType } from "@/type/VideoType";
-// import MovieList from "@/components/MovieList";
+import { useVideos } from "@/hooks/useVideos";
 import Movie from "@/components/Movie";
-
-interface VideoDetail {
-  id: number;
-  youtube_url: string;
-  actor_name: string;
-  category: string;
-  start_time: number;
-  end_time: number;
-  scripts: string[];
-  s3_pitch_url: string;
-  s3_bgvoice_url: string;
-  s3_textgrid_url: string;
-  youtubeId: string;
-}
-
-interface TokenMap {
-  [youtubeId: string]: VideoDetail;
-}
+import type { TokenDetailResponse } from "@/type/PitchdataType";
 
 export default function Home() {
   const [selectedTab, setSelectedTab] = useState("인기 영상");
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
-  const [videos, setVideos] = useState<VideoType[]>([]);
-  const [tokenMap, setTokenMap] = useState<TokenMap>({});
-  const [isReady, setIsReady] = useState(false); 
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
-  const tabs = ["인기 배우", "인기 영상", "미국 배우", "영국 배우", "남자 배우", "여자 배우"];
-  const selectedTokenData = selectedVideoId ? tokenMap[selectedVideoId] : null;
-  
-  useEffect(() => {
-    const fetchAllTokenData = async () => {
-      try {
-        const res = await axios.get<VideoDetail[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/`);
+  const tabs = [
+    "인기 배우",
+    "인기 영상",
+    "미국 배우",
+    "영국 배우",
+    "남자 배우",
+    "여자 배우",
+  ];
 
-        const validItems = res.data
-          .map((item) => {
-            const youtubeId = extractYoutubeVideoId(item.youtube_url);
-            return youtubeId ? { ...item, youtubeId } : null;
-          })
-          .filter((item): item is VideoDetail => !!item);
+  // useVideos: TokenDetailResponse[]
+  const { data: tokens = [], isLoading, error } = useVideos();
 
-        const videoList = validItems.map((item) => ({
-          videoId: item.id,
-          youtubeId: item.youtubeId,
-        }));
-        setVideos(videoList);
+  // 카드(리스트)에는 최소 정보만 뽑아 사용 (필요하면)
+  const videos = tokens.map(({ youtubeId, actor_name }) => ({
+    youtubeId,
+    actor_name,
+  }));
 
-        const map: TokenMap = {};
-        validItems.forEach((item) => {
-          map[item.youtubeId] = item;
-        });
-        setTokenMap(map);
-        setIsReady(true); 
-      } catch (error) {
-        console.error("Error fetching all tokens:", error);
-      }
-    };
-
-    fetchAllTokenData();
-  }, []);
+  // 모달 tokenData는 전체 TokenDetailResponse에서 찾음
+  const selectedTokenData: TokenDetailResponse | undefined =
+    selectedVideoId && tokens.length
+      ? tokens.find((v) => v.youtubeId === selectedVideoId)
+      : undefined;
 
   const openModal = (youtubeId: string) => {
     if (hoverTimeout) clearTimeout(hoverTimeout);
-    if (selectedVideoId !== null) return; // 이미 열려 있으면 무시
     setSelectedVideoId(youtubeId);
   };
 
@@ -108,12 +73,16 @@ export default function Home() {
       </div>
 
       {/* Videos */}
-      {isReady && (
+      {isLoading && <div>로딩중...</div>}
+      {error && <div>에러 발생!</div>}
+
+      {!isLoading && !error && (
         <Movie
           bestVideos={videos}
           latestVideos={videos}
           nowPlayingVideos={videos}
           onVideoClick={openModal}
+          selectedVideoId={selectedVideoId}     
         />
       )}
 

@@ -45,12 +45,9 @@ export interface ServerPitch {
 }
 
 export interface ScriptItem {
-  token_id: number;
   start_time: number;
   end_time: number;
-  script: string;
-  translation: string | null;
-  id: number;
+  text: string;
 }
 
 export interface TokenDetailResponse {
@@ -64,7 +61,8 @@ export interface TokenDetailResponse {
   s3_bgvoice_url: string;
   youtube_url: string;
   id: number;
-  pitch: ServerPitch[]; // 이 부분이 핵심!
+  pitch: ServerPitch[];
   bgvoice_url: string;
   scripts: ScriptItem[];
+  youtubeId: string;
 }

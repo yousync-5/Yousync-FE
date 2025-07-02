@@ -1,5 +1,3 @@
-import React from "react";
-
 interface MovieItemProps {
   video: {
     id: string | number;
@@ -7,17 +5,19 @@ interface MovieItemProps {
     title: string;
   };
   onVideoClick: (youtubeId: string) => void;
+  selected?: boolean; // ⭐ 추가!
 }
 
-const MovieItem = ({ video, onVideoClick }: MovieItemProps) => {
+const MovieItem = ({ video, onVideoClick, selected }: MovieItemProps) => {
   return (
     <div
-      className="
+      className={`
         relative w-full aspect-[16/9] bg-black rounded-[10px]
         overflow-hidden cursor-pointer
         transition-all duration-200
         hover:scale-105 z-0 hover:z-50
-      "
+        ${selected ? "scale-210 shadow-2xl ring-4 ring-red-500" : ""}
+      `}
       onClick={() => onVideoClick(video.youtubeId)}
       style={{ minWidth: "240px", maxWidth: "320px" }}
     >
