@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { FaAngleLeft, FaAngleRight } from "react-icons/fa";
-import { VideoType } from "@/type/VideoType";
 
-interface MovieListProps {
-  videos?: VideoType[];
-  onVideoClick: (youtubeId: string) => void;
-  selectedVideoId?: string | number | null;
+interface SliderItem {
+  id: number | string;
+  youtubeId: string;
+  date?: string;
+  rating?: number;
 }
 
-export default function MovieList({ videos, onVideoClick, selectedVideoId }: MovieListProps) {
-  const items = videos || [];
+interface SliderProps {
+  items: SliderItem[];
+  onCardClick?: (id: number | string) => void;
+}
 
+export default function Slider({ items, onCardClick }: SliderProps) {
+  // 반응형: 카드 개수 자동 조절 (모바일2, 태블릿4, 데스크탑6)
   const getCardsPerPage = () =>
     typeof window !== "undefined"
       ? window.innerWidth < 480
@@ -43,7 +47,8 @@ export default function MovieList({ videos, onVideoClick, selectedVideoId }: Mov
 
   return (
     <section className="w-full bg-black py-6 px-0 select-none">
-      <div className="flex items-center justify-between px-6 mb-3">
+      {/* 상단: 오른쪽 끝 정렬 도트 */}
+      <div className="flex items-center justify-end w-full px-6 mb-3">
         <div className="flex items-center gap-1">
           {Array.from({ length: totalPages }).map((_, i) => (
             <span
@@ -55,6 +60,7 @@ export default function MovieList({ videos, onVideoClick, selectedVideoId }: Mov
           ))}
         </div>
       </div>
+      {/* 카드 슬라이드 */}
       <div className="relative flex items-center px-4">
         <button
           onClick={goPrev}
@@ -62,39 +68,35 @@ export default function MovieList({ videos, onVideoClick, selectedVideoId }: Mov
         >
           <FaAngleLeft />
         </button>
-        {/* 핵심! overflow-visible로 선택 카드가 튀어나옴 */}
-        <div className="w-full flex gap-6 justify-center overflow-visible">
-          {visibleItems.map((video) => {
-            const isSelected = video.youtubeId === selectedVideoId;
-            return (
-              <div
-                key={video.youtubeId}
-                className={`
-                  group relative bg-black rounded-lg overflow-visible cursor-pointer 
-                  aspect-[16/9] min-w-[180px] max-w-[280px] w-full transition-all duration-300 
-                  hover:scale-105 hover:z-20
-                  ${isSelected ? "scale-125 shadow-2xl ring-4 ring-red-400 z-50" : ""}
-                `}
-                style={{
-                  zIndex: isSelected ? 50 : 0,
-                  minWidth: "180px",
-                  maxWidth: "280px"
-                }}
-                onClick={() => onVideoClick(video.youtubeId)}
-              >
-                <img
-                  src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`}
-                  className="object-cover w-full h-full pointer-events-none"
-                  draggable={false}
-                  alt=""
-                />
-                {/* 오버레이 */}
-                <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end">
-                  <div className="p-4"></div>
+        <div className="w-full flex gap-6 justify-center overflow-hidden">
+          {visibleItems.map((item) => (
+            <div
+              key={item.id}
+              className="
+                group relative bg-black rounded-lg overflow-hidden cursor-pointer 
+                aspect-[16/9] min-w-[180px] max-w-[280px] w-full transition-all duration-200 
+                hover:scale-105 z-0 hover:z-50
+              "
+              onClick={() => onCardClick?.(item.id)}
+            >
+              <img
+                src={`https://img.youtube.com/vi/${item.youtubeId}/mqdefault.jpg`}
+                className="object-cover w-full h-full pointer-events-none"
+                draggable={false}
+              />
+              {/* hover시 오버레이+정보 */}
+              <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end">
+                <div className="p-4">
+                  {item.date && (
+                    <div className="text-xs text-green-400">{item.date}</div>
+                  )}
+                  {item.rating !== undefined && (
+                    <div className="text-xs text-yellow-300">{item.rating}</div>
+                  )}
                 </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
         <button
           onClick={goNext}
