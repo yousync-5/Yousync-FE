@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import MovieDetailModal from "@/components/MovieDetailModal";
+import MovieDetailModal from "@/components/modal/MovieDetailModal";
 import { useVideos } from "@/hooks/useVideos";
-import Movie from "@/components/Movie";
+import Movie from "@/components/movie/Movie";
 import type { TokenDetailResponse } from "@/type/PitchdataType";
 
 export default function Home() {

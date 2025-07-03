@@ -14,7 +14,10 @@ const fetchVideos = async () => {
     })
     .filter(Boolean) as (TokenDetailResponse & { youtubeId: string })[];
 };
-
+/**
+ * 
+ * @returns 비디오 객체 반환
+ */
 export function useVideos() {
   return useQuery({
     queryKey: ["videos"],

@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import YouTube from 'react-youtube'
 import { FaArrowRight, FaFilter} from 'react-icons/fa'
-import { ActorNameModal } from '@/components/ActorNameModal'
+import { ActorNameModal } from '@/components/modal/ActorNameModal'
 
 export default function ProfilePage() {
   const shortIds = [

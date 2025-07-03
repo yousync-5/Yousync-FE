@@ -1,5 +1,5 @@
 import React from "react";
-import MovieList from "./MovieList";
+import MovieList from "@/components/movie/MovieList";
 import { VideoType } from "@/type/VideoType";
 
 interface MovieProps {

@@ -5,7 +5,7 @@ import { extractYoutubeVideoId } from "@/utils/extractYoutubeVideoId";
 import { mergeWavBlobs } from "@/utils/mergeWavBlobs";
 import { useRouter } from "next/router";
 import axios from "axios";
-import ServerPitchGraph from "@/components/ServerPitchGraph"
+import ServerPitchGraph from "@/components/graph/ServerPitchGraph";
 import type { CaptionState } from "@/type/PitchdataType";
 
 import {
@@ -19,7 +19,7 @@ import {
 import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 import { useAudioStream } from "@/hooks/useAudioStream";
 import { useAudioStore } from "@/store/useAudioStore";
-import { MyPitchGraph } from "@/components/MyPitchGraph";
+import { MyPitchGraph } from "@/components/graph/MyPitchGraph";
 import { Timer } from "@/components/Timer";
 
 interface Caption {
