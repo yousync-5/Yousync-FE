@@ -7,18 +7,8 @@ import Movie from "@/components/movie/Movie";
 import type { TokenDetailResponse } from "@/type/PitchdataType";
 
 export default function Home() {
-  const [selectedTab, setSelectedTab] = useState("인기 영상");
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
-  const tabs = [
-    "인기 배우",
-    "인기 영상",
-    "미국 배우",
-    "영국 배우",
-    "남자 배우",
-    "여자 배우",
-  ];
-
   // useVideos: TokenDetailResponse[]
   const { data: tokens = [], isLoading, error } = useVideos();
 
@@ -49,30 +39,7 @@ const videos = tokens.map(({ id, youtubeId, actor_name }) => ({
   };
 
   return (
-    <div className="bg-neutral-950 min-h-screen text-white px-6 py-4 font-sans overflow-x-hidden">
-      {/* Search */}
-      <div className="flex justify-center mb-6 mt-24">
-        <div className="flex items-center border-2 border-white rounded-full px-4 py-2 w-full max-w-xl">
-          <input
-            type="text"
-            placeholder="Actor검색 또는 YoutubeURL을 입력해 주세요"
-            className="bg-transparent text-white outline-none w-full placeholder:text-white"
-          />
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex justify-center gap-4 text-sm font-medium mb-6">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            className={`transition-colors ${selectedTab === tab ? "text-red-500" : "text-white"}`}
-            onClick={() => setSelectedTab(tab)}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
+  <div className="bg-neutral-950 text-white px-6 py-4 font-sans overflow-x-hidden min-h-full flex flex-col">
 
       {/* Videos */}
       {isLoading && <div>로딩중...</div>}
