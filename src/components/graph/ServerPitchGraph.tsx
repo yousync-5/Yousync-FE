@@ -38,6 +38,7 @@ export default function ServerPitchGraph({
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${token_id}`
         );
         setPitch(res.data.pitch || []);
+        console.log("서버 피치 데이터 : ", res.data.pitch);
       } catch (err) {
         console.error("서버 피치 데이터 불러오기 에러:", err);
       }
