@@ -7,7 +7,7 @@ import { useRouter } from "next/router";
 import axios from "axios";
 import ServerPitchGraph from "@/components/graph/ServerPitchGraph";
 import type { CaptionState } from "@/type/PitchdataType";
-
+import { delayPlay } from "@/utils/delayPlay";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -21,6 +21,7 @@ import { useAudioStream } from "@/hooks/useAudioStream";
 import { useAudioStore } from "@/store/useAudioStore";
 import { MyPitchGraph } from "@/components/graph/MyPitchGraph";
 import { Timer } from "@/components/Timer";
+import { ScriptContainer } from "@/components/dubbing/ScriptContainer";
 
 interface Caption {
   movie_id: number;
@@ -95,7 +96,9 @@ export default function Detail() {
   const router = useRouter();
   const token_id = router.query.id;
   const movieUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${token_id}`;
-
+  
+  // 타이머 보이게 하기 위한 변수
+  const [showTimer, setShowTimer] = useState(false);  
   useEffect(() => {
     if (!token_id || Array.isArray(token_id)) return;
 
@@ -205,67 +208,111 @@ export default function Detail() {
     captions,
   };
 
-  // 자막 변경 시: 완전 초기화 → 2초 일시정지 → 게이지 채우기 → 1초 후 재생 → 0.2초 뒤 하이라이트
-  useEffect(() => {
-    let pauseTimer: NodeJS.Timeout;
-    let resumeTimer: NodeJS.Timeout;
-    let enableTimer: NodeJS.Timeout;
-    let stopTimer: NodeJS.Timeout; 
+  // 개힘들다
+  // useEffect(() => {
+  //   const caption = captions[currentIdx];
+  //   if (!caption || currentIdx === prevIdx || !playerRef.current) return;
+  
+  //   const run = async () => {
+  //     if (!playerRef.current) return;
+  //     setPlaying(true);
+  //     // setHighlightEnabled(false);
+  //     // setGaugeProgress(0);
+      
+  //     // 영상이 캡션 길이만큼 지난 뒤 일시정지
+  //     const duration = caption.end_time - caption.start_time;
+  //     await delayPlay(duration * 1000); 
+  
+  //     console.log("⏸ 영상 멈춤");
+  //     playerRef.current.pauseVideo();
+  //     setPlaying(false);
+  //     // setGaugeProgress(1);
+  //     // setHighlightEnabled(true);
+  
+  //     //타이머 켬
+  //     setShowTimer(true);
+  //     // 3초 타이머
+  //     await delayPlay(3000)
+  //     console.log("3초 타이머");
+  //     // 타이머 끔
+  //     setShowTimer(false);
+
+  //     // 잠깐 기다렸다가 재생 재개
+  //     startRecording();
+  //     await delayPlay(duration * 1000); // 대사 길이만큼 기다림
+  //     await stopRecording(currentIdx); // 대사 끝났으니 정지
+      
+  //     console.log("▶ 영상 재생됨!", duration, "초");
+  //     playerRef.current.playVideo();
+  //     setPlaying(true);
+  //     setGaugeProgress(0);
+  //     setHighlightEnabled(false);
+  //   };
+  
+  //   run();
+  //   setPrevIdx(currentIdx);
+  // }, [currentIdx]);
+  // // 자막 변경 시: 완전 초기화 → 2초 일시정지 → 게이지 채우기 → 1초 후 재생 → 0.2초 뒤 하이라이트
+  // useEffect(() => {
+  //   let pauseTimer: NodeJS.Timeout;
+  //   let resumeTimer: NodeJS.Timeout;
+  //   let enableTimer: NodeJS.Timeout;
+  //   let stopTimer: NodeJS.Timeout; 
     
-    if (prevIdx !== null && currentIdx !== prevIdx) {
-      // 하이라이트 완전 초기화
-      setHighlightEnabled(false);
-      // 일시정지
-      playerRef.current?.pauseVideo();
-      setPlaying(false);
-      setGaugeProgress(0);
+  //   if (prevIdx !== null && currentIdx !== prevIdx) {
+  //     // 하이라이트 완전 초기화
+  //     setHighlightEnabled(false);
+  //     // 일시정지
+  //     playerRef.current?.pauseVideo();
+  //     setPlaying(false);
+  //     setGaugeProgress(0);
 
-      // 2초 일시정지
-      pauseTimer = setTimeout(() => {
-        // 게이지 1초 애니메이션
-        setGaugeProgress(1);
+  //     // 2초 일시정지
+  //     pauseTimer = setTimeout(() => {
+  //       // 게이지 1초 애니메이션
+  //       setGaugeProgress(1);
 
-        // 애니메이션 끝나면 재생 재개
-        resumeTimer = setTimeout(async () => {
-          playerRef.current?.playVideo();
-          setPlaying(true);
-          setGaugeProgress(0);
+  //       // 애니메이션 끝나면 재생 재개
+  //       resumeTimer = setTimeout(async () => {
+  //         playerRef.current?.playVideo();
+  //         setPlaying(true);
+  //         setGaugeProgress(0);
 
-          //이전 재생 중이던 대사 녹음 정지
-          if(recording  && playingIdx !== null) {
-            await stopRecording(playingIdx);
-          }
-          // 현재 재생 인덱스 설정 후 녹음 시작
-          setPlayingIdx(currentIdx);
-          // 녹음시작
-          startRecording();
+  //         //이전 재생 중이던 대사 녹음 정지
+  //         if(recording  && playingIdx !== null) {
+  //           await stopRecording(playingIdx);
+  //         }
+  //         // 현재 재생 인덱스 설정 후 녹음 시작
+  //         setPlayingIdx(currentIdx);
+  //         // 녹음시작
+  //         startRecording();
 
-          const currentCaption = captions[currentIdx];
-          const startTime = currentCaption?.start_time;
-          const endTime = currentCaption?.end_time;
-          const deltaTime = endTime - startTime;
+  //         const currentCaption = captions[currentIdx];
+  //         const startTime = currentCaption?.start_time;
+  //         const endTime = currentCaption?.end_time;
+  //         const deltaTime = endTime - startTime;
 
-          stopTimer = setTimeout(async () => {
-            await stopRecording(currentIdx);
-          }, 1000 * deltaTime)
+  //         stopTimer = setTimeout(async () => {
+  //           await stopRecording(currentIdx);
+  //         }, 1000 * deltaTime)
 
-          // 0.2초 뒤 하이라이트 재활성화
-          enableTimer = setTimeout(() => {
-            setHighlightEnabled(true);
-          }, 200);
-        }, 1000);
-      }, 2000);
-    }
+  //         // 0.2초 뒤 하이라이트 재활성화
+  //         enableTimer = setTimeout(() => {
+  //           setHighlightEnabled(true);
+  //         }, 200);
+  //       }, 1000);
+  //     }, 2000);
+  //   }
 
-    setPrevIdx(currentIdx);
+  //   setPrevIdx(currentIdx);
 
-    return () => {
-      clearTimeout(pauseTimer);
-      clearTimeout(resumeTimer);
-      clearTimeout(enableTimer);
-      clearTimeout(stopTimer);
-    };
-  }, [currentIdx]);
+  //   return () => {
+  //     clearTimeout(pauseTimer);
+  //     clearTimeout(resumeTimer);
+  //     clearTimeout(enableTimer);
+  //     clearTimeout(stopTimer);
+  //   };
+  // }, [currentIdx]);
 
   // 글자별 하이라이트
   const chars = currentCaption?.script.split("") || [];
@@ -316,7 +363,7 @@ export default function Detail() {
       console.error('녹음 파일 업로드 중 오류가 발생했습니다.', err);
     }
   };
-  
+ 
   if (!movieData) return null;
   const videoId = extractYoutubeVideoId(movieData.youtube_url)
   return (
@@ -433,7 +480,7 @@ export default function Detail() {
       {/* 타이머 + 대사 묶기 */}
       <div className="flex items-center space-x-4">
         {/* 타이머 */}
-        <Timer currentIdx={currentIdx} />
+        {/* {showTimer &&<Timer currentIdx={currentIdx}/>} */}
 
         {/* 대사 */}
         <div className="relative text-left">
@@ -443,7 +490,7 @@ export default function Detail() {
             style={{ width: `${gaugeProgress * 100}%` }}
           />
           {/* 영어 대사 */}
-          <p className="relative z-10 text-4xl font-extrabold leading-tight whitespace-nowrap">
+          {/* <p className="relative z-10 text-4xl font-extrabold leading-tight whitespace-nowrap">
             {chars.map((ch, i) => (
               <span
                 key={i}
@@ -452,7 +499,17 @@ export default function Detail() {
                 {ch}
               </span>
             ))}
-          </p>
+          </p> */}
+          {currentCaption && (
+            <ScriptContainer
+            caption={currentCaption}
+            currentIdx={currentIdx}
+            chars={chars}
+            playerRef={playerRef}
+            startRecording={startRecording}
+            stopRecording={stopRecording}
+          />
+          )}
           {/* 한국어 자막 */}
           <p className="relative z-10 text-xl italic text-gray-300 mt-2">
             {currentCaption.translation}
