@@ -11,7 +11,7 @@ import ServerPitchGraph from "@/components/graph/ServerPitchGraph";
 import { MyPitchGraph } from "@/components/graph/MyPitchGraph";
 import SlotScript from "@/components/dubbing/SlotScript";
 import { Timer } from "@/components/Timer";
-
+import { delayPlay } from "@/utils/delayPlay";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -26,6 +26,7 @@ import { useAudioStream } from "@/hooks/useAudioStream";
 import { useAudioStore } from "@/store/useAudioStore";
 
 import type { CaptionState } from "@/type/PitchdataType";
+import { ScriptContainer } from "@/components/dubbing/ScriptContainer";
 
 /* ────────── 타입 ────────── */
 export interface Caption {
@@ -153,52 +154,6 @@ export default function Detail() {
 
   const captionState: CaptionState = { currentIdx, captions };
 
-  /* ----- 자막 바뀔 때 녹음·게이지·하이라이트 ----- */
-  useEffect(() => {
-    let pauseTimer: NodeJS.Timeout;
-    let resumeTimer: NodeJS.Timeout;
-    let enableTimer: NodeJS.Timeout;
-    let stopTimer: NodeJS.Timeout;
-
-    if (prevIdx !== null && currentIdx !== prevIdx) {
-      setHighlightEnabled(false);
-      playerRef.current?.pauseVideo();
-      setPlaying(false);
-      setGaugeProgress(0);
-
-      pauseTimer = setTimeout(() => {
-        setGaugeProgress(1);
-
-        resumeTimer = setTimeout(async () => {
-          playerRef.current?.playVideo();
-          setPlaying(true);
-          setGaugeProgress(0);
-
-          if (recording && playingIdx !== null) await stopRecording(playingIdx);
-          setPlayingIdx(currentIdx);
-          startRecording();
-
-          const delta =
-            captions[currentIdx].end_time - captions[currentIdx].start_time;
-
-          stopTimer = setTimeout(
-            async () => await stopRecording(currentIdx),
-            delta * 1000
-          );
-
-          enableTimer = setTimeout(() => setHighlightEnabled(true), 200);
-        }, 1000);
-      }, 2000);
-    }
-
-    setPrevIdx(currentIdx);
-    return () => {
-      clearTimeout(pauseTimer);
-      clearTimeout(resumeTimer);
-      clearTimeout(enableTimer);
-      clearTimeout(stopTimer);
-    };
-  }, [currentIdx]);
 
   /* ----- 병합된 WAV 미리듣기 & 업로드 ----- */
   const previewMergedWav = async () => {
@@ -228,8 +183,7 @@ export default function Detail() {
       console.error("업로드 오류", err);
     }
   };
-
-  /* ----- 로딩 가드 ----- */
+  
   if (!movieData) return null;
   const videoId = extractYoutubeVideoId(movieData.youtube_url);
 
@@ -334,45 +288,51 @@ export default function Detail() {
         </aside>
       </div>
 
-      {/* ───── Footer (타이머 & 대사) ───── */}
-      {currentCaption && (
-        <footer className="bg-black p-4 text-center">
-          <div className="flex w-full justify-center">
-            <div className="flex items-center space-x-4">
-              <Timer currentIdx={currentIdx} />
+      {/* Footer */}
+      <footer className="bg-black p-4 text-center">
+  {currentCaption && (
+    <div className="w-full flex justify-center">
+      {/* 타이머 + 대사 묶기 */}
+      <div className="flex items-center space-x-4">
+        {/* 타이머 */}
+        {/* {showTimer &&<Timer currentIdx={currentIdx}/>} */}
 
-              <div className="relative text-left">
-                <div
-                  className="absolute inset-y-0 left-0 bg-blue-500/40 transition-all duration-1000"
-                  style={{ width: `${gaugeProgress * 100}%` }}
-                />
-                <p className="relative z-10 whitespace-nowrap text-4xl font-extrabold leading-tight">
-                  {currentCaption.script.split("").map((ch, i) => (
-                    <span
-                      key={i}
-                      className={
-                        i <
-                        Math.floor(
-                          ((currentSec - currentCaption.start_time) /
-                            (currentCaption.end_time - currentCaption.start_time)) *
-                            currentCaption.script.length
-                        ) && highlightEnabled
-                          ? "text-green-400"
-                          : "text-white"
-                      }
-                    >
-                      {ch}
-                    </span>
-                  ))}
-                </p>
-                <p className="relative z-10 mt-2 text-xl italic text-gray-300">
-                  {currentCaption.translation}
-                </p>
-              </div>
-            </div>
-          </div>
-        </footer>
-      )}
+        {/* 대사 */}
+        <div className="relative text-left">
+          {/* 게이지 */}
+          <div
+            className="absolute inset-y-0 left-0 bg-blue-500/40 transition-all duration-1000"
+            style={{ width: `${gaugeProgress * 100}%` }}
+          />
+          {/* 영어 대사 */}
+          {/* <p className="relative z-10 text-4xl font-extrabold leading-tight whitespace-nowrap">
+            {chars.map((ch, i) => (
+              <span
+                key={i}
+                className={i < highlightCount ? "text-green-400" : "text-white"}
+              >
+                {ch}
+              </span>
+            ))}
+          </p> */}
+          {currentCaption && (
+            <ScriptContainer
+            caption={currentCaption}
+            currentIdx={currentIdx}
+            playerRef={playerRef}
+            startRecording={startRecording}
+            stopRecording={stopRecording}
+          />
+          )}
+          {/* 한국어 자막 */}
+          <p className="relative z-10 text-xl italic text-gray-300 mt-2">
+            {currentCaption.translation}
+          </p>
+        </div>
+      </div>
+    </div>
+  )}
+</footer>
     </div>
   );
 }
