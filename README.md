@@ -1,3 +1,6 @@
+
+```text
+
 src/
 ├── 📁 app/                          # Next.js App Router - 페이지 및 라우트
 │   ├── 📁 (auth)/                   # 인증 필요 라우트 그룹 - 로그인 후 접근
@@ -100,3 +103,5 @@ src/
     ├── extractYoutubeVideoId.ts     # 유튜브 비디오 ID 추출 - URL에서 ID 추출
     ├── logger.ts                    # 로깅 유틸리티 - 로그 기록/관리
     └── mergeWavBlobs.ts            # WAV 블롭 병합 유틸리티 - 오디오 파일 병합
+
+```
