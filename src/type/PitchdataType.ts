@@ -45,9 +45,20 @@ export interface ServerPitch {
 }
 
 export interface ScriptItem {
+  token_id: number;
   start_time: number;
   end_time: number;
-  text: string;
+  script: string;
+  translation: string | null;
+  id: number;
+  words?: Array<{
+    script_id: number;
+    start_time: number;
+    end_time: number;
+    word: string;
+    probability: number;
+    id: number;
+  }>;
 }
 
 export interface TokenDetailResponse {

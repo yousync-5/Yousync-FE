@@ -1,29 +1,85 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
+import axios from "axios";
+import { MyPitchGraph } from "@/components/graph/MyPitchGraph";
 import YouTube from "react-youtube";
 import {
   StarIcon,
   ChartBarIcon,
+  PlayIcon,
+  PauseIcon,
   ArrowPathIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  PlayIcon,
+  SparklesIcon,
+  CpuChipIcon,
+  CodeBracketIcon,
 } from "@heroicons/react/24/solid";
-import ServerPitchGraph from "@/components/graph/ServerPitchGraph";
-import type { TokenDetailResponse, ServerPitch, ScriptItem } from "@/type/PitchdataType";
-import type { Caption as CaptionType, CaptionState } from "@/type/CaptionTypes";
-import axios from "axios";
-import { MyPitchGraph } from '@/components/graph/MyPitchGraph';
-import { useAudioStream } from "@/hooks/useAudioStream";
 
-interface Caption {
-  id: number;
-  script: string;
-  translation: string;
-  start_time: number;
-  end_time: number;
-}
+// 임시 ServerPitchGraph 컴포넌트
+const ServerPitchGraph = ({ pitchData }: { pitchData: number[] }) => {
+  return (
+    <div className="w-full h-full relative">
+      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 40" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="pitchGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#10B981" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#10B981" stopOpacity="0.2" />
+          </linearGradient>
+        </defs>
+        <path
+          d={`M 0,${40 - (pitchData[0] / 100) * 40} ${pitchData.map((value, index) => 
+            `L ${(index / (pitchData.length - 1)) * 100},${40 - (value / 100) * 40}`
+          ).join(' ')}`}
+          stroke="#10B981"
+          strokeWidth="2"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d={`M 0,${40 - (pitchData[0] / 100) * 40} ${pitchData.map((value, index) => 
+            `L ${(index / (pitchData.length - 1)) * 100},${40 - (value / 100) * 40}`
+          ).join(' ')} L 100,40 L 0,40 Z`}
+          fill="url(#pitchGradient)"
+        />
+      </svg>
+    </div>
+  );
+};
+
+// 임시 UserPitchGraph 컴포넌트
+const UserPitchGraph = ({ pitchData }: { pitchData: number[] }) => {
+  return (
+    <div className="w-full h-full relative">
+      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 40" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="userPitchGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#34D399" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#34D399" stopOpacity="0.2" />
+          </linearGradient>
+        </defs>
+        <path
+          d={`M 0,${40 - (pitchData[0] / 100) * 40} ${pitchData.map((value, index) => 
+            `L ${(index / (pitchData.length - 1)) * 100},${40 - (value / 100) * 40}`
+          ).join(' ')}`}
+          stroke="#34D399"
+          strokeWidth="2"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d={`M 0,${40 - (pitchData[0] / 100) * 40} ${pitchData.map((value, index) => 
+            `L ${(index / (pitchData.length - 1)) * 100},${40 - (value / 100) * 40}`
+          ).join(' ')} L 100,40 L 0,40 Z`}
+          fill="url(#userPitchGradient)"
+        />
+      </svg>
+    </div>
+  );
+};
 
 interface TestResult {
   id: number;
@@ -42,89 +98,84 @@ interface TestResult {
     youtube_url: string;
     category: string;
   };
-  captions: Caption[];
+  captions: Array<{
+    id: number;
+    script: string;
+    translation: string;
+    start_time: number;
+    end_time: number;
+  }>;
 }
 
 export default function TestResultPage() {
   const router = useRouter();
-  const {
-    query: { id },
-    isReady,
-  } = router;
+  const { id } = router.query;
   const [result, setResult] = useState<TestResult | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showResults, setShowResults] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [selectedCaption, setSelectedCaption] = useState(0);
   const [currentScriptIndex, setCurrentScriptIndex] = useState(0);
-  const [tokenData, setTokenData] = useState<TokenDetailResponse | null>(null);
-  const [serverPitchData, setServerPitchData] = useState<ServerPitch[]>([]);
+  const [showResults, setShowResults] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  // 오디오 스트림 초기화
-  useAudioStream();
+  useEffect(() => {
+    if (!id) return;
 
-  // 서버 피치 데이터 가져오기
-  const fetchServerPitchData = useCallback(async (tokenId: string) => {
-    try {
-      const response = await axios.get<ServerPitch[]>(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${tokenId}`
-      );
-      setServerPitchData(response.data);
-      console.log('서버 피치 데이터:', response.data);
-    } catch (error) {
-      console.error('서버 피치 데이터 가져오기 실패:', error);
-    }
-  }, []);
-
-  // 토큰 데이터 가져오기
-  const fetchTokenData = useCallback(async (tokenId: string) => {
-    try {
-      const response = await axios.get<TokenDetailResponse>(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${tokenId}`
-      );
-      setTokenData(response.data);
-      console.log('토큰 데이터:', response.data);
-      
-      // 토큰 데이터를 기반으로 result 생성
-      const token = response.data;
-      const testResult: TestResult = {
-        id: token.id,
-        user_id: 1, // 임시 값
-        movie_id: token.id,
-        score: 85, // 임시 점수
-        accuracy: 88,
-        fluency: 82,
-        pronunciation: 90,
-        created_at: new Date().toISOString(),
-        user_pitch_data: Array.from({ length: 50 }, () => Math.random() * 100), // 임시 사용자 피치 데이터
-        server_pitch_data: token.pitch?.map(p => p.hz || 0) || [],
-        audio_url: token.bgvoice_url || "",
-        movie: {
-          title: token.token_name,
-          youtube_url: token.youtube_url,
-          category: token.category,
+    // 임시 더미 데이터 생성
+    const dummyResult: TestResult = {
+      id: 1,
+      user_id: 1,
+      movie_id: 1,
+      score: 85,
+      accuracy: 88,
+      fluency: 82,
+      pronunciation: 90,
+      created_at: new Date().toISOString(),
+      user_pitch_data: Array.from({ length: 50 }, () => Math.random() * 100),
+      server_pitch_data: Array.from({ length: 50 }, () => Math.random() * 100),
+      audio_url: "https://example.com/audio.mp3",
+      movie: {
+        title: "The Great Gatsby",
+        youtube_url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        category: "Drama"
+      },
+      captions: [
+        {
+          id: 1,
+          script: "So we beat on, boats against the current, borne back ceaselessly into the past.",
+          translation: "그래서 우리는 계속 앞으로 나아가며, 과거로 끊임없이 밀려오는 물결에 맞서 배를 저어갑니다.",
+          start_time: 0,
+          end_time: 5
         },
-        captions: token.scripts?.map((script, index) => ({
-          id: script.id,
-          script: script.script,
-          translation: script.translation || "",
-          start_time: script.start_time,
-          end_time: script.end_time,
-        })) || [],
-      };
-      
-      setResult(testResult);
-    } catch (error) {
-      console.error('토큰 데이터 가져오기 실패:', error);
-    }
-  }, []);
+        {
+          id: 2,
+          script: "I hope she'll be a fool—that's the best thing a girl can be in this world.",
+          translation: "그녀가 바보가 되기를 바랍니다—이 세상에서 여자가 될 수 있는 가장 좋은 일이니까요.",
+          start_time: 5,
+          end_time: 10
+        },
+        {
+          id: 3,
+          script: "The only way to do great work is to love what you do.",
+          translation: "훌륭한 일을 하는 유일한 방법은 당신이 하는 일을 사랑하는 것입니다.",
+          start_time: 10,
+          end_time: 15
+        }
+      ]
+    };
 
-  // 점수 색상 헬퍼
+    setResult(dummyResult);
+    setLoading(false);
+  }, [id]);
+
   const getScoreColor = (score: number) => {
-    if (score >= 90) return "text-green-400";
-    if (score >= 80) return "text-yellow-400";
-    if (score >= 70) return "text-orange-400";
-    return "text-red-400";
+    if (score >= 90) return "text-green-500";
+    if (score >= 80) return "text-yellow-500";
+    if (score >= 70) return "text-orange-500";
+    return "text-red-500";
   };
+
   const getScoreLevel = (score: number) => {
     if (score >= 90) return "Excellent";
     if (score >= 80) return "Good";
@@ -132,21 +183,7 @@ export default function TestResultPage() {
     return "Poor";
   };
 
-  useEffect(() => {
-    if (!isReady || !id) return;
-    
-    const tokenId = Array.isArray(id) ? id[0] : id;
-    
-    // 토큰 데이터와 서버 피치 데이터 가져오기
-    fetchTokenData(tokenId);
-    fetchServerPitchData(tokenId);
-    
-
-    
-    setLoading(false);
-  }, [isReady, id, fetchTokenData, fetchServerPitchData]);
-
-  const showResultsSection = useCallback(() => {
+  const showResultsSection = () => {
     setShowResults(true);
     setTimeout(() => {
       resultsRef.current?.scrollIntoView({ 
@@ -154,12 +191,25 @@ export default function TestResultPage() {
         block: 'start'
       });
     }, 100);
-  }, []);
+  };
 
-  if (loading) return <div>Loading...</div>;
-  if (!result) return <div>No result found.</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+        <div className="text-white text-xl">결과를 불러오는 중...</div>
+      </div>
+    );
+  }
 
-   return (
+  if (!result) {
+    return (
+      <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+        <div className="text-white text-xl">결과를 찾을 수 없습니다.</div>
+      </div>
+    );
+  }
+
+  return (
     <div className="min-h-screen bg-neutral-950 text-white">
       {/* Header */}
       <header className="bg-black/50 backdrop-blur-sm border-b border-gray-800">
@@ -192,21 +242,14 @@ export default function TestResultPage() {
                   opts={{
                     width: "100%",
                     height: "100%",
-                    playerVars: {
-                      autoplay: 0,
-                      controls: 1,
-                      modestbranding: 1,
-                      rel: 0,
-                      showinfo: 0,
-                    },
+                    playerVars: { controls: 1, modestbranding: 1 },
                   }}
                 />
               </div>
             </div>
 
-             {/* Script Display */}
-             <div className="bg-gray-900 rounded-xl p-6 w-[77em] flex flex-col relative">
-
+                         {/* Script Display */}
+             <div className="bg-gray-900 rounded-xl p-6">
                <h3 className="text-lg font-semibold mb-4">Current Script</h3>
                
                {/* Progress */}
@@ -274,23 +317,19 @@ export default function TestResultPage() {
           {/* Right Column - Pitch Graphs & Captions */}
           <div className="space-y-6">
             {/* Pitch Comparison */}
-            <div className="bg-gray-900 rounded-xl p-6 h-[28em]">
+            <div className="bg-gray-900 rounded-xl p-6">
               <h3 className="text-lg font-semibold mb-4">Pitch Comparison</h3>
               <div className="space-y-4">
                 <div>
                   <div className="text-sm text-gray-400 mb-2">Your Pitch</div>
                   <div className="w-full h-16 bg-gray-800 rounded">
-                    <MyPitchGraph currentIdx={currentScriptIndex} />
+                    <MyPitchGraph currentIdx={0} />
                   </div>
                 </div>
                 <div>
                   <div className="text-sm text-gray-400 mb-2">Original Pitch</div>
                   <div className="w-full h-16 bg-gray-800 rounded">
-                    <ServerPitchGraph
-                      captionState={{ currentIdx: currentScriptIndex, captions: result.captions as CaptionType[] }}
-                      token_id={Array.isArray(id) ? id[0] : id}
-                      serverPitchData={serverPitchData}
-                    />
+                    <ServerPitchGraph pitchData={result.server_pitch_data} />
                   </div>
                 </div>
               </div>
@@ -563,17 +602,13 @@ export default function TestResultPage() {
                   <div>
                     <div className="text-sm text-green-400 mb-2">Your Pitch</div>
                     <div className="w-full h-16 bg-gray-700 rounded border border-green-500 relative overflow-hidden">
-                      <MyPitchGraph currentIdx={currentScriptIndex} />
+                      <UserPitchGraph pitchData={result.user_pitch_data} />
                     </div>
                   </div>
                   <div>
                     <div className="text-sm text-green-400 mb-2">Original Pitch</div>
                     <div className="w-full h-16 bg-gray-700 rounded border border-green-500 relative overflow-hidden">
-                      <ServerPitchGraph
-                        captionState={{ currentIdx: currentScriptIndex, captions: result.captions as CaptionType[] }}
-                        token_id={Array.isArray(id) ? id[0] : id}
-                        serverPitchData={serverPitchData}
-                      />
+                      <ServerPitchGraph pitchData={result.server_pitch_data} />
                     </div>
                   </div>
                 </div>

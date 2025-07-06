@@ -14,6 +14,7 @@ export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
   const [series, setSeries] = useState([{name: "Pitch", data: [] as {x: number, y: number}[]}]);
   const detectPitchRef = useRef<ReturnType<typeof Pitchfinder.YIN> | null>(null);
   const pitchIndexRef = useRef(0); //x축 인덱스
+  const [alertShown, setAlertShown] = useState(false);
   const options = {
     chart: {
       id: "pitch-graph",
@@ -27,6 +28,8 @@ export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
     grid: { yaxis: { lines: { show: false } } },
   };
 
+
+
   useEffect(() => {
     setSeries([{name: "Pitch", data: []}]);
     pitchIndexRef.current = 0;
@@ -36,7 +39,14 @@ export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
 
     const interval = setInterval(() => {
       const {analyser} = useAudioStore.getState();
-      if(!analyser || !detectPitchRef.current) return;
+      if(!analyser || !detectPitchRef.current) {
+        // 첫 번째 호출에서만 alert 표시
+        if (!alertShown) {
+          alert('마이크가 초기화되지 않았습니다.\n\n페이지를 새로고침하고 마이크 권한을 허용해주세요.');
+          setAlertShown(true);
+        }
+        return;
+      }
 
       const buffer = new Float32Array(analyser.fftSize);
       analyser.getFloatTimeDomainData(buffer);
@@ -44,6 +54,7 @@ export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
       // RMS 계산 -> 작으면 무음으로 판단
       const rms = Math.sqrt(buffer.reduce((sum, x) => sum + x * x, 0) / buffer.length);
       if (rms < 0.01) {
+        console.log('음성 입력이 없습니다. (RMS:', rms, ')');
         return;
       }
 
@@ -51,6 +62,7 @@ export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
 
       // 사람 목소리 범위 필터(80~1000Hz)
       if(pitch && pitch > 80 && pitch < 1000){
+        console.log('피치 감지됨:', pitch, 'Hz');
         setMyPitch(pitch);
         setSeries(prev => [{
           ...prev[0],
