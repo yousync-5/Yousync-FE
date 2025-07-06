@@ -16,38 +16,26 @@ export interface PitchItem {
   };
 }
 
-export interface Caption {
-  movie_id: number;
-  actor_id: number;
-  start_time: number;
-  end_time: number;
-  script: string;
-  translation: string;
-  url: string | null;
-  actor_pitch_values: number[];
-  background_audio_url: string;
-  id: number;
-  actor: {
-    name: string;
-    id: number;
-  };
-}
-
-export interface CaptionState {
-  currentIdx: number;
-  captions: Caption[];
-}
-
-
 export interface ServerPitch {
   time: number;
   hz: number | null;
 }
 
 export interface ScriptItem {
+  token_id: number;
   start_time: number;
   end_time: number;
-  text: string;
+  script: string;
+  translation: string | null;
+  id: number;
+  words?: Array<{
+    script_id: number;
+    start_time: number;
+    end_time: number;
+    word: string;
+    probability: number;
+    id: number;
+  }>;
 }
 
 export interface TokenDetailResponse {
@@ -65,4 +53,4 @@ export interface TokenDetailResponse {
   bgvoice_url: string;
   scripts: ScriptItem[];
   youtubeId: string;
-}
+} 

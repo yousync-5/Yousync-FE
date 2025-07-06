@@ -4,7 +4,8 @@ import React, { MouseEvent } from "react";
 import YouTube from "react-youtube";
 import { FaMicrophone } from "react-icons/fa";
 import Link from "next/link";
-import type { TokenDetailResponse } from "@/type/PitchdataType";
+import { useRouter } from "next/navigation";
+import type { TokenDetailResponse } from "@/types/pitch";
 
 interface VideoModalProps {
   youtubeId: string;
@@ -19,6 +20,8 @@ export default function MovieDetailModal({
   onClose,
   tokenData,
 }: VideoModalProps) {
+  const router = useRouter();
+
   if (!isOpen) return null;
 
   const relatedVideos = [
@@ -26,6 +29,11 @@ export default function MovieDetailModal({
     { id: "ScMzIvxBSi4" },
     { id: "E7wJTI-1dvQ" },
   ];
+
+  const handleDubbingClick = () => {
+    // Next.js의 replace로 히스토리에 남기지 않고 이동
+    router.replace(`/detail/${tokenData.id}?modalId=${youtubeId}`);
+  };
 
   return (
     <div className="fixed inset-0 z-51 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -73,8 +81,8 @@ export default function MovieDetailModal({
             </div>
           </div>
           <div className="w-1/2 flex justify-end items-start">
-            <Link
-              href="/detail/1"
+            <button
+              onClick={handleDubbingClick}
               className="
                 flex items-center gap-2
                 px-6 py-2 rounded-full
@@ -88,7 +96,7 @@ export default function MovieDetailModal({
             >
               <FaMicrophone className="text-xl" />
               더빙하기
-            </Link>
+            </button>
           </div>
         </div>
 
