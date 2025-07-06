@@ -12,18 +12,13 @@ import {
 } from "@heroicons/react/24/solid";
 import ServerPitchGraph from "@/components/graph/ServerPitchGraph";
 import type { TokenDetailResponse, ServerPitch, ScriptItem } from "@/type/PitchdataType";
-import type { Caption as CaptionType, CaptionState } from "@/type/CaptionTypes";
+import type { Caption } from "@/type/PitchdataType";
 import axios from "axios";
 import { MyPitchGraph } from '@/components/graph/MyPitchGraph';
 import { useAudioStream } from "@/hooks/useAudioStream";
-
-interface Caption {
-  id: number;
-  script: string;
-  translation: string;
-  start_time: number;
-  end_time: number;
-}
+import TestResultAnalysisSection from "@/components/result/TestResultAnalysisSection";
+import { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 interface TestResult {
   id: number;
@@ -65,8 +60,9 @@ export default function TestResultPage() {
   // 서버 피치 데이터 가져오기
   const fetchServerPitchData = useCallback(async (tokenId: string) => {
     try {
+      const numericId = Number(tokenId);
       const response = await axios.get<ServerPitch[]>(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${tokenId}`
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${numericId}`
       );
       setServerPitchData(response.data);
       console.log('서버 피치 데이터:', response.data);
@@ -78,8 +74,9 @@ export default function TestResultPage() {
   // 토큰 데이터 가져오기
   const fetchTokenData = useCallback(async (tokenId: string) => {
     try {
+      const numericId = Number(tokenId);
       const response = await axios.get<TokenDetailResponse>(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${tokenId}`
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${numericId}`
       );
       setTokenData(response.data);
       console.log('토큰 데이터:', response.data);
@@ -105,10 +102,19 @@ export default function TestResultPage() {
         },
         captions: token.scripts?.map((script, index) => ({
           id: script.id,
+          movie_id: token.id,
+          actor_id: 1, // 임시 값
           script: script.script,
           translation: script.translation || "",
           start_time: script.start_time,
           end_time: script.end_time,
+          url: null,
+          actor_pitch_values: [],
+          background_audio_url: token.bgvoice_url || "",
+          actor: {
+            name: token.actor_name,
+            id: 1
+          }
         })) || [],
       };
       
@@ -161,6 +167,7 @@ export default function TestResultPage() {
 
    return (
     <div className="min-h-screen bg-neutral-950 text-white">
+      <Toaster position="top-center" />
       {/* Header */}
       <header className="bg-black/50 backdrop-blur-sm border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-6 py-4">
@@ -170,7 +177,17 @@ export default function TestResultPage() {
               <p className="text-gray-400 text-sm">{result.movie.category}</p>
             </div>
             <button
-              onClick={() => router.back()}
+              onClick={() => {
+                // 쿼리스트링에 modalId가 있으면 홈페이지로 돌아가면서 모달을 열도록 설정
+                if (router.query.modalId) {
+                  router.push({ 
+                    pathname: '/', 
+                    query: { modalId: router.query.modalId as string } 
+                  });
+                } else {
+                  router.back();
+                }
+              }}
               className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
             >
               뒤로가기
@@ -287,7 +304,7 @@ export default function TestResultPage() {
                   <div className="text-sm text-gray-400 mb-2">Original Pitch</div>
                   <div className="w-full h-16 bg-gray-800 rounded">
                     <ServerPitchGraph
-                      captionState={{ currentIdx: currentScriptIndex, captions: result.captions as CaptionType[] }}
+                      captionState={{ currentIdx: currentScriptIndex, captions: result.captions as Caption[] }}
                       token_id={Array.isArray(id) ? id[0] : id}
                       serverPitchData={serverPitchData}
                     />
@@ -302,284 +319,15 @@ export default function TestResultPage() {
 
         {/* Test Page Results Section */}
         {showResults && (
-          <div ref={resultsRef} className="mt-16">
-            <div className="space-y-8">
-              {/* Score Cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-gray-900 border-2 border-gray-800 rounded-xl p-6 hover:border-green-500 transition-all duration-300">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="flex items-center justify-center w-12 h-12 rounded-lg mb-3 bg-green-900">
-                      <StarIcon className="w-6 h-6 text-green-400" />
-                    </div>
-                    <div className={`text-2xl font-bold ${getScoreColor(result.score)}`}>
-                      {result.score}
-                    </div>
-                    <div className="text-sm text-green-400">Overall Score</div>
-                    <div className="text-xs text-gray-500 mt-1">{getScoreLevel(result.score)}</div>
-                    <div className="w-full bg-gray-700 rounded-full h-2 mt-3">
-                      <div
-                        className="bg-green-500 h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${result.score}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gray-900 border-2 border-gray-800 rounded-xl p-6 hover:border-green-500 transition-all duration-300">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="flex items-center justify-center w-12 h-12 rounded-lg mb-3 bg-green-900">
-                      <ChartBarIcon className="w-6 h-6 text-green-400" />
-                    </div>
-                    <div className="text-2xl font-bold text-green-400">{result.accuracy}</div>
-                    <div className="text-sm text-green-400">Accuracy</div>
-                    <div className="w-full bg-gray-700 rounded-full h-2 mt-3">
-                      <div
-                        className="bg-green-500 h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${result.accuracy}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gray-900 border-2 border-gray-800 rounded-xl p-6 hover:border-green-500 transition-all duration-300">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="flex items-center justify-center w-12 h-12 rounded-lg mb-3 bg-green-900">
-                      <PlayIcon className="w-6 h-6 text-green-400" />
-                    </div>
-                    <div className="text-2xl font-bold text-green-400">{result.fluency}</div>
-                    <div className="text-sm text-green-400">Fluency</div>
-                    <div className="w-full bg-gray-700 rounded-full h-2 mt-3">
-                      <div
-                        className="bg-green-500 h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${result.fluency}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gray-900 border-2 border-gray-800 rounded-xl p-6 hover:border-green-500 transition-all duration-300">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="flex items-center justify-center w-12 h-12 rounded-lg mb-3 bg-green-900">
-                      <ArrowPathIcon className="w-6 h-6 text-green-400" />
-                    </div>
-                    <div className="text-2xl font-bold text-green-400">{result.pronunciation}</div>
-                    <div className="text-sm text-green-400">Pronunciation</div>
-                    <div className="w-full bg-gray-700 rounded-full h-2 mt-3">
-                      <div
-                        className="bg-green-500 h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${result.pronunciation}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Detailed Analysis */}
-              <div className="bg-gray-900 border-2 border-gray-800 rounded-xl p-6">
-                <h3 className="text-xl font-semibold mb-4 text-white">Detailed Analysis</h3>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="text-lg font-medium mb-3 text-white">Score Breakdown</h4>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-white">Overall Score</span>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-32 bg-gray-700 rounded-full h-2">
-                            <div
-                              className="bg-green-500 h-2 rounded-full"
-                              style={{ width: `${result.score}%` }}
-                            />
-                          </div>
-                          <span className="text-sm text-green-400">{result.score}%</span>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-white">Accuracy</span>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-32 bg-gray-700 rounded-full h-2">
-                            <div
-                              className="bg-green-500 h-2 rounded-full"
-                              style={{ width: `${result.accuracy}%` }}
-                            />
-                          </div>
-                          <span className="text-sm text-green-400">{result.accuracy}%</span>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-white">Fluency</span>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-32 bg-gray-700 rounded-full h-2">
-                            <div
-                              className="bg-green-500 h-2 rounded-full"
-                              style={{ width: `${result.fluency}%` }}
-                            />
-                          </div>
-                          <span className="text-sm text-green-400">{result.fluency}%</span>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-white">Pronunciation</span>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-32 bg-gray-700 rounded-full h-2">
-                            <div
-                              className="bg-green-500 h-2 rounded-full"
-                              style={{ width: `${result.pronunciation}%` }}
-                            />
-                          </div>
-                          <span className="text-sm text-green-400">{result.pronunciation}%</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-medium mb-3 text-white">Performance Summary</h4>
-                    <div className="space-y-3 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Best Area:</span>
-                        <span className="text-green-400">Pronunciation</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Needs Improvement:</span>
-                        <span className="text-yellow-500">Fluency</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Overall Rating:</span>
-                        <span className="text-green-400">Good</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Sentence Analysis */}
-              <div className="bg-gray-900 border-2 border-gray-800 rounded-xl p-6">
-                <h3 className="text-xl font-semibold mb-6 text-white">Sentence Analysis</h3>
-                <div className="space-y-6">
-                  {result.captions.map((caption) => (
-                    <div
-                      key={caption.id}
-                      className="p-6 rounded-lg bg-gray-800 border border-gray-700"
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                            {caption.id}
-                          </div>
-                          <div>
-                            <div className="text-white font-medium">{caption.script}</div>
-                            <div className="text-gray-400 text-sm">{caption.translation}</div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-green-400">85</div>
-                          <div className="text-xs text-gray-500">Score</div>
-                        </div>
-                      </div>
-                      
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <div className="text-sm text-green-400 mb-2">Your Pitch</div>
-                          <div className="w-full h-20 bg-gray-700 rounded border border-green-500 relative overflow-hidden">
-                            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 40" preserveAspectRatio="none">
-                              <defs>
-                                <linearGradient id={`userPitchGradient${caption.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                                  <stop offset="0%" stopColor="#34D399" stopOpacity="0.8" />
-                                  <stop offset="100%" stopColor="#34D399" stopOpacity="0.2" />
-                                </linearGradient>
-                              </defs>
-                              <path
-                                d={`M 0,${40 - (result.user_pitch_data[0] / 100) * 40} ${result.user_pitch_data.slice(0, 20).map((value, index) => 
-                                  `L ${(index / 19) * 100},${40 - (value / 100) * 40}`
-                                ).join(' ')}`}
-                                stroke="#34D399"
-                                strokeWidth="2"
-                                fill="none"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                              <path
-                                d={`M 0,${40 - (result.user_pitch_data[0] / 100) * 40} ${result.user_pitch_data.slice(0, 20).map((value, index) => 
-                                  `L ${(index / 19) * 100},${40 - (value / 100) * 40}`
-                                ).join(' ')} L 100,40 L 0,40 Z`}
-                                fill={`url(#userPitchGradient${caption.id})`}
-                              />
-                            </svg>
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-green-400 mb-2">Original Pitch</div>
-                          <div className="w-full h-20 bg-gray-700 rounded border border-green-500 relative overflow-hidden">
-                            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 40" preserveAspectRatio="none">
-                              <defs>
-                                <linearGradient id={`serverPitchGradient${caption.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                                  <stop offset="0%" stopColor="#10B981" stopOpacity="0.8" />
-                                  <stop offset="100%" stopColor="#10B981" stopOpacity="0.2" />
-                                </linearGradient>
-                              </defs>
-                              <path
-                                d={`M 0,${40 - (result.server_pitch_data[0] / 100) * 40} ${result.server_pitch_data.slice(0, 20).map((value, index) => 
-                                  `L ${(index / 19) * 100},${40 - (value / 100) * 40}`
-                                ).join(' ')}`}
-                                stroke="#10B981"
-                                strokeWidth="2"
-                                fill="none"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                              <path
-                                d={`M 0,${40 - (result.server_pitch_data[0] / 100) * 40} ${result.server_pitch_data.slice(0, 20).map((value, index) => 
-                                  `L ${(index / 19) * 100},${40 - (value / 100) * 40}`
-                                ).join(' ')} L 100,40 L 0,40 Z`}
-                                fill={`url(#serverPitchGradient${caption.id})`}
-                              />
-                            </svg>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-3 gap-4 mt-4">
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-green-400">92%</div>
-                          <div className="text-xs text-gray-500">Similarity</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-green-400">88%</div>
-                          <div className="text-xs text-gray-500">Accuracy</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-green-400">85%</div>
-                          <div className="text-xs text-gray-500">Timing</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Overall Pitch Comparison */}
-              <div className="bg-gray-900 border-2 border-gray-800 rounded-xl p-6">
-                <h3 className="text-xl font-semibold mb-6 text-white">Overall Pitch Comparison</h3>
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <div className="text-sm text-green-400 mb-2">Your Pitch</div>
-                    <div className="w-full h-16 bg-gray-700 rounded border border-green-500 relative overflow-hidden">
-                      <MyPitchGraph currentIdx={currentScriptIndex} />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-green-400 mb-2">Original Pitch</div>
-                    <div className="w-full h-16 bg-gray-700 rounded border border-green-500 relative overflow-hidden">
-                      <ServerPitchGraph
-                        captionState={{ currentIdx: currentScriptIndex, captions: result.captions as CaptionType[] }}
-                        token_id={Array.isArray(id) ? id[0] : id}
-                        serverPitchData={serverPitchData}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <TestResultAnalysisSection
+            result={result}
+            currentScriptIndex={currentScriptIndex}
+            getScoreColor={getScoreColor}
+            getScoreLevel={getScoreLevel}
+            serverPitchData={serverPitchData}
+            id={id}
+            resultsRef={resultsRef}
+          />
         )}
 
         {/* Show Results Button */}

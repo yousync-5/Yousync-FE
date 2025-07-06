@@ -1,18 +1,5 @@
 import { PlayIcon, SpeakerWaveIcon } from "@heroicons/react/24/outline";
-
-interface MovieItemProps {
-  video: {
-    videoId: string;
-    youtubeId: string;
-    actor_name: string;
-  };
-  isPlayable?: boolean;
-  isShorts?: boolean;
-  playingVideo?: string | null;
-  onPlay?: (youtubeId: string) => void;
-  onOpenModal?: (youtubeId: string) => void;
-  onStop?: () => void;
-}
+import type { MovieItemProps } from "@/type/VideoType";
 
 export default function MovieItem({
   video,
@@ -35,11 +22,13 @@ export default function MovieItem({
         minWidth: isShorts ? "180px" : "280px",
         maxWidth: isShorts ? "180px" : "280px",
       }}
-      onClick={() =>
-        isPlayable
-          ? onPlay && onPlay(video.youtubeId)
-          : onOpenModal && onOpenModal(video.youtubeId)
-      }
+      onClick={() => {
+        if (isPlayable) {
+          if (onPlay) onPlay(video.videoId);
+        } else {
+          if (onOpenModal) onOpenModal(video.youtubeId);
+        }
+      }}
     >
       {/* 유튜브 썸네일만 표시 */}
       {video.youtubeId ? (
@@ -71,10 +60,10 @@ export default function MovieItem({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (playingVideo === video.youtubeId) {
-                    onStop && onStop();
+                  if (playingVideo && playingVideo === video.youtubeId) {
+                    if (onStop) onStop();
                   } else {
-                    onPlay && onPlay(video.youtubeId);
+                    if (onPlay) onPlay(video.videoId);
                   }
                 }}
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-full text-sm font-bold hover:bg-green-700 transition-colors"

@@ -2,12 +2,7 @@
 "use client";
 
 import { FC, useMemo } from "react";
-
-export interface Caption {
-  start_time: number;
-  end_time: number;
-  script: string;
-}
+import { Caption } from "@/type/PitchdataType";
 
 interface SlotScriptProps {
   captions: Caption[];

@@ -6,5 +6,20 @@ export interface VideoType {
   start_time?: number;
   end_time?: number;
   thumbnail_url?: string;
-  // 필요한 만큼 필드를 더 추가!
+}
+
+export interface MovieItemVideo {
+  videoId: string;
+  youtubeId: string;
+  actor_name: string;
+}
+
+export interface MovieItemProps {
+  video: MovieItemVideo;
+  isPlayable?: boolean;
+  isShorts?: boolean;
+  playingVideo?: string | null;
+  onPlay?: (youtubeId: string) => void;
+  onOpenModal?: (youtubeId: string) => void;
+  onStop?: () => void;
 }

@@ -2,10 +2,10 @@
 import { useState } from "react";
 import MovieDetailModal from "@/components/modal/MovieDetailModal";
 import MovieList from "./MovieList";
+import { NavBar } from "@/components/ui/NavBar";
 import type { TokenDetailResponse } from "@/type/PitchdataType";
 import {
   PlayIcon,
-  MagnifyingGlassIcon,
   FireIcon,
   StarIcon,
   HeartIcon,
@@ -15,18 +15,21 @@ import {
   VideoCameraIcon,
   TrophyIcon,
 } from "@heroicons/react/24/outline";
+import { useRouter } from "next/router";
 
 interface MovieProps {
   tokens: TokenDetailResponse[];
   isLoading: boolean;
   error: string | null;
+  onOpenModal?: (youtubeId: string) => void;
 }
 
-export default function Movie({ tokens, isLoading, error }: MovieProps) {
+export default function Movie({ tokens, isLoading, error, onOpenModal }: MovieProps) {
   const [selectedTab, setSelectedTab] = useState("인기 영상");
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const [playingVideo, setPlayingVideo] = useState<string | null>(null);
+  const router = useRouter();
 
   const tabs = [
     "인기 배우",
@@ -38,7 +41,7 @@ export default function Movie({ tokens, isLoading, error }: MovieProps) {
   ];
 
   const videos = tokens.map(({ id, youtubeId, actor_name }) => ({
-    videoId: id,
+    videoId: String(id),
     youtubeId,
     actor_name,
   }));
@@ -51,6 +54,9 @@ export default function Movie({ tokens, isLoading, error }: MovieProps) {
   const openModal = (youtubeId: string) => {
     if (hoverTimeout) clearTimeout(hoverTimeout);
     setSelectedVideoId(youtubeId);
+    if (onOpenModal) {
+      onOpenModal(youtubeId);
+    }
   };
 
   const closeModal = () => {
@@ -60,9 +66,13 @@ export default function Movie({ tokens, isLoading, error }: MovieProps) {
     setHoverTimeout(timeout);
   };
 
-  const playDubbing = (youtubeId: string) => {
-    setPlayingVideo(youtubeId);
-    console.log(`Playing dubbing for: ${youtubeId}`);
+  const playDubbing = (videoId: string) => {
+    setPlayingVideo(videoId);
+    const currentModalId = selectedVideoId;
+    router.push({ 
+      pathname: '/detail/' + videoId, 
+      query: currentModalId ? { modalId: currentModalId } : undefined 
+    });
   };
 
   const stopDubbing = () => {
@@ -90,7 +100,7 @@ export default function Movie({ tokens, isLoading, error }: MovieProps) {
       subtitle: "사람들이 미쳐서 하는 더빙들",
       icon: <FireIcon className="w-6 h-6 text-orange-500" />,
       videos: videos.slice(0, Math.min(10, videos.length)),
-      isPlayable: true,
+      isPlayable: false,
     },
     {
       id: "sync-collection",
@@ -98,7 +108,7 @@ export default function Movie({ tokens, isLoading, error }: MovieProps) {
       subtitle: "짧고 강한 더빙 숏츠",
       icon: <VideoCameraIcon className="w-6 h-6 text-purple-500" />,
       videos: videos.slice(0, Math.min(10, videos.length)),
-      isPlayable: true,
+      isPlayable: false,
       isShorts: true,
     },
     {
@@ -138,38 +148,10 @@ export default function Movie({ tokens, isLoading, error }: MovieProps) {
   const featuredVideo = videos[0];
 
   return (
-    <div className="bg-black min-h-screen text-white font-sans overflow-x-hidden">
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-b border-gray-800 shadow-2xl">
-        <div className="max-w-7xl mx-auto px-2 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-8">
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent animate-pulse">
-                YouSync
-              </h1>
-              <div className="hidden md:flex items-center space-x-6">
-                <a href="#" className="text-gray-400 hover:text-green-400 transition-colors font-medium">홈</a>
-                <a href="#" className="text-gray-400 hover:text-emerald-400 transition-colors font-medium">영화</a>
-                <a href="#" className="text-gray-400 hover:text-teal-400 transition-colors font-medium">배우</a>
-                <a href="#" className="text-gray-400 hover:text-green-400 transition-colors font-medium">결과</a>
-                <span className="text-xl walking-cat">🐱</span>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button className="p-2 text-gray-400 hover:text-green-400 transition-colors">
-                <MagnifyingGlassIcon className="w-6 h-6" />
-              </button>
-              <button className="px-4 py-2 text-gray-400 hover:text-emerald-400 transition-colors font-medium">
-                로그인
-              </button>
-              <button className="px-6 py-2 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 hover:from-green-600 hover:via-emerald-600 hover:to-teal-600 text-white rounded-full transition-all duration-200 font-bold shadow-lg hover:shadow-xl transform hover:scale-105">
-                시작하기
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
+    <div className="bg-black min-h-screen text-white font-sans overflow-x-hidden flex flex-col">
+      {/* NavBar */}
+      <NavBar />
+      
       {/* Main Content */}
       <div className="pt-24">
         {/* Hero Banner */}
@@ -293,47 +275,6 @@ export default function Movie({ tokens, isLoading, error }: MovieProps) {
           )}
         </div>
       </div>
-      <footer className="py-12 px-2 border-t border-gray-800 mt-20 bg-black">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="text-3xl font-bold bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent mb-4">
-                YouSync
-              </h3>
-              <p className="text-gray-500 font-medium">
-                AI와 함께 더빙의 새로운 재미를 발견하세요!
-              </p>
-            </div>
-            <div>
-              <h4 className="font-bold mb-4 text-white">제품</h4>
-              <ul className="space-y-2 text-gray-500">
-                <li><a href="#" className="hover:text-green-400 transition-colors font-medium">더빙 연습</a></li>
-                <li><a href="#" className="hover:text-emerald-400 transition-colors font-medium">성과 분석</a></li>
-                <li><a href="#" className="hover:text-teal-400 transition-colors font-medium">결과 다운로드</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold mb-4 text-white">회사</h4>
-              <ul className="space-y-2 text-gray-500">
-                <li><a href="#" className="hover:text-green-400 transition-colors font-medium">소개</a></li>
-                <li><a href="#" className="hover:text-emerald-400 transition-colors font-medium">팀</a></li>
-                <li><a href="#" className="hover:text-teal-400 transition-colors font-medium">채용</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold mb-4 text-white">지원</h4>
-              <ul className="space-y-2 text-gray-500">
-                <li><a href="#" className="hover:text-green-400 transition-colors font-medium">도움말</a></li>
-                <li><a href="#" className="hover:text-emerald-400 transition-colors font-medium">문의하기</a></li>
-                <li><a href="#" className="hover:text-teal-400 transition-colors font-medium">개인정보처리방침</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-600">
-            <p className="font-medium">&copy; 2024 YouSync. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
       {selectedVideoId && selectedTokenData && (
         <MovieDetailModal
           youtubeId={selectedVideoId}

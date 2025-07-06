@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import * as Pitchfinder from "pitchfinder";
 import { useAudioStore } from '@/store/useAudioStore';
 import dynamic from 'next/dynamic';
+import toast from 'react-hot-toast';
 const ReactApexChart = dynamic(() => import('react-apexcharts'), {
   ssr: false,
 })
@@ -28,7 +29,7 @@ export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
     grid: { yaxis: { lines: { show: false } } },
   };
 
-
+  let micErrorToastId: string | undefined;
 
   useEffect(() => {
     setSeries([{name: "Pitch", data: []}]);
@@ -42,7 +43,9 @@ export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
       if(!analyser || !detectPitchRef.current) {
         // 첫 번째 호출에서만 alert 표시
         if (!alertShown) {
-          alert('마이크가 초기화되지 않았습니다.\n\n페이지를 새로고침하고 마이크 권한을 허용해주세요.');
+          if (!micErrorToastId) {
+            micErrorToastId = toast('마이크가 초기화되지 않았습니다.\n\n페이지를 새로고침하고 마이크 권한을 허용해주세요.', { id: 'mic-error' });
+          }
           setAlertShown(true);
         }
         return;
