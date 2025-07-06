@@ -1,10 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
-import dynamic from "next/dynamic";
 import axios from "axios";
-import type { ApexOptions } from "apexcharts";
-import { Caption } from "@/type/PitchdataType";
-
-const ApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
+import { Caption } from "@/types/caption";
 
 interface CaptionState {
   currentIdx: number;
@@ -55,11 +51,12 @@ export default function ServerPitchGraph({
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${token_id_str}`
         );
         setPitch(res.data.pitch || []);
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError("서버 피치 데이터 불러오기 에러");
         setPitch([]);
-        if (err.response) {
-          console.error("서버 에러 상태코드:", err.response.status, err.response.data);
+        if (err && typeof err === 'object' && 'response' in err) {
+          const axiosError = err as { response: { status: number; data: unknown } };
+          console.error("서버 에러 상태코드:", axiosError.response.status, axiosError.response.data);
         } else {
           console.error("네트워크 또는 기타 에러:", err);
         }
@@ -85,43 +82,6 @@ export default function ServerPitchGraph({
         y: p.hz !== null && p.hz !== undefined ? p.hz : 0,
       }));
   }, [pitch, captions, currentIdx]);
-
-  const series = [
-    {
-      name: "Pitch (Hz)",
-      data: filteredData,
-    },
-  ];
-
-  const options: ApexOptions = {
-    chart: {
-      id: "pitch-graph",
-      toolbar: { show: false },
-      sparkline: { enabled: true },
-      animations: { enabled: true, speed: 400 },
-      background: "transparent",
-      fontFamily: "inherit",
-    },
-    colors: ["#10B981"],
-    stroke: { width: 2, curve: "smooth" },
-    fill: {
-      type: "gradient",
-      gradient: {
-        shade: "dark",
-        type: "vertical",
-        shadeIntensity: 0.7,
-        gradientToColors: ["#10B98110"],
-        inverseColors: false,
-        opacityFrom: 0.55,
-        opacityTo: 0.05,
-        stops: [0, 100],
-      },
-    },
-    tooltip: { enabled: false },
-    xaxis: { labels: { show: false }, axisBorder: { show: false }, axisTicks: { show: false } },
-    yaxis: { labels: { show: false }, axisBorder: { show: false }, axisTicks: { show: false } },
-    grid: { show: false, padding: { left: 0, right: 0, top: 0, bottom: 0 } },
-  };
 
   // y값 스케일링 (최소~최대 정규화)
   const yValues = filteredData.map(d => d.y);

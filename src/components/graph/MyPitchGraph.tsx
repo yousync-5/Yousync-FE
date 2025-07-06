@@ -1,40 +1,29 @@
 import React, { useEffect, useRef, useState } from 'react'
 import * as Pitchfinder from "pitchfinder";
 import { useAudioStore } from '@/store/useAudioStore';
-import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
-const ReactApexChart = dynamic(() => import('react-apexcharts'), {
-  ssr: false,
-})
+
 interface MyPitchGraphProps{
   currentIdx: number;
 }
+
 // pitchFinder
 export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
   const [myPitch, setMyPitch] = useState<number | null>(null);
-  const [series, setSeries] = useState([{name: "Pitch", data: [] as {x: number, y: number}[]}]);
+  const [pitchData, setPitchData] = useState<{x: number, y: number}[]>([]);
+  const [dynamicRange, setDynamicRange] = useState<{min: number, max: number}>({min: 80, max: 1000});
   const detectPitchRef = useRef<ReturnType<typeof Pitchfinder.YIN> | null>(null);
   const pitchIndexRef = useRef(0); //x축 인덱스
   const [alertShown, setAlertShown] = useState(false);
-  const options = {
-    chart: {
-      id: "pitch-graph",
-      toolbar: { show: false },
-    },
-    stroke: { width: 2 },
-    curve: "smooth",
-    tooltip: { enabled: false },
-    xaxis: { labels: { show: false }, axisBorder: { show: false }, axisTicks: { show: false } },
-    yaxis: { labels: { show: false }, axisBorder: { show: false }, axisTicks: { show: false } },
-    grid: { yaxis: { lines: { show: false } } },
-  };
 
   let micErrorToastId: string | undefined;
 
   useEffect(() => {
-    setSeries([{name: "Pitch", data: []}]);
+    setPitchData([]);
+    setDynamicRange({min: 80, max: 1000}); // 초기값으로 리셋
     pitchIndexRef.current = 0;
   }, [currentIdx])
+
   useEffect(() => {
     detectPitchRef.current = Pitchfinder.YIN();//ref로 사용하도록 변경
 
@@ -67,29 +56,86 @@ export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
       if(pitch && pitch > 80 && pitch < 1000){
         console.log('피치 감지됨:', pitch, 'Hz');
         setMyPitch(pitch);
-        setSeries(prev => [{
-          ...prev[0],
-          data: [...prev[0].data, {x: pitchIndexRef.current++, y: pitch}]
-        }])
+        
+        setPitchData(prev => {
+          const newData = [...prev, {x: pitchIndexRef.current++, y: pitch}];
+          
+          // 최근 50개 데이터만 유지 (성능 최적화)
+          const recentData = newData.slice(-50);
+          
+          // 동적 범위 업데이트
+          if (recentData.length > 0) {
+            const values = recentData.map(d => d.y);
+            const currentMin = Math.min(...values);
+            const currentMax = Math.max(...values);
+            
+            // 범위가 너무 좁으면 확장
+            const range = currentMax - currentMin;
+            const minRange = 50; // 최소 50Hz 범위 보장
+            
+            if (range < minRange) {
+              const padding = (minRange - range) / 2;
+              setDynamicRange({
+                min: Math.max(80, currentMin - padding),
+                max: Math.min(1000, currentMax + padding)
+              });
+            } else {
+              setDynamicRange({
+                min: Math.max(80, currentMin - range * 0.1), // 10% 패딩
+                max: Math.min(1000, currentMax + range * 0.1)
+              });
+            }
+          }
+          
+          return recentData;
+        });
       }
     }, 100);
 
     return () => clearInterval(interval);
   }, [])
 
-  return (
-    <div>
-      {/* <h2 className='text-lg font-bold'>실시간 pitch</h2>
-      <div className='text-2xl'>
-        {myPitch ? `${myPitch.toFixed(1)}` : '---'}
-      </div> */}
-      {/* {myPitch ? `${myPitch.toFixed(1)}` : '---'} */}
-      <ReactApexChart 
-        options={options}
-        series={series}
-        type='line'
-        height={64}/>
+  // y값 스케일링 (동적 범위 사용)
+  const getY = (y: number) => {
+    if (dynamicRange.max === dynamicRange.min) return 20; // flat line
+    return 40 - ((y - dynamicRange.min) / (dynamicRange.max - dynamicRange.min)) * 40;
+  };
 
+  // 데이터가 없으면 빈 그래프 표시
+  if (pitchData.length === 0) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
+        음성 입력 대기 중...
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full relative">
+      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 40" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="myPitchGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.2" />
+          </linearGradient>
+        </defs>
+        <path
+          d={`M 0,${getY(pitchData[0].y)} ${pitchData.map((point, index) => 
+            `L ${(index / (pitchData.length - 1)) * 100},${getY(point.y)}`
+          ).join(' ')}`}
+          stroke="#3B82F6"
+          strokeWidth="2"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d={`M 0,${getY(pitchData[0].y)} ${pitchData.map((point, index) => 
+            `L ${(index / (pitchData.length - 1)) * 100},${getY(point.y)}`
+          ).join(' ')} L 100,40 L 0,40 Z`}
+          fill="url(#myPitchGradient)"
+        />
+      </svg>
     </div>
-  )
+  );
 }

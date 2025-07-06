@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Caption } from "@/type/PitchdataType";
+import { Caption } from "@/types/caption";
 import { delayPlay } from "@/utils/delayPlay";
 import {motion, AnimatePresence} from "framer-motion";
 import React from "react";

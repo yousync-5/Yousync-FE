@@ -4,8 +4,8 @@ import React, { MouseEvent } from "react";
 import YouTube from "react-youtube";
 import { FaMicrophone } from "react-icons/fa";
 import Link from "next/link";
-import { useRouter } from "next/router";
-import type { TokenDetailResponse } from "@/type/PitchdataType";
+import { useRouter } from "next/navigation";
+import type { TokenDetailResponse } from "@/types/pitch";
 
 interface VideoModalProps {
   youtubeId: string;
@@ -31,11 +31,8 @@ export default function MovieDetailModal({
   ];
 
   const handleDubbingClick = () => {
-    // 현재 모달의 youtubeId를 쿼리스트링으로 전달
-    router.push({ 
-      pathname: '/detail/' + tokenData.id, 
-      query: { modalId: youtubeId } 
-    });
+    // Next.js의 replace로 히스토리에 남기지 않고 이동
+    router.replace(`/detail/${tokenData.id}?modalId=${youtubeId}`);
   };
 
   return (

@@ -4,15 +4,48 @@ import DetailedAnalysis from "./DetailedAnalysis";
 import SentenceAnalysis from "./SentenceAnalysis";
 import OverallPitchComparison from "./OverallPitchComparison";
 
-// 필요한 타입 import (예시)
-import type { TestResult } from "@/pages/detail/[id]";
+// TestResult 타입 정의
+interface TestResult {
+  id: number;
+  user_id: number;
+  movie_id: number;
+  score: number;
+  accuracy: number;
+  fluency: number;
+  pronunciation: number;
+  created_at: string;
+  user_pitch_data: number[];
+  server_pitch_data: number[];
+  audio_url: string;
+  movie: {
+    title: string;
+    youtube_url: string;
+    category: string;
+  };
+  captions: Array<{
+    id: number;
+    movie_id: number;
+    actor_id: number;
+    script: string;
+    translation: string;
+    start_time: number;
+    end_time: number;
+    url: string | null;
+    actor_pitch_values: number[];
+    background_audio_url: string;
+    actor: {
+      name: string;
+      id: number;
+    };
+  }>;
+}
 
 interface TestResultAnalysisSectionProps {
   result: TestResult;
   currentScriptIndex: number;
   getScoreColor: (score: number) => string;
   getScoreLevel: (score: number) => string;
-  serverPitchData: any;
+  serverPitchData: Array<{ time: number; hz: number | null }>;
   id: string | string[] | undefined;
   resultsRef: React.RefObject<HTMLDivElement>;
 }

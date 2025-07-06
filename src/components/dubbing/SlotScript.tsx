@@ -2,7 +2,7 @@
 "use client";
 
 import { FC, useMemo } from "react";
-import { Caption } from "@/type/PitchdataType";
+import { Caption } from "@/types/caption";
 
 interface SlotScriptProps {
   captions: Caption[];

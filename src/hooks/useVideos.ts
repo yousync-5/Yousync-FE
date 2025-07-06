@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { extractYoutubeVideoId } from "@/utils/extractYoutubeVideoId";
-import type { TokenDetailResponse, PitchItem, Caption, ServerPitch, ScriptItem } from "@/type/PitchdataType";
-import type { VideoType } from "@/type/VideoType";
-import type { Caption as CaptionType, CaptionState } from "@/type/CaptionTypes";
+import type { TokenDetailResponse, PitchItem, ServerPitch, ScriptItem } from "@/types/pitch";
+import type { VideoType } from "@/types/video";
+import type { Caption, CaptionState } from "@/types/caption";
 
 const fetchVideos = async () => {
   const res = await axios.get<Omit<TokenDetailResponse, "youtubeId">[]>(

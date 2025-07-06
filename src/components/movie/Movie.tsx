@@ -3,7 +3,7 @@ import { useState } from "react";
 import MovieDetailModal from "@/components/modal/MovieDetailModal";
 import MovieList from "./MovieList";
 import { NavBar } from "@/components/ui/NavBar";
-import type { TokenDetailResponse } from "@/type/PitchdataType";
+import type { TokenDetailResponse } from "@/types/pitch";
 import {
   PlayIcon,
   FireIcon,
@@ -15,7 +15,7 @@ import {
   VideoCameraIcon,
   TrophyIcon,
 } from "@heroicons/react/24/outline";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 
 interface MovieProps {
   tokens: TokenDetailResponse[];
@@ -69,10 +69,8 @@ export default function Movie({ tokens, isLoading, error, onOpenModal }: MoviePr
   const playDubbing = (videoId: string) => {
     setPlayingVideo(videoId);
     const currentModalId = selectedVideoId;
-    router.push({ 
-      pathname: '/detail/' + videoId, 
-      query: currentModalId ? { modalId: currentModalId } : undefined 
-    });
+    const query = currentModalId ? `?modalId=${currentModalId}` : '';
+    router.push(`/detail/${videoId}${query}`);
   };
 
   const stopDubbing = () => {

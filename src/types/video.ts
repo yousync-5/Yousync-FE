@@ -22,4 +22,4 @@ export interface MovieItemProps {
   onPlay?: (youtubeId: string) => void;
   onOpenModal?: (youtubeId: string) => void;
   onStop?: () => void;
-}
+} 
