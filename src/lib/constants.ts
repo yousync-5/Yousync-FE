@@ -2,6 +2,10 @@
 export const API_ENDPOINTS = {
   BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
   TOKENS: '/tokens',
+  AUTH: {
+    REFRESH: '/auth/refresh',
+    LOGOUT: '/auth/logout',
+  },
 } as const;
 
 // 애플리케이션 상수

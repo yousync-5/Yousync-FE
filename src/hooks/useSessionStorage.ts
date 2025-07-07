@@ -11,9 +11,36 @@ export function useSessionStorage<T>(key: string, initialValue: T) {
     
     try {
       const item = window.sessionStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
+      if (!item) return initialValue;
+      
+      // null, undefined 체크
+      if (item === 'null' || item === 'undefined') return initialValue;
+      
+      // 빈 문자열 체크
+      if (item === '""' || item === "''") return initialValue;
+      
+      // 문자열인지 JSON인지 판단
+      if (item.startsWith('{') || item.startsWith('[')) {
+        // JSON 객체나 배열인 경우
+        try {
+          const parsed = JSON.parse(item);
+          return parsed;
+        } catch (jsonError) {
+          console.error(`Error parsing JSON for key "${key}":`, jsonError);
+          return initialValue;
+        }
+      } else {
+        // 일반 문자열인 경우
+        return item as T;
+      }
     } catch (error) {
       console.error(`Error reading sessionStorage key "${key}":`, error);
+      // 에러 발생 시 해당 키를 삭제
+      try {
+        window.sessionStorage.removeItem(key);
+      } catch (removeError) {
+        console.error(`Error removing invalid sessionStorage key "${key}":`, removeError);
+      }
       return initialValue;
     }
   });

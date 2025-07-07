@@ -3,20 +3,34 @@
 import { useState, useEffect } from "react";
 import MovieDetailModal from "@/components/modal/MovieDetailModal";
 import { useVideos } from "@/hooks/useVideos";
+import { useRecentVideos } from "@/hooks/useRecentVideos";
 import Movie from "@/components/movie/Movie";
+import RecentWatchedVideos from "@/components/RecentWatchedVideos";
 import type { TokenDetailResponse } from "@/types/pitch";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSessionStorage } from "@/hooks/useSessionStorage";
 
 export default function Home() {
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [modalId, setModalId, removeModalId] = useSessionStorage<string | null>('modalId', null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   
   // useVideos: TokenDetailResponse[]
   const { data: tokens = [], isLoading, error } = useVideos();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // 로그인 상태 확인
+  useEffect(() => {
+    const accessToken = localStorage.getItem('access_token');
+    setIsLoggedIn(!!accessToken);
+    
+    // 디버깅 정보
+    console.log('홈페이지 로드 - 토큰 상태:', accessToken ? '있음' : '없음');
+    if (accessToken) {
+      console.log('토큰 길이:', accessToken.length);
+      console.log('토큰 (처음 20자):', accessToken.substring(0, 20) + '...');
+    }
+  }, []);
 
   // openModal 함수를 먼저 정의
   const openModal = (youtubeId: string) => {
@@ -31,29 +45,16 @@ export default function Home() {
     setHoverTimeout(timeout);
   };
 
-  // sessionStorage에서 modalId 확인 및 쿼리스트링에서 modalId 확인
+  // sessionStorage에서 modalId 확인
   useEffect(() => {
-    if (modalId) {
-      openModal(modalId);
-      removeModalId(); // 사용 후 제거
-      return;
+    if (typeof window !== 'undefined') {
+      const modalId = sessionStorage.getItem('modalId');
+      if (modalId) {
+        openModal(modalId);
+        sessionStorage.removeItem('modalId'); // 사용 후 제거
+      }
     }
-    
-    // 쿼리스트링에서 modalId 확인 (기존 방식 유지)
-    if (searchParams.get('modalId')) {
-      const modalId = searchParams.get('modalId') as string;
-      openModal(modalId);
-      // URL에서 modalId 쿼리스트링 제거
-      router.replace('/');
-    }
-  }, [searchParams, router, modalId, removeModalId]);
-
-  // 카드구성
-  const videos = tokens.map(({ id, youtubeId, actor_name }) => ({
-    videoId: id,
-    youtubeId,
-    actor_name,
-  }));
+  }, []);
 
   // 모달 tokenData는 전체 TokenDetailResponse에서 찾음
   const selectedTokenData: TokenDetailResponse | undefined =
@@ -63,6 +64,18 @@ export default function Home() {
 
   return (
     <div className="bg-neutral-950 text-white px-6 py-4 font-sans overflow-x-hidden min-h-full flex flex-col">
+      {/* 헤더 */}
+        <h1 className="text-2xl font-bold">YouSync</h1>
+
+      {/* 최근 시청한 영상 섹션 (로그인된 경우만) */}
+      {isLoggedIn && (
+        <div className="mb-8">
+          <RecentWatchedVideos 
+            onVideoClick={openModal}
+          />
+        </div>
+      )}
+
       {/* Videos */}
       {isLoading && <div>로딩중...</div>}
       {error && <div>에러 발생!</div>}

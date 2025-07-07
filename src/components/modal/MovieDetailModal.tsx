@@ -31,8 +31,9 @@ export default function MovieDetailModal({
   ];
 
   const handleDubbingClick = () => {
-    // Next.js의 replace로 히스토리에 남기지 않고 이동
-    router.replace(`/detail/${tokenData.id}?modalId=${youtubeId}`);
+    // sessionStorage에 modalId 저장하고 더빙 페이지로 이동
+    sessionStorage.setItem('modalId', youtubeId);
+    router.push(`/detail/${tokenData.id}`);
   };
 
   return (

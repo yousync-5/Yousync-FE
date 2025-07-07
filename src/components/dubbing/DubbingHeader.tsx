@@ -13,15 +13,13 @@ export default function DubbingHeader({ title, category, actorName }: DubbingHea
   const searchParams = useSearchParams();
 
   const handleBackClick = () => {
-    // 쿼리 파라미터에서 modalId 확인
-    const modalId = searchParams.get('modalId');
-    if (modalId) {
-      // modalId가 있으면 sessionStorage에 저장하고 홈페이지로 이동
-      sessionStorage.setItem('modalId', modalId);
-      router.replace('/');
-    } else {
-      router.back();
+    // 현재 페이지의 videoId를 sessionStorage에 저장
+    const videoId = searchParams.get('videoId');
+    if (videoId) {
+      sessionStorage.setItem('modalId', videoId);
     }
+    // 홈페이지로 이동
+    router.push('/');
   };
 
   return (
