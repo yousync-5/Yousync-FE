@@ -1,3 +1,4 @@
+//이해완료
 'use client';
 
 import { useState, useEffect } from "react";
@@ -75,7 +76,7 @@ export default function Home() {
           onOpenModal={openModal}
         />
       )}
-
+      {/* 모달 */}
       {/* Modal */}
       {selectedVideoId && selectedTokenData && (
         <MovieDetailModal

@@ -88,8 +88,17 @@ export default function ServerPitchGraph({
   const minY = Math.min(...yValues);
   const maxY = Math.max(...yValues);
   const getY = (y: number) => {
+    // 유효하지 않은 값 체크
+    if (!y || isNaN(y) || !isFinite(y)) return 20;
+    
     if (maxY === minY) return 20; // flat line
-    return 40 - ((y - minY) / (maxY - minY)) * 40;
+    
+    const scaledY = 40 - ((y - minY) / (maxY - minY)) * 40;
+    
+    // 결과값이 유효한지 체크
+    if (isNaN(scaledY) || !isFinite(scaledY)) return 20;
+    
+    return Math.max(0, Math.min(40, scaledY)); // 0-40 범위로 제한
   };
 
   if (error) {
@@ -100,8 +109,16 @@ export default function ServerPitchGraph({
     );
   }
 
+  // 유효한 데이터만 필터링
+  const validFilteredData = filteredData.filter(point => 
+    point && 
+    typeof point.y === 'number' && 
+    !isNaN(point.y) && 
+    isFinite(point.y)
+  );
+
   // 데이터가 없으면 빈 그래프 표시
-  if (filteredData.length === 0) {
+  if (validFilteredData.length === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
         피치 데이터 없음
@@ -119,8 +136,8 @@ export default function ServerPitchGraph({
           </linearGradient>
         </defs>
         <path
-          d={`M 0,${getY(filteredData[0].y)} ${filteredData.map((point, index) => 
-            `L ${(index / (filteredData.length - 1)) * 100},${getY(point.y)}`
+          d={`M 0,${getY(validFilteredData[0].y)} ${validFilteredData.map((point, index) => 
+            `L ${(index / (validFilteredData.length - 1)) * 100},${getY(point.y)}`
           ).join(' ')}`}
           stroke="#10B981"
           strokeWidth="2"
@@ -129,8 +146,8 @@ export default function ServerPitchGraph({
           strokeLinejoin="round"
         />
         <path
-          d={`M 0,${getY(filteredData[0].y)} ${filteredData.map((point, index) => 
-            `L ${(index / (filteredData.length - 1)) * 100},${getY(point.y)}`
+          d={`M 0,${getY(validFilteredData[0].y)} ${validFilteredData.map((point, index) => 
+            `L ${(index / (validFilteredData.length - 1)) * 100},${getY(point.y)}`
           ).join(' ')} L 100,40 L 0,40 Z`}
           fill="url(#pitchGradient)"
         />

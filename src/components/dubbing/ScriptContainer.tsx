@@ -41,7 +41,7 @@ const ScriptContainerComponent = ({
     // duration 후에 구간 시작으로 이동 + 3초 멈춤 + 다시 재생
     const timeOut = setTimeout(() => {
       playerRef.current?.seekTo(caption.start_time, true);
-      playerRef.current?.pauseVideo();
+      // playerRef.current?.pauseVideo(); // 자동 정지 비활성화
   
       // 3초 후에 다시 재생
       setShowTimer(true);

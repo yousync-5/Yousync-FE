@@ -29,20 +29,42 @@ export function useVoiceRecorder() {
 
   // Blob(녹음된 오디오)를 Promise로 반환, 녹음이 안된 경우에는 null 반환
   const stopRecording = async (idx: number): Promise<Blob | null> => {
+    console.log('[DEBUG] stopRecording called', idx);
     return new Promise((resolve) => {
-      if (!mediaRecorderRef.current) return resolve(null);// 녹음기가 없는 상태면 null 반환, 종료
-      
-      mediaRecorderRef.current.onstop = () => {
-        // 오디오 데이터 조각들(chunks)를 하나로 합쳐 .wav 형식의 Blob로 만듦
-        const blob = new Blob(chunksRef.current, { type: 'audio/wav' }); 
-        console.log('🎧 Blob 생성 완료:', blob);
-
-        // allBlobsRef.current.push(blob);// 각 녹음 저장
-        allBlobsRef.current[idx] = blob; //덮어쓰기
-        resolve(blob); // Promise 성공적으로 종료, Blob반환
+      if (!mediaRecorderRef.current) {
+        console.warn('[WARN] stopRecording: mediaRecorderRef.current is null');
         setRecording(false);
+        return resolve(null);
+      }
+      mediaRecorderRef.current.onstop = () => {
+        console.log('[DEBUG] mediaRecorderRef.current.onstop fired');
+        try {
+          const blob = new Blob(chunksRef.current, { type: 'audio/wav' });
+          allBlobsRef.current[idx] = blob;
+          resolve(blob);
+          setRecording(false);
+          console.log('[DEBUG] setRecording(false) called in onstop');
+        } catch (e) {
+          console.error('[ERROR] onstop handler failed', e);
+          setRecording(false);
+          resolve(null);
+        }
       };
-      mediaRecorderRef.current.stop();// 녹음 중지 , 그 결과 onstop이벤트 실행
+      try {
+        mediaRecorderRef.current.stop();
+        console.log('[DEBUG] mediaRecorderRef.current.stop() called');
+      } catch (e) {
+        console.error('[ERROR] mediaRecorderRef.current.stop() threw', e);
+        setRecording(false);
+        resolve(null);
+      }
+      setTimeout(() => {
+        if (recording) {
+          console.warn('[WARN] stopRecording: onstop not called in 1s, forcing setRecording(false)');
+          setRecording(false);
+          resolve(null);
+        }
+      }, 1000);
     });
   };
 
