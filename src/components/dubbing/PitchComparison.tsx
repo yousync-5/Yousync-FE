@@ -7,7 +7,6 @@ import { VideoPlayerRef } from "./VideoPlayer";
 import { useDubbingRecorder } from '@/hooks/useDubbingRecorder';
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { useAudioStore } from '@/store/useAudioStore';
-import VideoPlayer from "./VideoPlayer";
 
 
 interface PitchComparisonProps {
@@ -135,17 +134,13 @@ const PitchComparison = forwardRef<any, PitchComparisonProps>(function PitchComp
 
   return (
     <div className="bg-gray-900 rounded-xl p-6 h-[28em]">
-      <h3 className="text-lg font-semibold mb-4">Pitch Comparison</h3>
       <div className="space-y-4">
-        <div>
-          <div className="text-sm text-gray-400 mb-2">Your Pitch</div>
-          <div className="w-full h-16 bg-gray-800 rounded">
+        {/* 두 그래프를 한 컨테이너에서 겹쳐서 출력 */}
+        <div className="relative w-full h-80 bg-gray-800 rounded">
+          <div className="absolute top-0 left-0 w-full h-full">
             <MyPitchGraph currentIdx={currentScriptIndex} />
           </div>
-        </div>
-        <div>
-          <div className="text-sm text-gray-400 mb-2">Original Pitch</div>
-          <div className="w-full h-16 bg-gray-800 rounded">
+          <div className="absolute top-0 left-0 w-full h-full">
             <ServerPitchGraph
               captionState={{ currentIdx: currentScriptIndex, captions: captions }}
               token_id={tokenId}
