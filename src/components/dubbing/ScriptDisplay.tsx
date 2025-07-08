@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 import { VideoPlayerRef } from "./VideoPlayer";
+import PronunciationTimingGuide from "./PronunciationTimingGuide";
 
 interface ScriptDisplayProps {
   captions: Array<{
@@ -41,6 +42,8 @@ export default function ScriptDisplay({
 }: ScriptDisplayProps) {
 
   const [animatedProgress, setAnimatedProgress] = useState(0);
+  const [sentenceProgress, setSentenceProgress] = useState(0);
+  const [sentenceAnimatedProgress, setSentenceAnimatedProgress] = useState(0);
 
   // 현재 시간을 분:초 형식으로 변환
   const formatTime = (seconds: number) => {
@@ -95,23 +98,30 @@ export default function ScriptDisplay({
     );
     
     let accumulatedProgress = 0;
-    
     for (const word of currentWords) {
       const wordDuration = word.end_time - word.start_time;
       const wordWeight = wordDuration / totalDuration;
-      
       if (currentVideoTime >= word.start_time && currentVideoTime <= word.end_time) {
         // 현재 단어 내에서의 진행률
         const wordProgress = (currentVideoTime - word.start_time) / wordDuration;
         return accumulatedProgress + (wordProgress * wordWeight);
       }
-      
       if (currentVideoTime > word.end_time) {
         accumulatedProgress += wordWeight;
       }
     }
-    
     return accumulatedProgress;
+  };
+
+  // 전체 문장 길이 기준 진행률 계산 (word 무시)
+  const getSentenceOnlyProgress = () => {
+    const currentScript = captions[currentScriptIndex];
+    if (!currentScript) return 0;
+    
+    const sentenceDuration = currentScript.end_time - currentScript.start_time;
+    const elapsedInSentence = currentVideoTime - currentScript.start_time;
+    
+    return Math.min(Math.max(elapsedInSentence / sentenceDuration, 0), 1);
   };
 
   // 부드러운 애니메이션 함수
@@ -140,9 +150,48 @@ export default function ScriptDisplay({
 
   // 진행률이 변경될 때마다 애니메이션 실행
   useEffect(() => {
-    const targetProgress = getWeightedProgress();
+    const targetProgress = getWeightedProgress(); // word 기준
     animateProgress(targetProgress);
   }, [currentVideoTime, currentScriptIndex, animateProgress]);
+
+  // 문장 단위 부드러운 애니메이션 함수
+  const animateSentenceProgress = useCallback((targetProgress: number) => {
+    const startProgress = sentenceAnimatedProgress;
+    const startTime = performance.now();
+    const duration = 300; // 0.3초
+
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+      const currentValue = startProgress + (targetProgress - startProgress) * easeOutCubic;
+      setSentenceAnimatedProgress(currentValue);
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+    requestAnimationFrame(animate);
+  }, [sentenceAnimatedProgress]);
+
+  // 문장 단위 진행률 애니메이션 (아래 박스용)
+  useEffect(() => {
+    const targetSentenceProgress = getSentenceOnlyProgress();
+    animateSentenceProgress(targetSentenceProgress);
+  }, [currentVideoTime, animateSentenceProgress]);
+
+  // 스크립트 인덱스가 바뀔 때 진행률을 0으로 리셋하고, 다음 프레임에서만 애니메이션 재개
+  useEffect(() => {
+    setAnimatedProgress(0);
+    setSentenceAnimatedProgress(0);
+    // 다음 tick에서만 애니메이션 재개
+    setTimeout(() => {
+      const targetProgress = getWeightedProgress();
+      animateProgress(targetProgress);
+      const targetSentenceProgress = getSentenceOnlyProgress();
+      animateSentenceProgress(targetSentenceProgress);
+    }, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentScriptIndex]);
 
   // word 단위로 스크립트 렌더링
   const renderScriptWithWords = () => {
@@ -220,9 +269,6 @@ export default function ScriptDisplay({
         </div>
 
         <div className="flex flex-col items-center space-y-3">
-
-
-
           {/* 스크립트 본문 + 내비게이션 */}
           <div className="flex items-center space-x-4 w-full">
             <button
@@ -245,6 +291,11 @@ export default function ScriptDisplay({
             >
               {renderScriptWithWords()}
             </div>
+             
+
+              
+         
+
 
             <button
               onClick={() => handleScriptChange(Math.min(captions.length - 1, currentScriptIndex + 1))}
@@ -258,63 +309,15 @@ export default function ScriptDisplay({
               <ChevronRightIcon className="w-5 h-5" />
             </button>
           </div>
-
-          {/* 🎵 노래방 악보 스타일 타이밍 가이드 */}
+          {/* 🎯 직관적 타이밍 가이드 */}
           {currentWords && currentWords.length > 0 && (
-            <div className="w-full bg-gray-800 rounded-lg p-4 border border-gray-700">
-              <h4 className="text-sm font-semibold text-cyan-400 mb-3 text-center">
-                🎵 발음 타이밍 가이드
-              </h4>
-              <div className="flex items-center justify-center space-x-2 mb-3">
-                {currentWords.map((word, index) => {
-                  const isCurrent = currentVideoTime >= word.start_time && currentVideoTime <= word.end_time;
-                  const isUpcoming = currentVideoTime < word.start_time;
-                  const isCompleted = currentVideoTime > word.end_time;
-                  
-                  return (
-                    <div key={word.id} className="flex flex-col items-center">
-                      {/* 단어 */}
-                      <span className={`text-sm font-medium mb-1 ${
-                        isCurrent ? 'text-yellow-400' : 
-                        isCompleted ? 'text-green-400' : 
-                        isUpcoming ? 'text-gray-400' : 'text-white'
-                      }`}>
-                        {word.word}
-                      </span>
-                      
-                      {/* 타이밍 바 */}
-                      <div className="w-8 h-2 bg-gray-700 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full transition-all duration-200 ${
-                            isCurrent ? 'bg-yellow-400' : 
-                            isCompleted ? 'bg-green-400' : 
-                            isUpcoming ? 'bg-gray-500' : 'bg-gray-600'
-                          }`}
-                          style={{
-                            width: isCurrent ? 
-                              `${((currentVideoTime - word.start_time) / (word.end_time - word.start_time)) * 100}%` :
-                              isCompleted ? '100%' : '0%'
-                          }}
-                        />
-                      </div>
-                      
-                      {/* 시간 표시 */}
-                      <span className="text-xs text-gray-400 mt-1">
-                        {word.start_time.toFixed(1)}s
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-              
-              {/* 현재 진행 상태 */}
-              <div className="text-center text-xs text-gray-300">
-                현재: {currentVideoTime.toFixed(1)}s / 
-                총 길이: {(captions[currentScriptIndex]?.end_time - captions[currentScriptIndex]?.start_time).toFixed(1)}s
-              </div>
-            </div>
+            <PronunciationTimingGuide
+              captions={captions}
+              currentScriptIndex={currentScriptIndex}
+              currentVideoTime={currentVideoTime}
+              currentWords={currentWords}
+            />
           )}
-
         </div>
       </div>
     </div>

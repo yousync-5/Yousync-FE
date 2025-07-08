@@ -62,6 +62,8 @@ export default function TestResultPage() {
   const [score, setScore] = useState<number | null>(null);
   const jobId = useJobIdStore((state) => state.jobId);
   const sseRef = useRef<EventSource | null>(null);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [isVideoEnded, setIsVideoEnded] = useState(false);
 
   // 오디오 스트림 초기화
   useAudioStream();
@@ -145,21 +147,6 @@ export default function TestResultPage() {
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${numericId}`
       );
       setTokenData(response.data);
-
-      // word 데이터 출력
-      console.log('=== Word 데이터 출력 ===');
-      response.data.scripts?.forEach((script, scriptIndex) => {
-        console.log(`스크립트 ${scriptIndex + 1}: "${script.script}"`);
-        if (script.words && script.words.length > 0) {
-          console.log('단어별 데이터:');
-          script.words.forEach((word, wordIndex) => {
-            console.log(`  ${wordIndex + 1}. "${word.word}" (${word.start_time}s - ${word.end_time}s, 확률: ${word.probability})`);
-          });
-        } else {
-          console.log('  - word 데이터 없음');
-        }
-        console.log('---');
-      });
 
       
       // 토큰 데이터를 기반으로 result 생성
@@ -292,6 +279,24 @@ export default function TestResultPage() {
     };
   }, [result?.captions, currentScriptIndex]);
 
+  // 현재 스크립트의 단어 데이터 추출
+  const currentWords = tokenData?.scripts?.[currentScriptIndex]?.words || [];
+
+  // 스크립트 인덱스가 바뀔 때 영상 시간도 새 문장 시작으로 맞춤
+  useEffect(() => {
+    if (result?.captions && result.captions[currentScriptIndex]) {
+      setCurrentVideoTime(result.captions[currentScriptIndex].start_time);
+    }
+  }, [currentScriptIndex, result?.captions]);
+
+  const handlePlay = () => {
+    setIsVideoPlaying(true);
+  };
+
+  const handlePause = () => {
+    setIsVideoPlaying(false);
+  };
+
   if (loading) return <div>Loading...</div>;
   if (!result) return <div>No result found.</div>;
 
@@ -322,6 +327,8 @@ export default function TestResultPage() {
                 console.log('[DEBUG] 영상 endTime 도달 → PitchComparison에게 정지 요청');
                 pitchRef.current?.handleExternalStop?.();
               }}
+              onPlay={handlePlay}
+              onPause={handlePause}
             />
 
             {/* Script Display */}
@@ -332,10 +339,8 @@ export default function TestResultPage() {
               currentVideoTime={currentVideoTime}
               playbackRange={getPlaybackRange()}
               videoPlayerRef={videoPlayerRef}
-              currentWords={tokenData?.scripts[currentScriptIndex]?.words || []}
+              currentWords={currentWords}
             />
-
-
           </div>
 
           {/* Right Column - Pitch Comparison */}
@@ -348,6 +353,9 @@ export default function TestResultPage() {
               serverPitchData={serverPitchData}
               videoPlayerRef={videoPlayerRef}
               onNextScript={setCurrentScriptIndex}
+              onPlay={handlePlay}
+              onPause={handlePause}
+              isVideoPlaying={isVideoPlaying}
             />
           </div>
         </div>

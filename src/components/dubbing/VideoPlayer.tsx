@@ -3,6 +3,7 @@
 
 import YouTube from "react-youtube";
 import { useRef, useEffect, useImperativeHandle, forwardRef } from "react";
+import { useState } from "react";
 
 
 interface VideoPlayerProps {
@@ -13,6 +14,9 @@ interface VideoPlayerProps {
   disableAutoPause?: boolean;
   onEndTimeReached?: () => void;
   onPause?: () => void;
+  onPlay?: () => void;
+  overlayType?: 'full' | 'header'; // 오버레이 타입
+  overlayHeight?: number; // header 오버레이 높이(px)
 }
 
 export interface VideoPlayerRef {
@@ -23,7 +27,7 @@ export interface VideoPlayerRef {
 }
 
 const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
-  ({ videoId, onTimeUpdate, startTime = 0, endTime, disableAutoPause = false, onEndTimeReached, onPause }, ref) => {
+  ({ videoId, onTimeUpdate, startTime = 0, endTime, disableAutoPause = false, onEndTimeReached, onPause, onPlay, overlayType = 'header', overlayHeight = 48 }, ref) => {
     const playerRef = useRef<any>(null);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const initialStartTimeRef = useRef(startTime);
@@ -85,8 +89,24 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
       };
     }, []);
 
+    // 오버레이 상태
+    const [showOverlay, setShowOverlay] = useState(true);
+    const [playerReady, setPlayerReady] = useState(false);
+    // 4초 후 오버레이 해제
+    useEffect(() => {
+      const timer = setTimeout(() => setShowOverlay(false), 4000);
+      return () => clearTimeout(timer);
+    }, []);
+    // 오버레이가 사라지고, 플레이어가 준비된 경우 자동재생
+    useEffect(() => {
+      if (!showOverlay && playerReady && playerRef.current) {
+        playerRef.current.playVideo();
+      }
+    }, [showOverlay, playerReady]);
+
     const onReady = (event: any) => {
       playerRef.current = event.target;
+      setPlayerReady(true);
       
       // 시작 시간이 설정되어 있으면 해당 시간부터 재생
       if (startTime > 0) {
@@ -107,6 +127,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
       // 재생 중일 때만 시간 업데이트
       if (event.data === 1) { // 1 = 재생 중
         console.log('영상 재생 시작 - 시간 업데이트 인터벌 시작');
+        if (typeof onPlay === 'function') onPlay();
         intervalRef.current = setInterval(() => {
           if (playerRef.current && onTimeUpdate) {
             const currentTime = playerRef.current.getCurrentTime();
@@ -125,7 +146,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
           clearInterval(intervalRef.current);
           intervalRef.current = null;
         }
-        if (onPause) onPause();
+        if (typeof onPause === 'function') onPause();
       }
     };
 
@@ -144,13 +165,26 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
               height: "100%",
               playerVars: {
                 autoplay: 0,
-                controls: 1,
+                controls: 0,
                 modestbranding: 1,
                 rel: 0,
                 showinfo: 0,
+                iv_load_policy: 3,
+                disablekb: 1,
+                fs: 0,
                 start: initialStartTimeRef.current, // 시작 시간 설정
               },
             }}
+          />
+          {/* 상단 오버레이 (텍스트/공유/타이틀 등 가림) */}
+          <div
+            className="absolute top-0 left-0 w-full z-20 pointer-events-none"
+            style={{ height: 80, background: '#000' }}
+          />
+          {/* 하단 오버레이 (유튜브 로고 가림, 더 넓게/왼쪽으로 이동) */}
+          <div
+            className="absolute bottom-0 z-20 pointer-events-none"
+            style={{ right: 15, width: 400, height: 48, background: '#000' }}
           />
         </div>
       </div>
