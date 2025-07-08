@@ -46,7 +46,10 @@ export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
       // RMS 계산 -> 작으면 무음으로 판단
       const rms = Math.sqrt(buffer.reduce((sum, x) => sum + x * x, 0) / buffer.length);
       if (rms < 0.01) {
+<<<<<<< HEAD
         console.log('음성 입력이 없습니다. (RMS:', rms, ')');
+=======
+>>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
         return;
       }
 
@@ -54,7 +57,10 @@ export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
 
       // 사람 목소리 범위 필터(80~1000Hz)
       if(pitch && pitch > 80 && pitch < 1000){
+<<<<<<< HEAD
         console.log('피치 감지됨:', pitch, 'Hz');
+=======
+>>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
         setMyPitch(pitch);
         
         setPitchData(prev => {
@@ -97,8 +103,22 @@ export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
 
   // y값 스케일링 (동적 범위 사용)
   const getY = (y: number) => {
+<<<<<<< HEAD
     if (dynamicRange.max === dynamicRange.min) return 20; // flat line
     return 40 - ((y - dynamicRange.min) / (dynamicRange.max - dynamicRange.min)) * 40;
+=======
+    // 유효하지 않은 값 체크
+    if (!y || isNaN(y) || !isFinite(y)) return 20;
+    
+    if (dynamicRange.max === dynamicRange.min) return 20; // flat line
+    
+    const scaledY = 40 - ((y - dynamicRange.min) / (dynamicRange.max - dynamicRange.min)) * 40;
+    
+    // 결과값이 유효한지 체크
+    if (isNaN(scaledY) || !isFinite(scaledY)) return 20;
+    
+    return Math.max(0, Math.min(40, scaledY)); // 0-40 범위로 제한
+>>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
   };
 
   // 데이터가 없으면 빈 그래프 표시
@@ -110,6 +130,25 @@ export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
     );
   }
 
+<<<<<<< HEAD
+=======
+  // 유효한 데이터만 필터링
+  const validPitchData = pitchData.filter(point => 
+    point && 
+    typeof point.y === 'number' && 
+    !isNaN(point.y) && 
+    isFinite(point.y)
+  );
+
+  if (validPitchData.length === 0) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
+        유효한 피치 데이터 없음
+      </div>
+    );
+  }
+
+>>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
   return (
     <div className="w-full h-full relative">
       <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 40" preserveAspectRatio="none">
@@ -120,8 +159,13 @@ export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
           </linearGradient>
         </defs>
         <path
+<<<<<<< HEAD
           d={`M 0,${getY(pitchData[0].y)} ${pitchData.map((point, index) => 
             `L ${(index / (pitchData.length - 1)) * 100},${getY(point.y)}`
+=======
+          d={`M 0,${getY(validPitchData[0].y)} ${validPitchData.map((point, index) => 
+            `L ${(index / (validPitchData.length - 1)) * 100},${getY(point.y)}`
+>>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
           ).join(' ')}`}
           stroke="#3B82F6"
           strokeWidth="2"
@@ -130,8 +174,13 @@ export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
           strokeLinejoin="round"
         />
         <path
+<<<<<<< HEAD
           d={`M 0,${getY(pitchData[0].y)} ${pitchData.map((point, index) => 
             `L ${(index / (pitchData.length - 1)) * 100},${getY(point.y)}`
+=======
+          d={`M 0,${getY(validPitchData[0].y)} ${validPitchData.map((point, index) => 
+            `L ${(index / (validPitchData.length - 1)) * 100},${getY(point.y)}`
+>>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
           ).join(' ')} L 100,40 L 0,40 Z`}
           fill="url(#myPitchGradient)"
         />

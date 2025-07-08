@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+<<<<<<< HEAD
 import { useParams } from "next/navigation";
+=======
+import { useParams, useSearchParams } from "next/navigation";
+>>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
 import {
   StarIcon,
   ChartBarIcon,
@@ -18,7 +22,11 @@ import TestResultAnalysisSection from "@/components/result/TestResultAnalysisSec
 import { Toaster } from 'react-hot-toast';
 import toast from 'react-hot-toast';
 import DubbingHeader from "@/components/dubbing/DubbingHeader";
+<<<<<<< HEAD
 import VideoPlayer from "@/components/dubbing/VideoPlayer";
+=======
+import VideoPlayer, { VideoPlayerRef } from "@/components/dubbing/VideoPlayer";
+>>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
 import ScriptDisplay from "@/components/dubbing/ScriptDisplay";
 import PitchComparison from "@/components/dubbing/PitchComparison";
 
@@ -45,6 +53,11 @@ interface TestResult {
 export default function TestResultPage() {
   const params = useParams();
   const id = params.id as string;
+<<<<<<< HEAD
+=======
+  const searchParams = useSearchParams();
+  const modalId = searchParams.get("modalId");
+>>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
   
   const [result, setResult] = useState<TestResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,11 +65,82 @@ export default function TestResultPage() {
   const [currentScriptIndex, setCurrentScriptIndex] = useState(0);
   const [tokenData, setTokenData] = useState<TokenDetailResponse | null>(null);
   const [serverPitchData, setServerPitchData] = useState<ServerPitch[]>([]);
+<<<<<<< HEAD
   const resultsRef = useRef<HTMLDivElement>(null);
+=======
+  const [currentVideoTime, setCurrentVideoTime] = useState(0);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const videoPlayerRef = useRef<VideoPlayerRef | null>(null);
+
+>>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
 
   // 오디오 스트림 초기화
   useAudioStream();
 
+<<<<<<< HEAD
+=======
+
+
+  // 현재 시간에 맞는 스크립트 인덱스 찾기
+  const findScriptIndexByTime = useCallback((time: number) => {
+    if (!result?.captions) return 0;
+    
+    // 현재 시간이 마지막 문장의 end_time을 초과하면 마지막 문장 인덱스 반환
+    const lastIndex = result.captions.length - 1;
+    const lastScript = result.captions[lastIndex];
+    
+    if (lastScript && time > lastScript.end_time) {
+      return lastIndex;
+    }
+    
+    // 일반적인 경우: 현재 시간에 맞는 스크립트 찾기
+    const foundIndex = result.captions.findIndex(script => 
+      time >= script.start_time && time <= script.end_time
+    );
+    
+    // 찾지 못한 경우 -1 대신 0 반환 (첫 번째 문장)
+    return foundIndex !== -1 ? foundIndex : 0;
+  }, [result?.captions]);
+
+  // 재생 범위 계산 (첫 번째 문장 시작 ~ 마지막 문장 종료)
+  const getPlaybackRange = useCallback(() => {
+    if (!result?.captions || result.captions.length === 0) {
+      return { startTime: 0, endTime: undefined };
+    }
+
+    const firstScript = result.captions[0];
+    const lastScript = result.captions[result.captions.length - 1];
+    
+    const range = {
+      startTime: firstScript?.start_time || 0,  // 첫 번째 문장 시작
+      endTime: lastScript?.end_time || undefined  // 마지막 문장 끝
+    };
+
+
+
+    return range;
+  }, [result?.captions]);
+
+  // 비디오 시간 업데이트 핸들러
+  const handleTimeUpdate = useCallback((currentTime: number) => {
+    setCurrentVideoTime(currentTime);
+
+    // endTime에 도달해서 멈춘 경우, 인덱스 변경하지 않음
+    const currentScript = result?.captions[currentScriptIndex];
+    if (currentScript && currentTime >= currentScript.end_time) {
+      return;
+    }
+
+    // 현재 시간에 맞는 스크립트 찾기
+    const newScriptIndex = findScriptIndexByTime(currentTime);
+
+    // 스크립트 인덱스가 변경되었고, 유효한 인덱스라면 업데이트
+    if (newScriptIndex !== -1 && newScriptIndex !== currentScriptIndex) {
+      setCurrentScriptIndex(newScriptIndex);
+    }
+  }, [currentScriptIndex, findScriptIndexByTime, result?.captions]);
+
+>>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
   // 서버 피치 데이터 가져오기
   const fetchServerPitchData = useCallback(async (tokenId: string) => {
     try {
@@ -65,7 +149,11 @@ export default function TestResultPage() {
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${numericId}`
       );
       setServerPitchData(response.data);
+<<<<<<< HEAD
       console.log('서버 피치 데이터:', response.data);
+=======
+
+>>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
     } catch (error) {
       console.error('서버 피치 데이터 가져오기 실패:', error);
     }
@@ -79,7 +167,11 @@ export default function TestResultPage() {
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${numericId}`
       );
       setTokenData(response.data);
+<<<<<<< HEAD
       console.log('토큰 데이터:', response.data);
+=======
+
+>>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
       
       // 토큰 데이터를 기반으로 result 생성
       const token = response.data;
@@ -145,9 +237,19 @@ export default function TestResultPage() {
     fetchTokenData(id);
     fetchServerPitchData(id);
     
+<<<<<<< HEAD
     setLoading(false);
   }, [id, fetchTokenData, fetchServerPitchData]);
 
+=======
+
+    
+    setLoading(false);
+  }, [id, fetchTokenData, fetchServerPitchData]);
+
+
+
+>>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
   const showResultsSection = useCallback(() => {
     setShowResults(true);
     setTimeout(() => {
@@ -158,6 +260,27 @@ export default function TestResultPage() {
     }, 100);
   }, []);
 
+<<<<<<< HEAD
+=======
+  // 현재 스크립트의 재생 범위 계산 (마지막 문장에서만 endTime 설정)
+  const getCurrentScriptPlaybackRange = useCallback(() => {
+    if (!result?.captions || result.captions.length === 0) {
+      return { startTime: 0, endTime: undefined };
+    }
+
+    const currentScript = result.captions[currentScriptIndex];
+    if (!currentScript) {
+      return { startTime: 0, endTime: undefined };
+    }
+
+    // 모든 문장에 대해 endTime 설정
+    return {
+      startTime: currentScript.start_time,
+      endTime: currentScript.end_time
+    };
+  }, [result?.captions, currentScriptIndex]);
+
+>>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
   if (loading) return <div>Loading...</div>;
   if (!result) return <div>No result found.</div>;
 
@@ -177,13 +300,30 @@ export default function TestResultPage() {
           {/* Left Column - Video & Script */}
           <div className="lg:col-span-2 space-y-6">
             {/* Video Player */}
+<<<<<<< HEAD
             <VideoPlayer videoId={result.movie.youtube_url.split("v=")[1]} />
+=======
+            <VideoPlayer 
+              videoId={result.movie.youtube_url.split("v=")[1]} 
+              onTimeUpdate={handleTimeUpdate}
+              startTime={getCurrentScriptPlaybackRange().startTime}
+              endTime={getCurrentScriptPlaybackRange().endTime}
+              disableAutoPause={true}
+              ref={videoPlayerRef}
+            />
+>>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
 
             {/* Script Display */}
             <ScriptDisplay 
               captions={result.captions}
               currentScriptIndex={currentScriptIndex}
               onScriptChange={setCurrentScriptIndex}
+<<<<<<< HEAD
+=======
+              currentVideoTime={currentVideoTime}
+              playbackRange={getPlaybackRange()}
+              videoPlayerRef={videoPlayerRef}
+>>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
             />
           </div>
 
@@ -194,6 +334,11 @@ export default function TestResultPage() {
               captions={result.captions}
               tokenId={id}
               serverPitchData={serverPitchData}
+<<<<<<< HEAD
+=======
+              videoPlayerRef={videoPlayerRef}
+              onNextScript={setCurrentScriptIndex}
+>>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
             />
           </div>
         </div>

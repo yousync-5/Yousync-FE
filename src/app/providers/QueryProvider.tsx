@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+//이해완료
+>>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
