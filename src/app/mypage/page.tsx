@@ -3,7 +3,6 @@
 import PageHeader from "@/components/mypage/PageHeader";
 import UserProfile from "@/components/mypage/UserProfile";
 import ShortsGrid from "@/components/mypage/ShortsGrid";
-import RecentVideos from "@/components/mypage/RecentVideos";
 import StatsGrid from "@/components/mypage/StatsGrid";
 
 const user = {
@@ -57,7 +56,7 @@ export default function MyPage() {
         </section>
 
         {/* 2. 최근 플레이한 비디오 */}
-        <RecentVideos videos={recentVideos} />
+        {/* TODO: Add a component to display recentVideos here, e.g. <RecentVideosGrid videos={recentVideos} /> */}
 
         {/* 3. 통계 */}
         <StatsGrid stats={stats} />

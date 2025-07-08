@@ -8,7 +8,7 @@ export const authService = {
   // 로그아웃
   async logout(): Promise<LogoutResponse> {
     try {
-      const response = await backendApi.post<LogoutResponse>('/auth/logout');
+      const response = await backendApi.post<LogoutResponse>('/auth/logout/');
       
       // 클라이언트 측에서도 토큰 제거
       if (typeof window !== 'undefined') {

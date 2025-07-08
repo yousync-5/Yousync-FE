@@ -26,12 +26,12 @@ export const NavBar: React.FC = () => {
     try {
       await authService.logout();
       setIsLoggedIn(false);
-      router.push('/login');
+      router.push('/');
     } catch (error) {
       console.error('로그아웃 중 오류 발생:', error);
       // 에러가 발생해도 로컬 상태는 업데이트
       setIsLoggedIn(false);
-      router.push('/login');
+      router.push('/');
     } finally {
       setIsLoggingOut(false);
     }
