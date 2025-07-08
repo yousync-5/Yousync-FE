@@ -5,7 +5,6 @@ import MovieDetailModal from "@/components/modal/MovieDetailModal";
 import { useVideos } from "@/hooks/useVideos";
 import { useRecentVideos } from "@/hooks/useRecentVideos";
 import Movie from "@/components/movie/Movie";
-import RecentWatchedVideos from "@/components/RecentWatchedVideos";
 import type { TokenDetailResponse } from "@/types/pitch";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -66,15 +65,6 @@ export default function Home() {
     <div className="bg-neutral-950 text-white px-6 py-4 font-sans overflow-x-hidden min-h-full flex flex-col">
       {/* 헤더 */}
         <h1 className="text-2xl font-bold">YouSync</h1>
-
-      {/* 최근 시청한 영상 섹션 (로그인된 경우만) */}
-      {isLoggedIn && (
-        <div className="mb-8">
-          <RecentWatchedVideos 
-            onVideoClick={openModal}
-          />
-        </div>
-      )}
 
       {/* Videos */}
       {isLoading && <div>로딩중...</div>}
