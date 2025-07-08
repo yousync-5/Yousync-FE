@@ -5,7 +5,7 @@ import { MyPitchGraph } from '@/components/graph/MyPitchGraph';
 import type { Caption } from "@/types/caption";
 import { VideoPlayerRef } from "./VideoPlayer";
 import { useDubbingRecorder } from '@/hooks/useDubbingRecorder';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { useAudioStore } from '@/store/useAudioStore';
 import VideoPlayer from "./VideoPlayer";
 
@@ -19,14 +19,14 @@ interface PitchComparisonProps {
   onNextScript?: (nextIndex: number) => void;
 }
 
-export default function PitchComparison({ 
+const PitchComparison = forwardRef<any, PitchComparisonProps>(function PitchComparison({ 
   currentScriptIndex, 
   captions, 
   tokenId, 
   serverPitchData,
   videoPlayerRef,
   onNextScript,
-}: PitchComparisonProps) {
+}: PitchComparisonProps, ref) {
 
   const {
     recording,
@@ -40,7 +40,7 @@ export default function PitchComparison({
     captions,
     tokenId,
     onUploadComplete: (success) => {
-      alert(success ? '녹음 업로드 성공!' : '녹음 업로드 실패!');
+      console.log(success ? '녹음 업로드 성공!' : '녹음 업로드 실패!');
     },
   });
 
@@ -79,34 +79,13 @@ export default function PitchComparison({
     }
   };
 
-  // --- 녹음 자동 종료 플래그 ---
-  const stoppedRef = useRef(false);
-  useEffect(() => {
-    if (!videoPlayerRef?.current) return;
-    if (recording) {
-      stoppedRef.current = false;
-    }
-    const interval = setInterval(() => {
-      const player = videoPlayerRef.current;
-      if (!player) {
-        console.error('[ERROR] videoPlayerRef.current is null');
-        return;
-      }
-      const currentTime = player.getCurrentTime();
-      const endTime = captions[currentScriptIndex]?.end_time;
-      if (recording && endTime !== undefined && currentTime >= endTime && !stoppedRef.current) {
-        console.log('[DEBUG] stopScriptRecording called', { currentScriptIndex, currentTime, endTime });
-        player.pauseVideo();
-        try {
-          stopScriptRecording(currentScriptIndex);
-        } catch (e) {
-          console.error('[ERROR] stopScriptRecording threw', e);
-        }
-        stoppedRef.current = true;
-      }
-    }, 100);
-    return () => clearInterval(interval);
-  }, [recording, currentScriptIndex, captions, videoPlayerRef, stopScriptRecording]);
+  // useImperativeHandle remains for external stop
+  useImperativeHandle(ref, () => ({
+    handleExternalStop: () => {
+      console.log('[DEBUG][handleExternalStop] 외부에서 녹음 중지 요청');
+      stopScriptRecording(currentScriptIndex);
+    },
+  }));
 
   useEffect(() => {
     if (allRecorded && !uploading) {
@@ -142,20 +121,6 @@ export default function PitchComparison({
     // ... (필요시 기존 로직 복구) ...
   };
 
-  useEffect(() => {
-    const logInterval = setInterval(() => {
-      console.log('[DEBUG][3s]', {
-        recording,
-        currentScriptIndex,
-        uploading,
-        allRecorded,
-        recordedScripts,
-        volume,
-      });
-    }, 3000);
-    return () => clearInterval(logInterval);
-  }, [recording, currentScriptIndex, uploading, allRecorded, recordedScripts, volume]);
-
   // recording 값이 바뀔 때만 로그 출력
   const prevRecordingRef = useRef(recording);
   useEffect(() => {
@@ -164,6 +129,9 @@ export default function PitchComparison({
       prevRecordingRef.current = recording;
     }
   }, [recording]);
+
+  
+
 
   return (
     <div className="bg-gray-900 rounded-xl p-6 h-[28em]">
@@ -241,4 +209,6 @@ export default function PitchComparison({
       </div>
     </div>
   );
-} 
+});
+
+export default PitchComparison; 

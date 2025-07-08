@@ -21,6 +21,7 @@ import DubbingHeader from "@/components/dubbing/DubbingHeader";
 import VideoPlayer, { VideoPlayerRef } from "@/components/dubbing/VideoPlayer";
 import ScriptDisplay from "@/components/dubbing/ScriptDisplay";
 import PitchComparison from "@/components/dubbing/PitchComparison";
+import { useJobIdStore } from '@/store/useAudioStore';
 
 interface TestResult {
   id: number;
@@ -57,12 +58,13 @@ export default function TestResultPage() {
   const [currentVideoTime, setCurrentVideoTime] = useState(0);
   const resultsRef = useRef<HTMLDivElement>(null);
   const videoPlayerRef = useRef<VideoPlayerRef | null>(null);
-
+  const pitchRef = useRef<any>(null);
+  const [score, setScore] = useState<number | null>(null);
+  const jobId = useJobIdStore((state) => state.jobId);
+  const sseRef = useRef<EventSource | null>(null);
 
   // 오디오 스트림 초기화
   useAudioStream();
-
-
 
   // 현재 시간에 맞는 스크립트 인덱스 찾기
   const findScriptIndexByTime = useCallback((time: number) => {
@@ -98,8 +100,6 @@ export default function TestResultPage() {
       startTime: firstScript?.start_time || 0,  // 첫 번째 문장 시작
       endTime: lastScript?.end_time || undefined  // 마지막 문장 끝
     };
-
-
 
     return range;
   }, [result?.captions]);
@@ -145,6 +145,21 @@ export default function TestResultPage() {
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${numericId}`
       );
       setTokenData(response.data);
+
+      // word 데이터 출력
+      console.log('=== Word 데이터 출력 ===');
+      response.data.scripts?.forEach((script, scriptIndex) => {
+        console.log(`스크립트 ${scriptIndex + 1}: "${script.script}"`);
+        if (script.words && script.words.length > 0) {
+          console.log('단어별 데이터:');
+          script.words.forEach((word, wordIndex) => {
+            console.log(`  ${wordIndex + 1}. "${word.word}" (${word.start_time}s - ${word.end_time}s, 확률: ${word.probability})`);
+          });
+        } else {
+          console.log('  - word 데이터 없음');
+        }
+        console.log('---');
+      });
 
       
       // 토큰 데이터를 기반으로 result 생성
@@ -211,12 +226,43 @@ export default function TestResultPage() {
     fetchTokenData(id);
     fetchServerPitchData(id);
     
-
-    
     setLoading(false);
   }, [id, fetchTokenData, fetchServerPitchData]);
 
-
+  useEffect(() => {
+    if (!jobId) return;
+    if (sseRef.current) {
+      console.log('[DEBUG] 이미 SSE 연결이 있습니다.');
+      return;
+    }
+    console.log('[DEBUG] SSE 연결 시작:', jobId);
+    const sse = new EventSource(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/analysis-progress/${jobId}`);
+    sseRef.current = sse;
+    sse.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      console.log("SSE 수신 : ", data);
+      if (data.status === "completed" || data.status === "failed" || data.status === "error") {
+        if (data.status === "completed") {
+          setScore(data.score);
+        }
+        sse.close();
+        sseRef.current = null;
+      }
+      // 진행 중이면 progress bar 등 갱신 가능
+    };
+    sse.onerror = (e) => {
+      // 연결이 닫힌 경우(정상 종료 포함)에도 호출될 수 있음
+      console.error("SSE 에러 발생", e);
+      // sse.close()는 onmessage에서만 호출 (중복 close 방지)
+      sseRef.current = null;
+    };
+    return () => {
+      if (sseRef.current) {
+        sseRef.current.close();
+        sseRef.current = null;
+      }
+    };
+  }, [jobId]);
 
   const showResultsSection = useCallback(() => {
     setShowResults(true);
@@ -272,6 +318,10 @@ export default function TestResultPage() {
               endTime={getCurrentScriptPlaybackRange().endTime}
               disableAutoPause={true}
               ref={videoPlayerRef}
+              onEndTimeReached={() => {
+                console.log('[DEBUG] 영상 endTime 도달 → PitchComparison에게 정지 요청');
+                pitchRef.current?.handleExternalStop?.();
+              }}
             />
 
             {/* Script Display */}
@@ -282,12 +332,16 @@ export default function TestResultPage() {
               currentVideoTime={currentVideoTime}
               playbackRange={getPlaybackRange()}
               videoPlayerRef={videoPlayerRef}
+              currentWords={tokenData?.scripts[currentScriptIndex]?.words || []}
             />
+
+
           </div>
 
           {/* Right Column - Pitch Comparison */}
           <div className="space-y-6">
             <PitchComparison 
+              ref={pitchRef}
               currentScriptIndex={currentScriptIndex}
               captions={result.captions}
               tokenId={id}
