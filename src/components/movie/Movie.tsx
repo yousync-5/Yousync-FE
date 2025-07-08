@@ -4,6 +4,7 @@ import MovieDetailModal from "@/components/modal/MovieDetailModal";
 import MovieList from "./MovieList";
 import { NavBar } from "@/components/ui/NavBar";
 import type { TokenDetailResponse } from "@/types/pitch";
+import {motion, AnimatePresence} from "framer-motion";
 import {
   PlayIcon,
   FireIcon,
@@ -14,6 +15,8 @@ import {
   InformationCircleIcon,
   VideoCameraIcon,
   TrophyIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 
@@ -144,6 +147,23 @@ export default function Movie({ tokens, isLoading, error, onOpenModal }: MoviePr
   ];
 
   const featuredVideo = videos[0];
+  const heroVideos = videos.slice(0, 5);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const goToPrev = () => {
+    setDirection(-1);
+    setCurrentIndex((prev) => (prev === 0 ? heroVideos.length - 1 : prev - 1))
+  };
+  const goToNext = () => {
+    setDirection(1);
+    setCurrentIndex((prev) => (prev === heroVideos.length - 1 ? 0 : prev + 1))
+  };
+  const goToIndex = (idx: number) => {
+    setDirection(idx > currentIndex ? 1 : -1);
+    setCurrentIndex(idx)
+  };
+  //슬라이드가 왼쪽/오른쪽으로 이동하는지 구분
+  const [direction, setDirection] = useState(0); // -1: 왼쪽, 1: 오른쪽
 
   return (
     <div className="bg-black min-h-screen text-white font-sans overflow-x-hidden flex flex-col">
@@ -153,23 +173,47 @@ export default function Movie({ tokens, isLoading, error, onOpenModal }: MoviePr
       {/* Main Content */}
       <div className="pt-24">
         {/* Hero Banner */}
-        {featuredVideo && (
+        {heroVideos.length > 0 && (
           <div className="relative h-[70vh] min-h-[500px] mb-8">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-700 via-emerald-700 to-teal-700">
+            {/* 유튜브 썸네일 배경 */}
+            <div className="absolute inset-0">
+              <AnimatePresence initial={false} custom={direction}>
+                <motion.img
+                  key={currentIndex}
+                  src={`https://img.youtube.com/vi/${heroVideos[currentIndex].youtubeId}/maxresdefault.jpg`}
+                  alt="배너 배경"
+                  className="w-full h-full object-cover object-center absolute inset-0"
+                  style={{ filter: 'brightness(1)' }}
+                  initial={{ x: direction > 0 ? 300 : -300, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: direction > 0 ? -300 : 300, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 500, damping: 40 }}
+                />
+              </AnimatePresence>
+              {/* 기존 어두운 오버레이 */}
               <div className="absolute inset-0 bg-black/60"></div>
             </div>
             <div className="relative z-10 h-full flex items-center">
+              {/* 좌측 화살표 */}
+              <button
+                onClick={goToPrev}
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/70 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl"
+                aria-label="이전 비디오"
+              >
+                <ChevronLeftIcon className="w-6 h-6" />
+              </button>
+              {/* 비디오 정보 */}
               <div className="max-w-7xl mx-auto px-2 w-full">
                 <div className="max-w-2xl">
                   <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 drop-shadow-lg">
-                    {featuredVideo.actor_name}
+                    {heroVideos[currentIndex].actor_name}
                   </h1>
                   <p className="text-xl text-white/90 mb-8 max-w-lg">
                     AI와 함께 더빙의 재미를 발견하세요! 실시간 피치 분석으로 완벽한 연기를 만들어보세요.
                   </p>
                   <div className="flex items-center gap-4">
                     <button
-                      onClick={() => openModal(featuredVideo.youtubeId)}
+                      onClick={() => openModal(heroVideos[currentIndex].youtubeId)}
                       className="flex items-center gap-2 px-8 py-4 bg-white text-black rounded-full font-bold hover:bg-green-100 transition-all duration-200 transform hover:scale-105 shadow-lg"
                     >
                       <PlayIcon className="w-6 h-6" />
@@ -182,6 +226,25 @@ export default function Movie({ tokens, isLoading, error, onOpenModal }: MoviePr
                   </div>
                 </div>
               </div>
+              {/* 우측 화살표 */}
+              <button
+                onClick={goToNext}
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/70 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl"
+                aria-label="다음 비디오"
+              >
+                <ChevronRightIcon className="w-6 h-6" />
+              </button>
+            </div>
+            {/* 인디케이터 */}
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+              {heroVideos.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => goToIndex(idx)}
+                  className={`w-3 h-3 rounded-full transition-all duration-200 ${currentIndex === idx ? 'bg-white scale-125' : 'bg-gray-500 opacity-60'}`}
+                  aria-label={`비디오 ${idx + 1}번`}
+                />
+              ))}
             </div>
             <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/70 to-transparent"></div>
           </div>

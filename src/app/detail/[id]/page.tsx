@@ -177,8 +177,10 @@ export default function TestResultPage() {
           {/* Left Column - Video & Script */}
           <div className="lg:col-span-2 space-y-6">
             {/* Video Player */}
-            <VideoPlayer videoId={result.movie.youtube_url.split("v=")[1]} />
-
+            {/* 유튜브 api 영상 전용 플레이어 */}
+            <VideoPlayer videoId={result.movie.youtube_url.split("v=")[1]} startTime={tokenData?.start_time}/>
+            {/* 유튜브에서 다운로드 받은 영상 전용 플레이어 */}
+            {/* <VideoPlayer videoUrl="/Gladiator.mp4" startTime={tokenData?.start_time}/> */}
             {/* Script Display */}
             <ScriptDisplay 
               captions={result.captions}
