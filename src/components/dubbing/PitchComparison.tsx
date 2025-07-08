@@ -3,36 +3,26 @@
 import ServerPitchGraph from "@/components/graph/ServerPitchGraph";
 import { MyPitchGraph } from '@/components/graph/MyPitchGraph';
 import type { Caption } from "@/types/caption";
-<<<<<<< HEAD
-=======
 import { VideoPlayerRef } from "./VideoPlayer";
 import { useDubbingRecorder } from '@/hooks/useDubbingRecorder';
 import { useEffect, useRef, useState } from 'react';
 import { useAudioStore } from '@/store/useAudioStore';
 import VideoPlayer from "./VideoPlayer";
 
->>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
 
 interface PitchComparisonProps {
   currentScriptIndex: number;
   captions: Caption[];
   tokenId: string;
   serverPitchData: Array<{ time: number; hz: number | null }>;
-<<<<<<< HEAD
-=======
   videoPlayerRef?: React.RefObject<VideoPlayerRef | null>;
   onNextScript?: (nextIndex: number) => void;
->>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
 }
 
 export default function PitchComparison({ 
   currentScriptIndex, 
   captions, 
   tokenId, 
-<<<<<<< HEAD
-  serverPitchData 
-}: PitchComparisonProps) {
-=======
   serverPitchData,
   videoPlayerRef,
   onNextScript,
@@ -175,7 +165,6 @@ export default function PitchComparison({
     }
   }, [recording]);
 
->>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
   return (
     <div className="bg-gray-900 rounded-xl p-6 h-[28em]">
       <h3 className="text-lg font-semibold mb-4">Pitch Comparison</h3>
@@ -196,8 +185,6 @@ export default function PitchComparison({
             />
           </div>
         </div>
-<<<<<<< HEAD
-=======
         
         <div className="flex justify-center mt-4 space-x-4">
           <div className="flex flex-col items-center">
@@ -251,7 +238,6 @@ export default function PitchComparison({
           ref={videoPlayerRef}
           onEndTimeReached={() => stopScriptRecording(currentScriptIndex)}
         /> */}
->>>>>>> 6afcd6bd82b7ca9849a17388d634aa46fe195272
       </div>
     </div>
   );
