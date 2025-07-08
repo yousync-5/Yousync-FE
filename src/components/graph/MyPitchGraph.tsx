@@ -1,20 +1,24 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import * as Pitchfinder from "pitchfinder";
 import { useAudioStore } from '@/store/useAudioStore';
 import toast from 'react-hot-toast';
 
 interface MyPitchGraphProps{
   currentIdx: number;
+  serverPitchData: any[];
 }
 
 // pitchFinder
-export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
+export const MyPitchGraph = ({currentIdx, serverPitchData}: MyPitchGraphProps) => {
   const [myPitch, setMyPitch] = useState<number | null>(null);
   const [pitchData, setPitchData] = useState<{x: number, y: number}[]>([]);
   const [dynamicRange, setDynamicRange] = useState<{min: number, max: number}>({min: 80, max: 1000});
   const detectPitchRef = useRef<ReturnType<typeof Pitchfinder.YIN> | null>(null);
   const pitchIndexRef = useRef(0); //x축 인덱스
   const [alertShown, setAlertShown] = useState(false);
+  const [judgements, setJudgements] = useState<(null | "perfect" | "miss")[]>(
+    Array.isArray(serverPitchData) ? serverPitchData.map(() => null) : []
+  );
 
   let micErrorToastId: string | undefined;
 
@@ -139,3 +143,9 @@ export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
     </div>
   );
 }
+
+
+
+
+
+

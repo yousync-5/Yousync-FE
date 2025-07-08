@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { Caption } from "@/types/caption";
