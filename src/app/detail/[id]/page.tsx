@@ -302,12 +302,19 @@ export default function TestResultPage() {
     const toastId = "analysis-loading-toast";
 
     if(!showCompleted && multiJobIds.length > 0) {
+      const completedCount = finalResults.length;
+      const totalCount = multiJobIds.length;
+      const progressText = completedCount > 0 
+        ? `${completedCount}번 대사 분석 완료` 
+        : "분석 준비 중...";
+      
       toast.loading(
-        <div className="flex items-center gap-3 p-2">
-          <div className="animate-spin w-8 h-8 border-3 border-green-400 border-t-transparent rounded-full" />
+        <div className="flex items-center gap-4 p-2">
+          <div className="animate-spin w-16 h-16 border-5 border-green-400 border-t-transparent rounded-full" />
           <div className="flex flex-col">
-            <span className="text-white font-semibold text-base">결과 분석 중입니다...</span>
-            <span className="text-green-300 text-sm">잠시만 기다려주세요</span>
+            <span className="text-white font-semibold text-2xl">결과 분석 중입니다...</span>
+            <span className="text-green-300 text-xl">{progressText}</span>
+            <span className="text-gray-400 text-lg">{completedCount} / {totalCount} 완료</span>
           </div>
         </div>, 
         {
@@ -320,8 +327,8 @@ export default function TestResultPage() {
             border: '2px solid #22c55e',
             borderRadius: '12px',
             boxShadow: '0 8px 32px rgba(34, 197, 94, 0.2)',
-            minWidth: '280px',
-            padding: '16px 20px',
+            minWidth: '500px',
+            padding: '32px 36px',
           },
         }
       );
@@ -332,7 +339,7 @@ export default function TestResultPage() {
     return () => {
       toast.dismiss(toastId);
     }
-  }, [showCompleted, multiJobIds.length])
+  }, [showCompleted, multiJobIds.length, finalResults.length])
 
 
   useEffect(() => {
@@ -462,8 +469,8 @@ export default function TestResultPage() {
           </div>
         </div>
 
-        {/* Test Page Results Section */}
-        {(showCompleted) && (
+        {/* Test Page Results Section  (showCompleted) && */}
+        { (showCompleted) && (
           <motion.div 
             ref={resultRef} // 스크롤 이동용
             initial={{opacity: 0, y: 30}}
