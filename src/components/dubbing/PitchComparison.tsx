@@ -7,6 +7,11 @@ import { VideoPlayerRef } from "./VideoPlayer";
 import { useDubbingRecorder } from '@/hooks/useDubbingRecorder';
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { useAudioStore } from '@/store/useAudioStore';
+import VideoPlayer from "./VideoPlayer";
+import { ChevronLeftIcon } from "@heroicons/react/24/solid";
+import { ScriptItem } from "@/types/pitch";
+import { useJobIdsStore } from '@/store/useJobIdsStore';
+
 
 
 interface PitchComparisonProps {
@@ -16,6 +21,11 @@ interface PitchComparisonProps {
   serverPitchData: Array<{ time: number; hz: number | null }>;
   videoPlayerRef?: React.RefObject<VideoPlayerRef | null>;
   onNextScript?: (nextIndex: number) => void;
+  onPlay?: () => void;
+  onPause?: () => void;
+  isVideoPlaying: boolean;
+  scripts?: ScriptItem[];
+  onUploadComplete?: (success: boolean, jobIds?: string[]) => void;
 }
 
 const PitchComparison = forwardRef<any, PitchComparisonProps>(function PitchComparison({ 
@@ -25,6 +35,11 @@ const PitchComparison = forwardRef<any, PitchComparisonProps>(function PitchComp
   serverPitchData,
   videoPlayerRef,
   onNextScript,
+  onPlay,
+  onPause,
+  isVideoPlaying,
+  scripts,
+  onUploadComplete,
 }: PitchComparisonProps, ref) {
 
   const {
@@ -38,13 +53,22 @@ const PitchComparison = forwardRef<any, PitchComparisonProps>(function PitchComp
   } = useDubbingRecorder({
     captions,
     tokenId,
-    onUploadComplete: (success) => {
+    scripts,
+    onUploadComplete: (success: boolean, jobIds: string[]) => {
       console.log(success ? '녹음 업로드 성공!' : '녹음 업로드 실패!');
+      onUploadComplete?.(success, jobIds)
     },
   });
 
+  // zustand 전역 상태 사용
+  const setMultiJobIds = useJobIdsStore((state) => state.setMultiJobIds);
+
   const [volume, setVolume] = useState(0);
   const rafRef = useRef<number | null>(null);
+  const [isVideoEnded, setIsVideoEnded] = useState(false);
+  const [isLooping, setIsLooping] = useState(false);
+  const loopIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     if (!recording) {
       setVolume(0);
@@ -105,6 +129,19 @@ const PitchComparison = forwardRef<any, PitchComparisonProps>(function PitchComp
     }
   };
 
+  const handlePrevScript = () => {
+    if (!captions || captions.length === 0) return;
+    const prevIndex = Math.max(currentScriptIndex - 1, 0);
+    if (prevIndex !== currentScriptIndex && onNextScript) {
+      onNextScript(prevIndex);
+      // 영상도 이전 문장 시작으로 이동 및 재생
+      if (videoPlayerRef?.current) {
+        videoPlayerRef.current.seekTo(captions[prevIndex].start_time);
+        videoPlayerRef.current.playVideo();
+      }
+    }
+  };
+
   const getCurrentScriptPlaybackRange = () => {
     if (!captions || captions.length === 0) {
       return { startTime: 0, endTime: undefined };
@@ -129,8 +166,85 @@ const PitchComparison = forwardRef<any, PitchComparisonProps>(function PitchComp
     }
   }, [recording]);
 
-  
+  // 영상 상태 추적
+  useEffect(() => {
+    if (!videoPlayerRef?.current) return;
+    let interval: NodeJS.Timeout | null = null;
+    const checkState = () => {
+      if (!videoPlayerRef.current) return;
+      const currentTime = videoPlayerRef.current.getCurrentTime();
+      const endTime = captions[currentScriptIndex]?.end_time;
+      // 영상이 끝났는지 체크
+      if (endTime !== undefined && currentTime >= endTime - 0.1) {
+        setIsVideoEnded(true);
+      } else {
+        setIsVideoEnded(false);
+      }
+    };
+    interval = setInterval(() => {
+      if (!videoPlayerRef.current) return;
+      // YouTube API의 getPlayerState가 있으면 더 정확하게 체크 가능
+      if (videoPlayerRef.current.getCurrentTime) {
+        const currentTime = videoPlayerRef.current.getCurrentTime();
+        const endTime = captions[currentScriptIndex]?.end_time;
+        if (endTime !== undefined && currentTime >= endTime - 0.1) {
+          setIsVideoEnded(true);
+        } else {
+          setIsVideoEnded(false);
+        }
+      }
+    }, 200);
+    return () => { if (interval) clearInterval(interval); };
+  }, [videoPlayerRef, currentScriptIndex, captions]);
 
+  // 영상 play/pause 이벤트 핸들러 필요시 추가
+  const handlePlay = () => {
+    if (onPlay) onPlay();
+  };
+  const handlePause = () => {
+    if (onPause) onPause();
+  };
+
+  const handleLoopToggle = () => {
+    if (isLooping) {
+      setIsLooping(false);
+      if (loopIntervalRef.current) {
+        clearInterval(loopIntervalRef.current);
+        loopIntervalRef.current = null;
+      }
+    } else {
+      setIsLooping(true);
+      // 구간 반복 감시 시작
+      loopIntervalRef.current = setInterval(() => {
+        if (!videoPlayerRef?.current) return;
+        const currentTime = videoPlayerRef.current.getCurrentTime();
+        const startTime = captions[currentScriptIndex]?.start_time || 0;
+        const endTime = captions[currentScriptIndex]?.end_time;
+        if (endTime !== undefined && currentTime >= endTime - 0.1) {
+          videoPlayerRef.current.seekTo(startTime);
+          videoPlayerRef.current.playVideo();
+        }
+      }, 200);
+    }
+  };
+
+  useEffect(() => {
+    // 문장 인덱스가 바뀌면 반복 해제
+    setIsLooping(false);
+    if (loopIntervalRef.current) {
+      clearInterval(loopIntervalRef.current);
+      loopIntervalRef.current = null;
+    }
+  }, [currentScriptIndex]);
+
+  useEffect(() => {
+    // 컴포넌트 언마운트 시 반복 해제
+    return () => {
+      if (loopIntervalRef.current) {
+        clearInterval(loopIntervalRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="bg-gray-900 rounded-xl p-6 h-[28em]">
@@ -149,8 +263,36 @@ const PitchComparison = forwardRef<any, PitchComparisonProps>(function PitchComp
           </div>
         </div>
         
-        <div className="flex justify-center mt-4 space-x-4">
-          <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center space-y-2 mt-4">
+          <div className="flex flex-row justify-center space-x-4">
+            <button
+              onClick={handlePrevScript}
+              className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20"
+              title="이전 문장으로 이동"
+              disabled={currentScriptIndex === 0}
+            >
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 5l-7 5 7 5V5zM17 5h-2v10h2V5z" />
+              </svg>
+            </button>
+            <div className="relative inline-block">
+              <button
+                onClick={() => {
+                  if (isVideoEnded) {
+                    const startTime = captions[currentScriptIndex]?.start_time || 0;
+                    videoPlayerRef?.current?.seekTo(startTime);
+                  }
+                  videoPlayerRef?.current?.playVideo();
+                }}
+                className="w-16 h-16 bg-gradient-to-r from-green-500 to-lime-500 hover:from-green-600 hover:to-lime-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20"
+                title="실행"
+                disabled={isVideoPlaying || !videoPlayerRef?.current}
+              >
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                  <polygon points="6,4 16,10 6,16" />
+                </svg>
+              </button>
+            </div>
             <button
               onClick={handleMicClick}
               disabled={recording}
@@ -172,24 +314,44 @@ const PitchComparison = forwardRef<any, PitchComparisonProps>(function PitchComp
                 />
               </svg>
             </button>
-            {recording && (
-              <div className="w-28 h-4 bg-gray-800 rounded-lg mt-3 overflow-hidden border-2 border-green-500 shadow-lg">
-                <div
-                  className={`h-4 transition-all duration-100 ${volume > 0.6 ? 'bg-lime-400 shadow-[0_0_16px_4px_rgba(163,230,53,0.7)]' : 'bg-green-400'}`}
-                  style={{ width: `${Math.min(100, volume * 100)}%` }}
-                />
-              </div>
-            )}
+            <button
+              onClick={handleNextScript}
+              className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20"
+              title="다음 문장으로 이동"
+            >
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 5l7 5-7 5V5zM3 5h2v10H3V5z" />
+              </svg>
+            </button>
           </div>
-          <button
-            onClick={handleNextScript}
-            className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20"
-            title="다음 문장으로 이동"
-          >
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 5l7 5-7 5V5zM3 5h2v10H3V5z" />
-            </svg>
-          </button>
+          <div className="flex flex-row justify-center mt-2 space-x-4">
+            <button
+              onClick={() => {
+                console.log('정지 버튼 클릭', videoPlayerRef?.current);
+                videoPlayerRef?.current?.pauseVideo();
+                stopScriptRecording(currentScriptIndex);
+              }}
+              className="w-16 h-16 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20"
+              title="정지"
+              disabled={!isVideoPlaying || !videoPlayerRef?.current}
+            >
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                <rect x="5" y="5" width="10" height="10" rx="2" />
+              </svg>
+            </button>
+            <button
+              onClick={handleLoopToggle}
+              className={`w-16 h-16 ${isLooping ? 'bg-gradient-to-r from-yellow-400 to-orange-500' : 'bg-gradient-to-r from-gray-500 to-gray-700'} hover:from-yellow-500 hover:to-orange-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20`}
+              title={isLooping ? '구간반복 해제' : '구간반복'}
+            >
+              <svg viewBox="0 0 48 48" fill="none" className={`w-7 h-7 ${isLooping ? 'animate-spin' : ''}`} stroke="currentColor" strokeWidth="4">
+                <path d="M8 24c0-8.837 7.163-16 16-16 4.418 0 8.418 1.79 11.314 4.686" strokeLinecap="round"/>
+                <path d="M40 8v8h-8" strokeLinecap="round"/>
+                <path d="M40 24c0 8.837-7.163 16-16 16-4.418 0-8.418-1.79-11.314-4.686" strokeLinecap="round"/>
+                <path d="M8 40v-8h8" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
         </div>
         {/* Video Player */}
         {/* <VideoPlayer

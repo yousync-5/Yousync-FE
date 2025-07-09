@@ -43,6 +43,7 @@ export function useVoiceRecorder() {
           allBlobsRef.current[idx] = blob;
           resolve(blob);
           setRecording(false);
+          // 여기서 wav파일로 변환해야
           console.log('[DEBUG] setRecording(false) called in onstop');
         } catch (e) {
           console.error('[ERROR] onstop handler failed', e);

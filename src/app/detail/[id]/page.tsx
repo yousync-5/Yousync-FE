@@ -22,6 +22,9 @@ import VideoPlayer, { VideoPlayerRef } from "@/components/dubbing/VideoPlayer";
 import ScriptDisplay from "@/components/dubbing/ScriptDisplay";
 import PitchComparison from "@/components/dubbing/PitchComparison";
 import { useJobIdStore } from '@/store/useAudioStore';
+import { useJobIdsStore } from '@/store/useJobIdsStore';
+import { useResultStore } from "@/store/useResultStore";
+import { easeOut, motion } from "framer-motion";
 
 interface TestResult {
   id: number;
@@ -41,6 +44,26 @@ interface TestResult {
     category: string;
   };
   captions: Caption[];
+}
+// 결과 인터페이스
+export interface WordAnalysis {
+  word: string;
+  text_status: 'fail' | 'pass';
+  mfcc_similarity: number;
+  word_score: number;
+}
+
+export interface Summary {
+  text_accuracy: number;
+  mfcc_average: number;
+  total_words: number;
+  passed_words: number;
+}
+
+export interface PitchResult {
+  overall_score: number;
+  summary: Summary;
+  word_analysis: WordAnalysis[];
 }
 
 export default function TestResultPage() {
@@ -62,6 +85,20 @@ export default function TestResultPage() {
   const [score, setScore] = useState<number | null>(null);
   const jobId = useJobIdStore((state) => state.jobId);
   const sseRef = useRef<EventSource | null>(null);
+
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [isVideoEnded, setIsVideoEnded] = useState(false);
+
+  const finalResults = useResultStore((state) => state.finalResults);
+  const setFinalResults = useResultStore((state) => state.setFinalResults);
+  const [showCompleted, setShowCompleted] = useState(false);
+  // 여러 job_id의 SSE 상태 관리 (Zustand)
+  const multiJobIds = useJobIdsStore((state) => state.multiJobIds);
+  const setMultiJobIds = useJobIdsStore((state) => state.setMultiJobIds);
+  // const [multiScores, setMultiScores] = useState<{ jobId: string, score?: number, status?: string }[]>([]);
+
+  const resultRef = useRef<HTMLDivElement>(null);
+
 
   // 오디오 스트림 초기화
   useAudioStream();
@@ -144,22 +181,8 @@ export default function TestResultPage() {
       const response = await axios.get<TokenDetailResponse>(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${numericId}`
       );
+      console.log("대사 정보 : ",response.data.scripts);
       setTokenData(response.data);
-
-      // word 데이터 출력
-      console.log('=== Word 데이터 출력 ===');
-      response.data.scripts?.forEach((script, scriptIndex) => {
-        console.log(`스크립트 ${scriptIndex + 1}: "${script.script}"`);
-        if (script.words && script.words.length > 0) {
-          console.log('단어별 데이터:');
-          script.words.forEach((word, wordIndex) => {
-            console.log(`  ${wordIndex + 1}. "${word.word}" (${word.start_time}s - ${word.end_time}s, 확률: ${word.probability})`);
-          });
-        } else {
-          console.log('  - word 데이터 없음');
-        }
-        console.log('---');
-      });
 
       
       // 토큰 데이터를 기반으로 result 생성
@@ -229,41 +252,98 @@ export default function TestResultPage() {
     setLoading(false);
   }, [id, fetchTokenData, fetchServerPitchData]);
 
+  // 여러 job_id에 대해 각각 SSE 연결
   useEffect(() => {
-    if (!jobId) return;
-    if (sseRef.current) {
-      console.log('[DEBUG] 이미 SSE 연결이 있습니다.');
-      return;
-    }
-    console.log('[DEBUG] SSE 연결 시작:', jobId);
-    const sse = new EventSource(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/analysis-progress/${jobId}`);
-    sseRef.current = sse;
-    sse.onmessage = (e) => {
-      const data = JSON.parse(e.data);
-      console.log("SSE 수신 : ", data);
-      if (data.status === "completed" || data.status === "failed" || data.status === "error") {
-        if (data.status === "completed") {
-          setScore(data.score);
+    console.log('multiJobIds changed:', multiJobIds);
+    if (!multiJobIds.length) return;
+    const sseList: EventSource[] = [];
+    multiJobIds.forEach((jobId) => {
+      console.log('SSE 연결 시도:', jobId);
+      const sse = new EventSource(`${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/analysis-progress/${jobId}`);
+      sseList.push(sse);
+      sse.onopen = () => {
+        console.log(`[SSE][${jobId}] 연결됨`);
+      };
+      sse.onmessage = (e) => {
+        console.log(`[SSE][${jobId}] onmessage 호출됨`);
+        const data = JSON.parse(e.data);
+        console.log(`[SSE][${jobId}] 수신 : `, data);
+        // result.result가 존재하면 state에 추가
+      if (data.status === 'completed' && data.result?.result) {
+        setFinalResults(prev => [...prev, data.result.result]);
+      }
+        if (data.status === "completed" || data.status === "failed" || data.status === "error") {
+          sse.close();
         }
+      };
+      sse.onerror = (e) => {
+        console.error(`[SSE][${jobId}] 에러 발생`, e);
         sse.close();
-        sseRef.current = null;
-      }
-      // 진행 중이면 progress bar 등 갱신 가능
-    };
-    sse.onerror = (e) => {
-      // 연결이 닫힌 경우(정상 종료 포함)에도 호출될 수 있음
-      console.error("SSE 에러 발생", e);
-      // sse.close()는 onmessage에서만 호출 (중복 close 방지)
-      sseRef.current = null;
-    };
+      };
+    });
     return () => {
-      if (sseRef.current) {
-        sseRef.current.close();
-        sseRef.current = null;
-      }
+      sseList.forEach(sse => sse.close());
     };
-  }, [jobId]);
+  }, [multiJobIds]);
 
+  useEffect(() => {
+    console.log('multiJobIds:', multiJobIds);
+    console.log('finalResults:', finalResults);
+    if (!multiJobIds.length) return;
+    const allCompleted = finalResults.length === multiJobIds.length;
+    if (allCompleted) {
+      
+      console.log("🎉 모든 작업 완료!", finalResults);
+      setShowCompleted(true);
+    }
+  }, [finalResults, multiJobIds]);
+
+  useEffect(() => {
+    const toastId = "analysis-loading-toast";
+
+    if(!showCompleted && multiJobIds.length > 0) {
+      toast.loading(
+        <div className="flex items-center gap-3 p-2">
+          <div className="animate-spin w-8 h-8 border-3 border-green-400 border-t-transparent rounded-full" />
+          <div className="flex flex-col">
+            <span className="text-white font-semibold text-base">결과 분석 중입니다...</span>
+            <span className="text-green-300 text-sm">잠시만 기다려주세요</span>
+          </div>
+        </div>, 
+        {
+          id: toastId,
+          icon: null,
+          position: "bottom-right",
+          duration: Infinity,
+          style: {
+            background: 'linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%)',
+            border: '2px solid #22c55e',
+            borderRadius: '12px',
+            boxShadow: '0 8px 32px rgba(34, 197, 94, 0.2)',
+            minWidth: '280px',
+            padding: '16px 20px',
+          },
+        }
+      );
+    } else {
+      toast.dismiss(toastId);
+    }
+
+    return () => {
+      toast.dismiss(toastId);
+    }
+  }, [showCompleted, multiJobIds.length])
+
+
+  useEffect(() => {
+    if (showCompleted) {
+      const timer = setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [showCompleted]);
+  
   const showResultsSection = useCallback(() => {
     setShowResults(true);
     setTimeout(() => {
@@ -291,6 +371,24 @@ export default function TestResultPage() {
       endTime: currentScript.end_time
     };
   }, [result?.captions, currentScriptIndex]);
+
+  // 현재 스크립트의 단어 데이터 추출
+  const currentWords = tokenData?.scripts?.[currentScriptIndex]?.words || [];
+
+  // 스크립트 인덱스가 바뀔 때 영상 시간도 새 문장 시작으로 맞춤
+  useEffect(() => {
+    if (result?.captions && result.captions[currentScriptIndex]) {
+      setCurrentVideoTime(result.captions[currentScriptIndex].start_time);
+    }
+  }, [currentScriptIndex, result?.captions]);
+
+  const handlePlay = () => {
+    setIsVideoPlaying(true);
+  };
+
+  const handlePause = () => {
+    setIsVideoPlaying(false);
+  };
 
   if (loading) return <div>Loading...</div>;
   if (!result) return <div>No result found.</div>;
@@ -321,7 +419,10 @@ export default function TestResultPage() {
               onEndTimeReached={() => {
                 console.log('[DEBUG] 영상 endTime 도달 → PitchComparison에게 정지 요청');
                 pitchRef.current?.handleExternalStop?.();
+                pitchRef.current?.uploadAllRecordings?.();
               }}
+              onPlay={handlePlay}
+              onPause={handlePause}
             />
 
             {/* Script Display */}
@@ -332,10 +433,8 @@ export default function TestResultPage() {
               currentVideoTime={currentVideoTime}
               playbackRange={getPlaybackRange()}
               videoPlayerRef={videoPlayerRef}
-              currentWords={tokenData?.scripts[currentScriptIndex]?.words || []}
+              currentWords={currentWords}
             />
-
-
           </div>
 
           {/* Right Column - Pitch Comparison */}
@@ -348,13 +447,30 @@ export default function TestResultPage() {
               serverPitchData={serverPitchData}
               videoPlayerRef={videoPlayerRef}
               onNextScript={setCurrentScriptIndex}
+              onPlay={handlePlay}
+              onPause={handlePause}
+              isVideoPlaying={isVideoPlaying}
+              scripts={tokenData?.scripts}
+              onUploadComplete={(success, jobIds) => {
+                console.log(success ? '녹음 업로드 성공!' : '녹음 업로드 실패!');
+                if (success && jobIds && jobIds.length > 0) {
+                  // 1차원 배열 깊은 복사 후 zustand로 저장
+                  setMultiJobIds(jobIds.map(x => x));
+                }
+              }}
             />
           </div>
         </div>
 
         {/* Test Page Results Section */}
-        {showResults && (
-          <TestResultAnalysisSection
+        {(showCompleted) && (
+          <motion.div 
+            ref={resultRef} // 스크롤 이동용
+            initial={{opacity: 0, y: 30}}
+            animate={{opacity: 1, y: 30}}
+            transition={{duration: 0.6, ease: "easeOut"}}
+          >
+            <TestResultAnalysisSection
             result={result}
             currentScriptIndex={currentScriptIndex}
             getScoreColor={getScoreColor}
@@ -363,10 +479,11 @@ export default function TestResultPage() {
             id={id}
             resultsRef={resultsRef as React.RefObject<HTMLDivElement>}
           />
+          </motion.div>
         )}
 
         {/* Show Results Button */}
-        {!showResults && (
+        {/* {!finalResults && (
           <div className="text-center mt-8">
             <button
               onClick={showResultsSection}
@@ -375,7 +492,9 @@ export default function TestResultPage() {
               결과 보기
             </button>
           </div>
-        )}
+        )} */}
+
+        
       </div>
     </div>
   );
