@@ -81,7 +81,7 @@ export default function TestResultPage() {
   const [currentVideoTime, setCurrentVideoTime] = useState(0);
   const resultsRef = useRef<HTMLDivElement>(null);
   const videoPlayerRef = useRef<VideoPlayerRef | null>(null);
-  const pitchRef = useRef<any>(null);
+  const pitchRef = useRef<{ handleExternalStop: () => void; uploadAllRecordings: () => void } | null>(null);
   const [score, setScore] = useState<number | null>(null);
   const jobId = useJobIdStore((state) => state.jobId);
   const sseRef = useRef<EventSource | null>(null);

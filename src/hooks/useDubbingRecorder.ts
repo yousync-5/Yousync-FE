@@ -15,7 +15,7 @@ interface UseDubbingRecorderProps {
 // 응답 타입 정의
 interface UploadAudioResponse {
   job_id?: string;
-  [key: string]: any;
+  [key: string]: string | number | boolean | undefined;
 }
 
 export function useDubbingRecorder({ captions, tokenId, scripts, onUploadComplete }: UseDubbingRecorderProps) {
@@ -97,7 +97,6 @@ export function useDubbingRecorder({ captions, tokenId, scripts, onUploadComplet
         const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
         // 2. wav로 변환
         // encodeWav는 src/utils/encodeWav.ts에 있음
-        // @ts-ignore
         const { encodeWav } = await import('@/utils/encodeWav');
         const wavBlob = encodeWav(audioBuffer);
         // 3. 업로드

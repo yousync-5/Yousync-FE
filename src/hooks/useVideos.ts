@@ -8,7 +8,10 @@ import type { Caption, CaptionState } from "@/types/caption";
 
 const fetchVideos = async () => {
   const res = await axios.get<Omit<TokenDetailResponse, "youtubeId">[]>(
-    `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/`
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/`,
+    {
+      timeout: 10000, // 10초 타임아웃
+    }
   );
   
   console.log('API 응답 데이터:', res.data);
@@ -29,5 +32,9 @@ export function useVideos() {
   return useQuery({
     queryKey: ["videos"],
     queryFn: fetchVideos,
+    staleTime: 5 * 60 * 1000, // 5분간 데이터를 fresh로 유지
+    gcTime: 10 * 60 * 1000, // 10분간 캐시 유지
+    refetchOnWindowFocus: false, // 윈도우 포커스 시 재요청 비활성화
+    refetchOnMount: false, // 마운트 시 재요청 비활성화 (캐시 우선)
   });
 }

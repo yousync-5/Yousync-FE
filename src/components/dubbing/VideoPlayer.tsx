@@ -28,7 +28,7 @@ export interface VideoPlayerRef {
 
 const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
   ({ videoId, onTimeUpdate, startTime = 0, endTime, disableAutoPause = false, onEndTimeReached, onPause, onPlay, overlayType = 'header', overlayHeight = 48 }, ref) => {
-    const playerRef = useRef<any>(null);
+    const playerRef = useRef<{ seekTo: (time: number) => void; playVideo: () => void; pauseVideo: () => void; getCurrentTime: () => number } | null>(null);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const initialStartTimeRef = useRef(startTime);
 
@@ -104,7 +104,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
       }
     }, [showOverlay, playerReady]);
 
-    const onReady = (event: any) => {
+    const onReady = (event: { target: { seekTo: (time: number) => void; playVideo: () => void; pauseVideo: () => void; getCurrentTime: () => number } }) => {
       playerRef.current = event.target;
       setPlayerReady(true);
       
@@ -117,7 +117,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
       console.log('VideoPlayer onReady - disableAutoPause:', disableAutoPause);
     };
 
-    const onStateChange = (event: any) => {
+    const onStateChange = (event: { data: number }) => {
       // 기존 인터벌 정리
       if (intervalRef.current) {
         clearInterval(intervalRef.current);

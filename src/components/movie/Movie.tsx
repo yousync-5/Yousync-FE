@@ -266,13 +266,16 @@ export default function Movie({ tokens, isLoading, error, onOpenModal }: MoviePr
             ))}
           </div>
           {isLoading && (
-            <div className="text-center py-20">
-              <div className="text-gray-500 font-medium">더빙 준비 중...</div>
+            <div className="flex items-center justify-center py-20">
+              <div className="flex flex-col items-center space-y-4">
+                <div className="animate-spin w-8 h-8 border-3 border-green-400 border-t-transparent rounded-full" />
+                <div className="text-gray-500 font-medium">영화 목록을 불러오는 중...</div>
+              </div>
             </div>
           )}
           {error && (
-            <div className="text-center py-20">
-              <div className="text-red-400 font-medium">앗! 문제가 생겼어요!</div>
+            <div className="flex items-center justify-center py-20">
+              <div className="text-red-400 font-medium">에러 발생: {error.toString()}</div>
             </div>
           )}
           {!isLoading && !error && (

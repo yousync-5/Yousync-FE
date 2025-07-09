@@ -1,17 +1,20 @@
 "use client";
 
 import React, { MouseEvent } from "react";
-import YouTube from "react-youtube";
+import dynamic from 'next/dynamic';
 import { FaMicrophone } from "react-icons/fa";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { TokenDetailResponse } from "@/types/pitch";
+import type { YouTubePlayer } from "react-youtube";
+
+const YouTube = dynamic(() => import('react-youtube'), { ssr: false });
 
 interface VideoModalProps {
   youtubeId: string;
   isOpen: boolean;
   onClose: () => void;
-  tokenData: TokenDetailResponse; 
+  tokenData?: TokenDetailResponse; // optional로 변경
 }
 
 export default function MovieDetailModal({
@@ -21,8 +24,30 @@ export default function MovieDetailModal({
   tokenData,
 }: VideoModalProps) {
   const router = useRouter();
+  const [player, setPlayer] = React.useState<{ unMute: () => void } | null>(null);
 
-  if (!isOpen) return null;
+  if (!isOpen || !youtubeId || !tokenData) return null;
+
+  // tokenData가 없으면 로딩 상태 표시
+  if (!tokenData) {
+    return (
+      <div className="fixed inset-0 z-51 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-300">
+        <div className="absolute inset-0" onClick={onClose} />
+        <div className="relative z-50 w-full max-w-[90vw] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto rounded-lg bg-[#181818] p-4 sm:p-6 shadow-2xl transition-all duration-300 transform scale-100">
+          <button
+            className="absolute top-4 right-4 text-2xl text-white hover:text-gray-300"
+            onClick={onClose}
+          >
+            &times;
+          </button>
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin w-8 h-8 border-3 border-green-400 border-t-transparent rounded-full" />
+            <span className="ml-3 text-white">영상 정보를 불러오는 중...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const relatedVideos = [
     { id: "M7lc1UVf-VE" },
@@ -35,13 +60,28 @@ export default function MovieDetailModal({
     router.replace(`/detail/${tokenData.id}?modalId=${youtubeId}`);
   };
 
+  const handleUserInteraction = () => {
+    // 사용자 상호작용 시 플레이어 재생 또는 일시정지
+    if (player) {
+      player.unMute();
+    }
+  };
+
+  const onReady = (event: { target: YouTubePlayer }) => {
+    setPlayer(event.target);
+    event.target.playVideo();
+    event.target.unMute();
+  };
+
   return (
-    <div className="fixed inset-0 z-51 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-51 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-300">
       <div className="absolute inset-0" onClick={onClose} />
 
       <div
-        className="relative z-50 w-full max-w-[90vw] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto rounded-lg bg-[#181818] p-4 sm:p-6 shadow-2xl"
+        className="relative z-50 w-full max-w-[90vw] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto rounded-lg bg-[#181818] p-4 sm:p-6 shadow-2xl transition-all duration-300 transform scale-100"
         onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
+        onMouseEnter={handleUserInteraction}
+        onTouchStart={handleUserInteraction}
       >
         <button
           className="absolute top-4 right-4 text-2xl text-white hover:text-gray-300"
@@ -51,21 +91,23 @@ export default function MovieDetailModal({
         </button>
 
         {/* 메인 영상 */}
-        <div className="mx-auto aspect-video w-full overflow-hidden rounded-lg">
-          <YouTube
-            videoId={youtubeId}
-            className="h-full w-full"
+        {youtubeId && (
+          <div className="mx-auto aspect-video w-full overflow-hidden rounded-lg">
+            <YouTube
+              key={youtubeId}
+              videoId={youtubeId}
+              className="h-full w-full"
               opts={{
-      width: "100%",
-      height: "100%",
-      playerVars: {
-        controls: 1,
-        autoplay: 1, // 자동재생!
-        start: 15,   // 15초부터 시작!
-      }
-    }}
-  />
-        </div>
+                width: "100%",
+                height: "100%",
+                playerVars: {
+                  controls: 1,
+                  autoplay: 1,
+                }
+              }}
+            />
+          </div>
+        )}
 
         {/* 텍스트/버튼: 50%씩, 평행 정렬 */}
         <div className="flex w-full mt-6 mb-2 bg-[#181818] p-4 rounded-lg">
@@ -107,6 +149,7 @@ export default function MovieDetailModal({
             {relatedVideos.map(({ id }) => (
               <div key={id} className="flex-shrink-0 w-70 rounded-lg overflow-hidden">
                 <YouTube
+                  key={`related-${id}`} // 관련 영상용 key 추가
                   videoId={id}
                   className="w-full h-full"
                   opts={{
