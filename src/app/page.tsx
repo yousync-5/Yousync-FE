@@ -43,7 +43,7 @@ export default function LandingPage() {
       )}
       {step === 'main' && (
         <MainStartButton onPlay={handleLetsRun} />
-      {/* 모달 */}
+      )}
       {/* Modal */}
       {selectedVideoId && selectedTokenData && (
         <MovieDetailModal
