@@ -34,6 +34,8 @@ export function useDubbingRecorder({ captions, tokenId, scripts, onUploadComplet
   const startScriptRecording = (scriptIdx: number) => {
     // 새로운 녹음 시 jobId 초기화
     resetJobId();
+    // 새로운 녹음 시 hasUploaded 상태도 리셋
+    setHasUploaded(false);
     startRecording();
   };
 
