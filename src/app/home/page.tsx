@@ -13,7 +13,7 @@ export default function Home() {
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const [modalId, setModalId, removeModalId] = useSessionStorage<string | null>('modalId', null);
   
-  // useVideos: TokenDetailResponse[]
+  // useVideos: TokenDetailResponse[] - React Query 캐싱 활용
   const { data: tokens = [], isLoading, error } = useVideos();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -32,7 +32,11 @@ export default function Home() {
   };
 
   // sessionStorage에서 modalId 확인 및 쿼리스트링에서 modalId 확인
+  // React Query 캐싱을 활용하여 데이터가 있으면 바로 모달 표시
   useEffect(() => {
+    // 데이터가 로드되었거나 캐시에서 가져온 경우에만 모달 처리
+    if (tokens.length === 0) return;
+
     if (modalId) {
       openModal(modalId);
       removeModalId(); // 사용 후 제거
@@ -44,9 +48,9 @@ export default function Home() {
       const modalId = searchParams.get('modalId') as string;
       openModal(modalId);
       // URL에서 modalId 쿼리스트링 제거
-      router.replace('/');
+      router.replace('/home');
     }
-  }, [searchParams, router, modalId, removeModalId]);
+  }, [searchParams, router, modalId, removeModalId, tokens.length]);
 
   // 카드구성
   const videos = tokens.map(({ id, youtubeId, actor_name }) => ({
@@ -64,7 +68,7 @@ export default function Home() {
   return (
     <div className="bg-neutral-950 text-white px-6 py-4 font-sans overflow-x-hidden min-h-full flex flex-col">
       {/* Videos */}
-      {isLoading && <div>로딩중...</div>}
+      {isLoading && tokens.length === 0 && <div>로딩중...</div>}
       {error && <div>에러 발생!</div>}
 
       {!isLoading && !error && (
@@ -75,9 +79,8 @@ export default function Home() {
           onOpenModal={openModal}
         />
       )}
-      {/* 모달 */}
-      {/* Modal */}
-      {selectedVideoId && selectedTokenData && (
+      {/* 모달 - 깜빡임 방지를 위해 조건 개선 */}
+      {selectedVideoId && (
         <MovieDetailModal
           youtubeId={selectedVideoId}
           isOpen={!!selectedVideoId}

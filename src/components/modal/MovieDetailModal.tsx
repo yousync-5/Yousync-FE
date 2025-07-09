@@ -11,7 +11,7 @@ interface VideoModalProps {
   youtubeId: string;
   isOpen: boolean;
   onClose: () => void;
-  tokenData: TokenDetailResponse; 
+  tokenData?: TokenDetailResponse; // optional로 변경
 }
 
 export default function MovieDetailModal({
@@ -23,6 +23,27 @@ export default function MovieDetailModal({
   const router = useRouter();
 
   if (!isOpen) return null;
+
+  // tokenData가 없으면 로딩 상태 표시
+  if (!tokenData) {
+    return (
+      <div className="fixed inset-0 z-51 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-300">
+        <div className="absolute inset-0" onClick={onClose} />
+        <div className="relative z-50 w-full max-w-[90vw] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto rounded-lg bg-[#181818] p-4 sm:p-6 shadow-2xl transition-all duration-300 transform scale-100">
+          <button
+            className="absolute top-4 right-4 text-2xl text-white hover:text-gray-300"
+            onClick={onClose}
+          >
+            &times;
+          </button>
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin w-8 h-8 border-3 border-green-400 border-t-transparent rounded-full" />
+            <span className="ml-3 text-white">영상 정보를 불러오는 중...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const relatedVideos = [
     { id: "M7lc1UVf-VE" },
@@ -36,11 +57,11 @@ export default function MovieDetailModal({
   };
 
   return (
-    <div className="fixed inset-0 z-51 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-51 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-300">
       <div className="absolute inset-0" onClick={onClose} />
 
       <div
-        className="relative z-50 w-full max-w-[90vw] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto rounded-lg bg-[#181818] p-4 sm:p-6 shadow-2xl"
+        className="relative z-50 w-full max-w-[90vw] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto rounded-lg bg-[#181818] p-4 sm:p-6 shadow-2xl transition-all duration-300 transform scale-100"
         onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
       >
         <button
@@ -53,6 +74,7 @@ export default function MovieDetailModal({
         {/* 메인 영상 */}
         <div className="mx-auto aspect-video w-full overflow-hidden rounded-lg">
           <YouTube
+            key={youtubeId} // key 추가로 불필요한 재마운트 방지
             videoId={youtubeId}
             className="h-full w-full"
               opts={{
@@ -107,6 +129,7 @@ export default function MovieDetailModal({
             {relatedVideos.map(({ id }) => (
               <div key={id} className="flex-shrink-0 w-70 rounded-lg overflow-hidden">
                 <YouTube
+                  key={`related-${id}`} // 관련 영상용 key 추가
                   videoId={id}
                   className="w-full h-full"
                   opts={{
