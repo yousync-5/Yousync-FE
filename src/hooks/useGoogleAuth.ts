@@ -1,5 +1,8 @@
-git branch --show-current
-```
+import { useEffect } from "react";
 
-실행 결과를 원하시면 바로 실행해드릴 수 있습니다.  
-진행할까요? 
+export function useGoogleAuth(onSuccess: (token: string) => void) {
+  useEffect(() => {
+    // 실제 구글 OAuth 로직을 여기에 작성
+    // 예시: window.gapi, Google Identity Services 등
+  }, [onSuccess]);
+} 

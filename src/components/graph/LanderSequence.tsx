@@ -30,6 +30,11 @@ export default function LanderSequence({ onEnd }: LanderSequenceProps) {
   const playIconRef = useRef(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // 재생 버튼 클릭 핸들러
+  const handlePlayClick = () => {
+    setStep(3); // 영상 재생 단계로 이동
+  };
+
   // 1. 재생버튼 SVG 애니메이션
   useEffect(() => {
     if (step === 0 && playIconRef.current) {

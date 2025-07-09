@@ -85,7 +85,7 @@ export default function DoubleGridBlurSlider({ onPlay }: MainStartButtonProps) {
           YouSyck is a place where anyone,<br />
           can easily and enjoyably recreate iconic scenes!
         </p>
-        <button onClick={handlePlay}>Let's Run!</button>
+        <button onClick={handlePlay}>Let&apos;s Run!</button>
       </div>
       <style>{`
         .doublegrid-root {

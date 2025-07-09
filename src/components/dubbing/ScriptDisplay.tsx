@@ -199,14 +199,14 @@ export default function ScriptDisplay({
       // word 데이터가 없으면 기존 방식으로 렌더링
       return (
         <div className="text-white text-2xl font-bold text-center leading-tight">
-          "{captions[currentScriptIndex]?.script}"
+          &quot;{captions[currentScriptIndex]?.script}&quot;
         </div>
       );
     }
 
     return (
       <div className="text-white text-2xl font-bold text-center leading-tight">
-        "{currentWords.map((word, index) => {
+        &quot;{currentWords.map((word, index) => {
           const isCurrent = currentVideoTime >= word.start_time && currentVideoTime <= word.end_time;
           return (
             <span 
@@ -217,10 +217,10 @@ export default function ScriptDisplay({
                   : 'text-white'
               }`}
             >
-              {word.word}{index < currentWords.length - 1 ? ' ' : ''}
+              {word.word.replace(/'/g, "&apos;")}{index < currentWords.length - 1 ? ' ' : ''}
             </span>
           );
-        })}"
+        })}&quot;
       </div>
     );
   };
