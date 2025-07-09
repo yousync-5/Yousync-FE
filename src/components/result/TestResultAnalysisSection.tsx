@@ -61,10 +61,10 @@ const TestResultAnalysisSection: React.FC<TestResultAnalysisSectionProps> = ({
 }) => {
   return (
     <div ref={resultsRef} className="mt-16">
-      <ScoreCards result={result} getScoreColor={getScoreColor} getScoreLevel={getScoreLevel} />
-      <DetailedAnalysis result={result} getScoreColor={getScoreColor} />
-      <SentenceAnalysis result={result} />
-      <OverallPitchComparison result={result} currentScriptIndex={currentScriptIndex} serverPitchData={serverPitchData} id={id} />
+      <ScoreCards getScoreColor={getScoreColor} getScoreLevel={getScoreLevel} />
+      <DetailedAnalysis getScoreColor={getScoreColor} />
+      <SentenceAnalysis  />
+      {/* <OverallPitchComparison result={result} currentScriptIndex={currentScriptIndex} serverPitchData={serverPitchData} id={id} /> */}
     </div>
   );
 };
