@@ -8,6 +8,8 @@ import { useDubbingRecorder } from '@/hooks/useDubbingRecorder';
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { useAudioStore } from '@/store/useAudioStore';
 import VideoPlayer from "./VideoPlayer";
+import { ScriptItem } from "@/types/pitch";
+import { useJobIdsStore } from '@/store/useJobIdsStore';
 
 
 interface PitchComparisonProps {
@@ -17,6 +19,8 @@ interface PitchComparisonProps {
   serverPitchData: Array<{ time: number; hz: number | null }>;
   videoPlayerRef?: React.RefObject<VideoPlayerRef | null>;
   onNextScript?: (nextIndex: number) => void;
+  scripts?: ScriptItem[];
+  onUploadComplete?: (success: boolean, jobIds?: string[]) => void;
 }
 
 const PitchComparison = forwardRef<any, PitchComparisonProps>(function PitchComparison({ 
@@ -26,6 +30,8 @@ const PitchComparison = forwardRef<any, PitchComparisonProps>(function PitchComp
   serverPitchData,
   videoPlayerRef,
   onNextScript,
+  scripts,
+  onUploadComplete,
 }: PitchComparisonProps, ref) {
 
   const {
@@ -39,10 +45,15 @@ const PitchComparison = forwardRef<any, PitchComparisonProps>(function PitchComp
   } = useDubbingRecorder({
     captions,
     tokenId,
-    onUploadComplete: (success) => {
+    scripts,
+    onUploadComplete: (success: boolean, jobIds: string[]) => {
       console.log(success ? '녹음 업로드 성공!' : '녹음 업로드 실패!');
+      onUploadComplete?.(success, jobIds)
     },
   });
+
+  // zustand 전역 상태 사용
+  const setMultiJobIds = useJobIdsStore((state) => state.setMultiJobIds);
 
   const [volume, setVolume] = useState(0);
   const rafRef = useRef<number | null>(null);
