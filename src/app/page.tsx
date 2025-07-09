@@ -1,3 +1,4 @@
+//이해완료
 'use client';
 
 import { useState } from "react";
@@ -6,11 +7,19 @@ import VideoAutoPlayer from "@/components/lending/VideoAutoPlayer";
 import MainStartButton from "@/components/lending/MainStartButton";
 import { useRouter } from "next/navigation";
 import React from "react";
+import MovieDetailModal from "@/components/modal/MovieDetailModal";
 
 export default function LandingPage() {
   const [step, setStep] = useState<'intro'|'video'|'main'>('intro');
   const [showFinalMessage, setShowFinalMessage] = useState(false);
+  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+  const [selectedTokenData, setSelectedTokenData] = useState<any | null>(null);
   const router = useRouter();
+
+  const closeModal = () => {
+    setSelectedVideoId(null);
+    setSelectedTokenData(null);
+  };
 
   // 인트로 → 재생버튼 클릭 시
   const handleIntroPlay = () => setStep('video');
@@ -34,6 +43,15 @@ export default function LandingPage() {
       )}
       {step === 'main' && (
         <MainStartButton onPlay={handleLetsRun} />
+      {/* 모달 */}
+      {/* Modal */}
+      {selectedVideoId && selectedTokenData && (
+        <MovieDetailModal
+          youtubeId={selectedVideoId}
+          isOpen={!!selectedVideoId}
+          onClose={closeModal}
+          tokenData={selectedTokenData}
+        />
       )}
     </div>
   );
