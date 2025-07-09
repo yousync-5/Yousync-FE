@@ -1,5 +1,6 @@
 "use client";
 
+import ServerPitchGraph from "@/components/graph/ServerPitchGraph";
 import { MyPitchGraph } from '@/components/graph/MyPitchGraph';
 import type { Caption } from "@/types/caption";
 import { VideoPlayerRef } from "./VideoPlayer";
@@ -258,7 +259,11 @@ const PitchComparison = forwardRef<any, PitchComparisonProps>(function PitchComp
         <div>
           <div className="text-sm text-gray-400 mb-2">Original Pitch</div>
           <div className="w-full h-16 bg-gray-800 rounded">
-            {/* ServerPitchGraph temporarily removed */}
+            <ServerPitchGraph
+              captionState={{ currentIdx: currentScriptIndex, captions: captions }}
+              token_id={tokenId}
+              serverPitchData={serverPitchData}
+            />
           </div>
         </div>
         
