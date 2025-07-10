@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { gsap } from "gsap";
+import { dummyUser, dummyShorts, dummyRecentVideos } from "@/dummy/userDummy";
 
 interface IntroPlayButtonProps {
   onPlay?: () => void;

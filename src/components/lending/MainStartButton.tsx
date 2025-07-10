@@ -79,7 +79,7 @@ export default function DoubleGridBlurSlider({ onPlay }: MainStartButtonProps) {
         <h1>
           Scenes you&apos;ve only watched.<br />
           now,<br />
-          reenact them yourself.
+reenact them yourself.
         </h1>
         <p>
           YouSyck is a place where anyone,<br />

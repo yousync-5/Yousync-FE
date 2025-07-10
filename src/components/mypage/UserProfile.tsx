@@ -1,37 +1,25 @@
-"use client";
+import { User } from "@/types/MypageType";
 
-interface User {
-  name: string;
-  email: string;
-  avatar: string;
-  level: number;
-  totalPlays: number;
-}
-
-interface UserProfileProps {
-  user: User;
-}
-
-export default function UserProfile({ user }: UserProfileProps) {
+export default function UserProfile({ user }: { user: User }) {
   return (
-    <div className="bg-neutral-900 rounded-2xl p-8 border border-neutral-800">
-      <div className="flex flex-col items-center text-center">
-        <img
-          src={user.avatar}
-          alt={user.name}
-          className="w-24 h-24 rounded-full border-4 border-blue-500 mb-4"
-        />
-        <h2 className="text-2xl font-bold mb-1">{user.name}</h2>
-        <p className="text-gray-400 text-sm mb-4">{user.email}</p>
-        <div className="flex gap-4 text-center">
-          <div>
-            <div className="text-2xl font-bold text-blue-400">Lv.{user.level}</div>
-            <div className="text-xs text-gray-500">레벨</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-green-400">{user.totalPlays}</div>
-            <div className="text-xs text-gray-500">연습횟수</div>
-          </div>
+    <div className="h-[24em] flex flex-col items-center justify-between bg-neutral-900 rounded-2xl shadow-lg p-8">
+      <img
+        src={user.avatar}
+        alt={user.name}
+        className="w-28 h-28 rounded-full border-4 border-blue-500 object-cover shadow-lg"
+      />
+      <div className="text-center">
+        <div className="text-2xl font-extrabold mt-4 text-white drop-shadow-[0_1px_6px_rgba(0,255,128,0.25)]">{user.name}</div>
+        <div className="text-neutral-400 text-sm">{user.email}</div>
+      </div>
+      <div className="flex gap-8 mt-4">
+        <div>
+          <span className="text-blue-400 font-extrabold text-xl drop-shadow-[0_1px_6px_rgba(0,128,255,0.25)]">Lv.{user.level}</span>
+          <div className="text-xs text-neutral-400">레벨</div>
+        </div>
+        <div>
+          <span className="text-green-400 font-extrabold text-xl drop-shadow-[0_1px_6px_rgba(0,255,128,0.25)]">{user.totalPlays}</span>
+          <div className="text-xs text-neutral-400">연습횟수</div>
         </div>
       </div>
     </div>

@@ -17,12 +17,12 @@ export default function LandingPage() {
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [selectedTokenData, setSelectedTokenData] = useState<TokenDetailResponse | null>(null);
   const router = useRouter();
-  
+
   // React Query로 비디오 데이터 미리 로드 (캐싱 활용)
   const { data: tokens = [], isLoading } = useVideos();
 
   const closeModal = () => {
-    setSelectedVideoId(null);
+      setSelectedVideoId(null);
     setSelectedTokenData(null);
   };
 
@@ -49,15 +49,15 @@ export default function LandingPage() {
       )}
       {step === 'main' && (
         <MainStartButton onPlay={handleLetsRun} />
-      )}
-      {/* Modal */}
-      {selectedVideoId && selectedTokenData && (
-        <MovieDetailModal
-          youtubeId={selectedVideoId}
-          isOpen={!!selectedVideoId}
-          onClose={closeModal}
-          tokenData={selectedTokenData}
-        />
+          )}
+          {/* Modal */}
+          {selectedVideoId && selectedTokenData && (
+            <MovieDetailModal
+              youtubeId={selectedVideoId}
+              isOpen={!!selectedVideoId}
+              onClose={closeModal}
+              tokenData={selectedTokenData}
+            />
       )}
     </div>
   );
