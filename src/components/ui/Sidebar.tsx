@@ -13,6 +13,8 @@ interface SidebarProps {
   movieTitle?: string;
   analyzedCount?: number;
   totalCount?: number;
+  recording?: boolean;
+  onStopLooping?: () => void;
 }
 
 export default function Sidebar({
@@ -21,6 +23,8 @@ export default function Sidebar({
   captions,
   currentScriptIndex,
   onScriptSelect,
+  recording = false,
+  onStopLooping,
 }: SidebarProps) {
   useEffect(() => {
     console.log("[Sidebar] captions:", captions);
@@ -82,6 +86,8 @@ export default function Sidebar({
           <li
             key={index}
             onClick={() => {
+              if (recording) return;
+              if (onStopLooping) onStopLooping();
               onScriptSelect(index);
             }}
             className={`cursor-pointer px-4 py-4 transition-all duration-150 select-none relative

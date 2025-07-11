@@ -22,6 +22,7 @@ interface PitchComparisonProps {
   isVideoPlaying: boolean;
   scripts?: ScriptItem[];
   onUploadComplete?: (success: boolean, jobIds?: string[]) => void;
+  onRecordingChange?: (recording: boolean) => void;
 }
 
 const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComparisonProps>(function PitchComparison({ 
@@ -36,6 +37,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   isVideoPlaying,
   scripts,
   onUploadComplete,
+  onRecordingChange,
 }: PitchComparisonProps, ref) {
 
   const {
@@ -97,6 +99,12 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
     };
   }, [recording]);
 
+  useEffect(() => {
+    if (typeof onRecordingChange === 'function') {
+      onRecordingChange(recording);
+    }
+  }, [recording, onRecordingChange]);
+
   const handleMicClick = () => {
     if (videoPlayerRef?.current && captions[currentScriptIndex]) {
       const currentScript = captions[currentScriptIndex];
@@ -115,6 +123,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
       console.log('[DEBUG][handleExternalStop] 외부에서 녹음 중지 요청');
       stopScriptRecording(currentScriptIndex);
     },
+    stopLooping,
   }));
 
   useEffect(() => {
@@ -253,6 +262,14 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
     };
   }, []);
 
+  const stopLooping = () => {
+    setIsLooping(false);
+    if (loopIntervalRef.current) {
+      clearInterval(loopIntervalRef.current);
+      loopIntervalRef.current = null;
+    }
+  };
+
   return (
     <div className="bg-gray-900 rounded-xl p-6 h-[28em]">
       <h3 className="text-lg font-semibold mb-4">Pitch Comparison</h3>
@@ -277,10 +294,13 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
         <div className="flex flex-col items-center space-y-2 mt-4">
           <div className="flex flex-row justify-center space-x-4">
             <button
-              onClick={handlePrevScript}
+              onClick={() => {
+                if (isLooping) stopLooping();
+                handlePrevScript();
+              }}
               className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20"
               title="이전 문장으로 이동"
-              disabled={currentScriptIndex === 0}
+              disabled={currentScriptIndex === 0 || recording}
             >
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10 5l-7 5 7 5V5zM17 5h-2v10h2V5z" />
@@ -297,7 +317,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
                 }}
                 className="w-16 h-16 bg-gradient-to-r from-green-500 to-lime-500 hover:from-green-600 hover:to-lime-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20"
                 title="실행"
-                disabled={isVideoPlaying || !videoPlayerRef?.current}
+                disabled={isVideoPlaying || !videoPlayerRef?.current || recording}
               >
                 <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                   <polygon points="6,4 16,10 6,16" />
@@ -305,7 +325,10 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
               </button>
             </div>
             <button
-              onClick={handleMicClick}
+              onClick={() => {
+                if (isLooping) stopLooping();
+                handleMicClick();
+              }}
               disabled={recording}
               className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20 ${recording ? 'bg-green-500 animate-pulse-mic' : 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white'}`}
               style={recording ? { boxShadow: '0 0 0 8px rgba(34,197,94,0.4), 0 0 0 16px rgba(34,197,94,0.2)' } : undefined}
@@ -326,9 +349,13 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
               </svg>
             </button>
             <button
-              onClick={handleNextScript}
+              onClick={() => {
+                if (isLooping) stopLooping();
+                handleNextScript();
+              }}
               className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20"
               title="다음 문장으로 이동"
+              disabled={recording}
             >
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10 5l7 5-7 5V5zM3 5h2v10H3V5z" />
@@ -344,7 +371,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
               }}
               className="w-16 h-16 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20"
               title="정지"
-              disabled={!isVideoPlaying || !videoPlayerRef?.current}
+              disabled={!isVideoPlaying || !videoPlayerRef?.current || recording}
             >
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                 <rect x="5" y="5" width="10" height="10" rx="2" />
@@ -354,6 +381,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
               onClick={handleLoopToggle}
               className={`w-16 h-16 ${isLooping ? 'bg-gradient-to-r from-yellow-400 to-orange-500' : 'bg-gradient-to-r from-gray-500 to-gray-700'} hover:from-yellow-500 hover:to-orange-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20`}
               title={isLooping ? '구간반복 해제' : '구간반복'}
+              disabled={recording}
             >
               <svg viewBox="0 0 48 48" fill="none" className={`w-7 h-7 ${isLooping ? 'animate-spin' : ''}`} stroke="currentColor" strokeWidth="4">
                 <path d="M8 24c0-8.837 7.163-16 16-16 4.418 0 8.418 1.79 11.314 4.686" strokeLinecap="round"/>
