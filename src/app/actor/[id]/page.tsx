@@ -5,10 +5,12 @@ import axios from 'axios';
 import { extractYoutubeVideoId } from '@/utils/extractYoutubeVideoId';
 import MovieDetailModal from '@/components/modal/MovieDetailModal';
 import type { TokenDetailResponse } from '@/types/pitch';
+
 import { ActorInfo } from '@/components/actor/ActorInfo';
 import { LeftSection } from '@/components/actor/LeftSection';
 import { RightVideosSection } from '@/components/actor/RightVideosSection';
 import { ActorMovie } from '@/types/actor';
+
 
 export default function ActorPage() {
     const params = useParams<{id: string}>();
@@ -20,6 +22,7 @@ export default function ActorPage() {
 
     // getActorMovies 함수로 빼기
     const getActorMovies = useCallback(async () => {
+
         setIsLoading(true);
         try {
             const res = await axios.get<ActorMovie[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/actors/${actorName}`)
@@ -34,6 +37,7 @@ export default function ActorPage() {
     useEffect(() => {
         if(actorName) {
             getActorMovies();
+
         }
     }, [actorName])
 
@@ -78,6 +82,7 @@ export default function ActorPage() {
                     isLoading={isLoading} 
                     onMovieClick={handleMovieClick} 
                 />
+
             </div>
 
             {/* MovieDetailModal */}

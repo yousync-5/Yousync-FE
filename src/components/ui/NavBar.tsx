@@ -1,6 +1,7 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { authService } from "@/services/auth";
@@ -11,12 +12,20 @@ interface Actor {
   id: number;
 }
 
+
+interface Actor {
+  "name": string;
+  "id": number;
+}
 export const NavBar: React.FC = () => {
+
   const router = useRouter();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [serachedMovies, setSearchedMovies] = useState<Actor[]>([]);
   const [isSearching, setIsSearcching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -52,6 +61,8 @@ export const NavBar: React.FC = () => {
     setIsSearcching(true);
     try {
       const res = await axios.get<Actor[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/actors/search/${searchQuery}`);
+
+
       setSearchedMovies(res.data);
       setShowDropdown(true);
     } catch (error) {
@@ -59,10 +70,12 @@ export const NavBar: React.FC = () => {
     } finally {
       setIsSearcching(false);
     }
+
   }, [searchQuery]);
 
   useEffect(() => {
     if (searchQuery.startsWith("http")) {
+
       setSearchedMovies([]);
       setShowDropdown(false);
       return;
@@ -78,6 +91,7 @@ export const NavBar: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchQuery, fetchActorsData]);
 
+
   const handleUrlSearch = async () => {
     if (searchQuery.startsWith('http')) {
       try {
@@ -90,6 +104,8 @@ export const NavBar: React.FC = () => {
         }
       } catch (error) {
         console.log("URL 검색 중 오류 발생");
+
+  
       }
     }
   };
@@ -121,6 +137,7 @@ export const NavBar: React.FC = () => {
     }
   };
 
+
   useEffect(() => setHighlightIndex(-1), [searchQuery]);
 
   useEffect(() => {
@@ -134,6 +151,7 @@ export const NavBar: React.FC = () => {
   }, []);
 
   const clickActor = (actor: string) => router.push(`/actor/${actor}`);
+
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-b border-gray-800 shadow-2xl">
@@ -149,6 +167,7 @@ export const NavBar: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center space-x-4">
+
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
@@ -215,6 +234,8 @@ export const NavBar: React.FC = () => {
                 </button>
               </>
             )}
+
+          
           </div>
         </div>
       </div>
