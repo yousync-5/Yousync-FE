@@ -26,7 +26,7 @@ export default function MovieDetailModal({
   if (!isOpen || !youtubeId || !tokenData) return null;
 
   const handleDubbingClick = () => {
-    router.replace(`/detail/${tokenData.id}?modalId=${youtubeId}`);
+    router.replace(`/dubbing/${tokenData.id}?modalId=${youtubeId}`);
   };
 
   return (
