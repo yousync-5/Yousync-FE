@@ -12,8 +12,8 @@ const app = next({ dev, hostname, port })
 const handle = app.getRequestHandler()
 
 const httpsOptions = {
-  key: fs.readFileSync('./13.209.50.98+2-key.pem'),
-  cert: fs.readFileSync('./13.209.50.98+2.pem'),
+  key: fs.readFileSync('./3.35.3.130+2-key.pem'),
+  cert: fs.readFileSync('./3.35.3.130+2.pem'),
 }
 
 app.prepare().then(() => {
@@ -36,6 +36,7 @@ app.prepare().then(() => {
       process.exit(1)
     })
     .listen(port, () => {
-      console.log(`> Ready on https://${hostname}:${port}`)
+      console.log(`> Ready on https://3.35.3.130:${port}`)
+      console.log(`> Also available on https://localhost:${port}`)
     })
 })
