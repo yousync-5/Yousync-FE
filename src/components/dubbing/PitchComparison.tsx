@@ -25,7 +25,7 @@ interface PitchComparisonProps {
   onPause?: () => void;
   isVideoPlaying: boolean;
   scripts?: ScriptItem[];
-  onUploadComplete?: (success: boolean, jobIds?: string[]) => void;
+
 }
 
 const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComparisonProps>(function PitchComparison({ 
@@ -39,25 +39,18 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   onPause,
   isVideoPlaying,
   scripts,
-  onUploadComplete,
 }: PitchComparisonProps, ref) {
 
   const {
     recording,
     recordedScripts,
-    uploading,
     startScriptRecording,
     stopScriptRecording,
     allRecorded,
-    uploadAllRecordings,
   } = useDubbingRecorder({
     captions,
     tokenId,
     scripts,
-    onUploadComplete: (success: boolean, jobIds: string[]) => {
-      console.log(success ? '녹음 업로드 성공!' : '녹음 업로드 실패!');
-      onUploadComplete?.(success, jobIds)
-    },
   });
 
   // zustand 전역 상태 사용
@@ -110,11 +103,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
     },
   }));
 
-  useEffect(() => {
-    if (allRecorded && !uploading) {
-      uploadAllRecordings();
-    }
-  }, [allRecorded, uploading, uploadAllRecordings]);
+
 
   const handleNextScript = () => {
     if (!captions || captions.length === 0) return;

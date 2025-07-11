@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { useAudioStore } from '@/store/useAudioStore';
+import toast from 'react-hot-toast';
 
 export function useVoiceRecorder() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -9,6 +10,7 @@ export function useVoiceRecorder() {
   const {stream} = useAudioStore();
 
   const startRecording = async () => {
+    console.log('[DEBUG][startRecording] 호출됨 - 스택 트레이스:', new Error().stack);
     // const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); // 마이크 접근 권한 요청
     if(!stream){
       console.warn("Stream not initialized");
@@ -41,6 +43,7 @@ export function useVoiceRecorder() {
         try {
           const blob = new Blob(chunksRef.current, { type: 'audio/wav' });
           allBlobsRef.current[idx] = blob;
+          console.log('[DEBUG][useVoiceRecorder] allBlobsRef.current:', allBlobsRef.current);
           resolve(blob);
           setRecording(false);
           // 여기서 wav파일로 변환해야

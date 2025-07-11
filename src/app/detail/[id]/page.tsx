@@ -81,10 +81,11 @@ export default function TestResultPage() {
   const [currentVideoTime, setCurrentVideoTime] = useState(0);
   const resultsRef = useRef<HTMLDivElement>(null);
   const videoPlayerRef = useRef<VideoPlayerRef | null>(null);
-  const pitchRef = useRef<{ handleExternalStop: () => void; uploadAllRecordings: () => void } | null>(null);
+  const pitchRef = useRef<{ handleExternalStop: () => void } | null>(null);
   const [score, setScore] = useState<number | null>(null);
   const jobId = useJobIdStore((state) => state.jobId);
   const sseRef = useRef<EventSource | null>(null);
+  const connectedJobIdsRef = useRef<Set<string>>(new Set());
 
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isVideoEnded, setIsVideoEnded] = useState(false);
@@ -95,6 +96,7 @@ export default function TestResultPage() {
   // 여러 job_id의 SSE 상태 관리 (Zustand)
   const multiJobIds = useJobIdsStore((state) => state.multiJobIds);
   const setMultiJobIds = useJobIdsStore((state) => state.setMultiJobIds);
+  const addJobId = useJobIdsStore((state) => state.addJobId);
   // const [multiScores, setMultiScores] = useState<{ jobId: string, score?: number, status?: string }[]>([]);
 
   const resultRef = useRef<HTMLDivElement>(null);
@@ -252,35 +254,66 @@ export default function TestResultPage() {
     setLoading(false);
   }, [id, fetchTokenData, fetchServerPitchData]);
 
-  // 여러 job_id에 대해 각각 SSE 연결
+    // 여러 job_id에 대해 각각 SSE 연결
   useEffect(() => {
     console.log('multiJobIds changed:', multiJobIds);
     if (!multiJobIds.length) return;
+    
     const sseList: EventSource[] = [];
+    
     multiJobIds.forEach((jobId) => {
+      // 이미 연결된 job_id는 건너뛰기
+      if (connectedJobIdsRef.current.has(jobId)) {
+        console.log(`[SSE] 이미 연결된 job_id 건너뛰기: ${jobId}`);
+        return;
+      }
+      
       console.log('SSE 연결 시도:', jobId);
+      connectedJobIdsRef.current.add(jobId);
+      
       const sse = new EventSource(`${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/analysis-progress/${jobId}`);
       sseList.push(sse);
+      
       sse.onopen = () => {
         console.log(`[SSE][${jobId}] 연결됨`);
       };
+      
       sse.onmessage = (e) => {
         console.log(`[SSE][${jobId}] onmessage 호출됨`);
         const data = JSON.parse(e.data);
         console.log(`[SSE][${jobId}] 수신 : `, data);
-        // result.result가 존재하면 state에 추가
-      if (data.status === 'completed' && data.result?.result) {
-        setFinalResults(prev => [...prev, data.result.result]);
-      }
+        
+        // result.result가 존재하면 state에 추가 (중복 체크)
+        if (data.status === 'completed' && data.result?.result) {
+          setFinalResults(prev => {
+            // 이미 같은 overall_score의 결과가 있는지 확인 (간단한 중복 체크)
+            const existingResult = prev.find(result => 
+              result.overall_score === data.result.result.overall_score
+            );
+            
+            if (existingResult) {
+              console.log(`[SSE] 중복 결과 무시: ${jobId}`);
+              return prev;
+            }
+            
+            console.log(`[SSE] 새로운 결과 추가: ${jobId}`);
+            return [...prev, data.result.result];
+          });
+        }
+        
         if (data.status === "completed" || data.status === "failed" || data.status === "error") {
           sse.close();
+          connectedJobIdsRef.current.delete(jobId);
         }
       };
+      
       sse.onerror = (e) => {
         console.error(`[SSE][${jobId}] 에러 발생`, e);
         sse.close();
+        connectedJobIdsRef.current.delete(jobId);
       };
     });
+    
     return () => {
       sseList.forEach(sse => sse.close());
     };
@@ -292,20 +325,34 @@ export default function TestResultPage() {
     if (!multiJobIds.length) return;
     const allCompleted = finalResults.length === multiJobIds.length;
     if (allCompleted) {
-      
       console.log("🎉 모든 작업 완료!", finalResults);
-      setShowCompleted(true);
+      // 약간의 지연을 두어 토스트가 충분히 표시되도록 함
+      setTimeout(() => {
+        setShowCompleted(true);
+      }, 1000);
+    } else {
+      // 새로운 분석이 시작되면 showCompleted를 false로 리셋
+      setShowCompleted(false);
     }
   }, [finalResults, multiJobIds]);
+
+  // 새로운 분석 시작 시 연결된 job_id 목록 초기화
+  useEffect(() => {
+    if (multiJobIds.length > 0) {
+      console.log('새로운 분석 시작 - 연결된 job_id 목록 초기화');
+      connectedJobIdsRef.current.clear();
+    }
+  }, [multiJobIds.length]);
 
   useEffect(() => {
     const toastId = "analysis-loading-toast";
 
-    if(!showCompleted && multiJobIds.length > 0) {
+    // 분석이 진행 중일 때 토스트 표시 (showCompleted가 false이고 job_id가 있을 때)
+    if (multiJobIds.length > 0 && !showCompleted) {
       const completedCount = finalResults.length;
       const totalCount = multiJobIds.length;
       const progressText = completedCount > 0 
-        ? `${completedCount}번 대사 분석 완료` 
+        ? `분석 완료` 
         : "분석 준비 중...";
       
       toast.loading(
@@ -339,7 +386,7 @@ export default function TestResultPage() {
     return () => {
       toast.dismiss(toastId);
     }
-  }, [showCompleted, multiJobIds.length, finalResults.length])
+  }, [multiJobIds.length, finalResults.length, showCompleted])
 
 
   useEffect(() => {
@@ -426,7 +473,6 @@ export default function TestResultPage() {
               onEndTimeReached={() => {
                 console.log('[DEBUG] 영상 endTime 도달 → PitchComparison에게 정지 요청');
                 pitchRef.current?.handleExternalStop?.();
-                pitchRef.current?.uploadAllRecordings?.();
               }}
               onPlay={handlePlay}
               onPause={handlePause}
@@ -458,13 +504,7 @@ export default function TestResultPage() {
               onPause={handlePause}
               isVideoPlaying={isVideoPlaying}
               scripts={tokenData?.scripts}
-              onUploadComplete={(success, jobIds) => {
-                console.log(success ? '녹음 업로드 성공!' : '녹음 업로드 실패!');
-                if (success && jobIds && jobIds.length > 0) {
-                  // 1차원 배열 깊은 복사 후 zustand로 저장
-                  setMultiJobIds(jobIds.map(x => x));
-                }
-              }}
+
             />
           </div>
         </div>
