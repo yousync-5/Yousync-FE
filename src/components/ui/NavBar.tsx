@@ -62,7 +62,6 @@ export const NavBar: React.FC = () => {
     try {
       const res = await axios.get<Actor[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/actors/search/${searchQuery}`);
 
-
       setSearchedMovies(res.data);
       setShowDropdown(true);
     } catch (error) {

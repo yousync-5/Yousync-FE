@@ -4,7 +4,7 @@ const next = require('next')
 const fs = require('fs')
 
 const dev = process.env.NODE_ENV !== 'production'
-const hostname = '0.0.0.0'  // 모든 IP에서 접속 허용
+const hostname = 'localhost'  // 로컬 개발용
 const port = 3000
 
 // when using middleware `hostname` and `port` must be provided below
@@ -12,8 +12,8 @@ const app = next({ dev, hostname, port })
 const handle = app.getRequestHandler()
 
 const httpsOptions = {
-  key: fs.readFileSync('./3.35.3.130+2-key.pem'),
-  cert: fs.readFileSync('./3.35.3.130+2.pem'),
+  key: fs.readFileSync('./localhost+1-key.pem'),
+  cert: fs.readFileSync('./localhost+1.pem'),
 }
 
 app.prepare().then(() => {
@@ -33,10 +33,11 @@ app.prepare().then(() => {
   })
     .once('error', (err) => {
       console.error(err)
-      process.exit(1)
+      res.statusCode = 500
+      res.end('internal server error')
     })
     .listen(port, () => {
-      console.log(`> Ready on https://3.35.3.130:${port}`)
-      console.log(`> Also available on https://localhost:${port}`)
+      console.log(`> Ready on https://localhost:${port}`)
+      console.log(`> Also available on https://127.0.0.1:${port}`)
     })
 })
