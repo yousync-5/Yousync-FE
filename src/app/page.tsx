@@ -10,6 +10,7 @@ import React from "react";
 import MovieDetailModal from "@/components/modal/MovieDetailModal";
 import { useVideos } from "@/hooks/useVideos";
 import type { TokenDetailResponse } from "@/types/pitch";
+import HomeClient from "./home/HomeClient";
 
 export default function LandingPage() {
   const [step, setStep] = useState<'intro'|'video'|'main'>('intro');
@@ -42,23 +43,24 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="bg-neutral-950 text-white min-h-screen">
-      {step === 'intro' && <IntroPlayButton onPlay={handleIntroPlay} />}
-      {step === 'video' && (
-        <VideoAutoPlayer onComplete={handleVideoComplete} />
-      )}
-      {step === 'main' && (
-        <MainStartButton onPlay={handleLetsRun} />
-      )}
-      {/* Modal */}
-      {selectedVideoId && selectedTokenData && (
-        <MovieDetailModal
-          youtubeId={selectedVideoId}
-          isOpen={!!selectedVideoId}
-          onClose={closeModal}
-          tokenData={selectedTokenData}
-        />
-      )}
-    </div>
+    // <div className="bg-neutral-950 text-white min-h-screen">
+    //   {step === 'intro' && <IntroPlayButton onPlay={handleIntroPlay} />}
+    //   {step === 'video' && (
+    //     <VideoAutoPlayer onComplete={handleVideoComplete} />
+    //   )}
+    //   {step === 'main' && (
+    //     <MainStartButton onPlay={handleLetsRun} />
+    //   )}
+    //   {/* Modal */}
+    //   {selectedVideoId && selectedTokenData && (
+    //     <MovieDetailModal
+    //       youtubeId={selectedVideoId}
+    //       isOpen={!!selectedVideoId}
+    //       onClose={closeModal}
+    //       tokenData={selectedTokenData}
+    //     />
+    //   )}
+    // </div>
+    <HomeClient />
   );
 } 

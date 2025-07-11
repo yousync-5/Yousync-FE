@@ -24,7 +24,7 @@ async function getTokens(url: string): Promise<TokenDetailResponse[]> {
   }
 }
 
-export default async function UrlSearchPage(
+export default async function UrlSearchPage(  
   props: UrlSearchPageProps
 ) {
   // ★ searchParams 자체가 비동기 API라 await 필요

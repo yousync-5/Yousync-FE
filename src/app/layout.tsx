@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import '../styles/globals.css'
 import QueryProvider from './providers/QueryProvider'
+import { NavBar } from '@/components/ui/NavBar'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -19,6 +20,7 @@ export default function RootLayout({
     <html lang="ko">
       <body className={inter.className}>
         <QueryProvider>
+          <NavBar />
           {children}
         </QueryProvider>
       </body>
