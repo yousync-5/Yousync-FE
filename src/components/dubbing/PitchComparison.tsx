@@ -7,12 +7,8 @@ import { VideoPlayerRef } from "./VideoPlayer";
 import { useDubbingRecorder } from '@/hooks/useDubbingRecorder';
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { useAudioStore } from '@/store/useAudioStore';
-import VideoPlayer from "./VideoPlayer";
-import { ChevronLeftIcon } from "@heroicons/react/24/solid";
 import { ScriptItem } from "@/types/pitch";
 import { useJobIdsStore } from '@/store/useJobIdsStore';
-
-
 
 interface PitchComparisonProps {
   currentScriptIndex: number;
@@ -55,7 +51,18 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
     tokenId,
     scripts,
     onUploadComplete: (success: boolean, jobIds: string[]) => {
-      console.log(success ? '녹음 업로드 성공!' : '녹음 업로드 실패!');
+      console.log('[DEBUG][PitchComparison] onUploadComplete 내부 콜백', { success, jobIds });
+      if (success) {
+        if (Array.isArray(jobIds)) {
+          jobIds.forEach((jobId, idx) => {
+            console.log(`[DEBUG][PitchComparison] 업로드 성공: jobId[${idx}]=${jobId}`);
+          });
+        } else {
+          console.warn('[DEBUG][PitchComparison] jobIds가 배열이 아님', jobIds);
+        }
+      } else {
+        console.warn('[DEBUG][PitchComparison] 업로드 실패', jobIds);
+      }
       onUploadComplete?.(success, jobIds)
     },
   });
@@ -67,7 +74,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   const rafRef = useRef<number | null>(null);
   const [isVideoEnded, setIsVideoEnded] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
-  const loopIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const loopIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!recording) {
@@ -169,7 +176,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   // 영상 상태 추적
   useEffect(() => {
     if (!videoPlayerRef?.current) return;
-    let interval: NodeJS.Timeout | null = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
     const checkState = () => {
       if (!videoPlayerRef.current) return;
       const currentTime = videoPlayerRef.current.getCurrentTime();

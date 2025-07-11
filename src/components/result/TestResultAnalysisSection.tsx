@@ -47,7 +47,7 @@ interface TestResultAnalysisSectionProps {
   getScoreLevel: (score: number) => string;
   serverPitchData: Array<{ time: number; hz: number | null }>;
   id: string | string[] | undefined;
-  resultsRef: React.RefObject<HTMLDivElement>;
+  resultsRef?: React.RefObject<HTMLDivElement>;
 }
 
 const TestResultAnalysisSection: React.FC<TestResultAnalysisSectionProps> = ({

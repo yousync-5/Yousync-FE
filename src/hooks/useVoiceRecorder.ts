@@ -30,10 +30,16 @@ export function useVoiceRecorder() {
   // Blob(녹음된 오디오)를 Promise로 반환, 녹음이 안된 경우에는 null 반환
   const stopRecording = async (idx: number): Promise<Blob | null> => {
     console.log('[DEBUG] stopRecording called', idx);
+    if (mediaRecorderRef.current) {
+      console.log('[DEBUG] mediaRecorderRef.current.state:', mediaRecorderRef.current.state);
+    } else {
+      console.warn('[DEBUG] mediaRecorderRef.current is null');
+    }
     return new Promise((resolve) => {
       if (!mediaRecorderRef.current) {
         console.warn('[WARN] stopRecording: mediaRecorderRef.current is null');
         setRecording(false);
+        console.log('[DEBUG] stopRecording resolve(null) - mediaRecorderRef.current is null');
         return resolve(null);
       }
       mediaRecorderRef.current.onstop = () => {
@@ -41,6 +47,7 @@ export function useVoiceRecorder() {
         try {
           const blob = new Blob(chunksRef.current, { type: 'audio/wav' });
           allBlobsRef.current[idx] = blob;
+          console.log('[DEBUG] Blob 생성됨', blob);
           resolve(blob);
           setRecording(false);
           // 여기서 wav파일로 변환해야
@@ -48,6 +55,7 @@ export function useVoiceRecorder() {
         } catch (e) {
           console.error('[ERROR] onstop handler failed', e);
           setRecording(false);
+          console.log('[DEBUG] stopRecording resolve(null) - onstop handler failed');
           resolve(null);
         }
       };
@@ -57,12 +65,14 @@ export function useVoiceRecorder() {
       } catch (e) {
         console.error('[ERROR] mediaRecorderRef.current.stop() threw', e);
         setRecording(false);
+        console.log('[DEBUG] stopRecording resolve(null) - stop() threw');
         resolve(null);
       }
       setTimeout(() => {
         if (recording) {
           console.warn('[WARN] stopRecording: onstop not called in 1s, forcing setRecording(false)');
           setRecording(false);
+          console.log('[DEBUG] stopRecording resolve(null) - onstop timeout');
           resolve(null);
         }
       }, 1000);

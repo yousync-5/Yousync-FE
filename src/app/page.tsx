@@ -10,9 +10,10 @@ import React from "react";
 import MovieDetailModal from "@/components/modal/MovieDetailModal";
 import { useVideos } from "@/hooks/useVideos";
 import type { TokenDetailResponse } from "@/types/pitch";
+import HomeClient from "@/app/home/HomeClient";
 
 export default function LandingPage() {
-  const [step, setStep] = useState<'intro'|'video'|'main'>('intro');
+  const [step, setStep] = useState<'intro'|'video'|'main'|'home'>('main');
   const [showFinalMessage, setShowFinalMessage] = useState(false);
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [selectedTokenData, setSelectedTokenData] = useState<TokenDetailResponse | null>(null);
@@ -26,29 +27,18 @@ export default function LandingPage() {
     setSelectedTokenData(null);
   };
 
-  // 인트로 → 재생버튼 클릭 시
-  const handleIntroPlay = () => setStep('video');
-  
-  // 영상 끝나면
-  const handleVideoComplete = () => {
-    setShowFinalMessage(true);
-    setTimeout(() => setStep('main'), 3000);
-  };
-
-  // "Let's Run!" 버튼 클릭 시 홈으로 이동
-  const handleLetsRun = () => {
-    // 홈으로 이동 (모달 자동 열기 없음)
-    router.push('/home');
-  };
 
   return (
     <div className="bg-neutral-950 text-white min-h-screen">
-      {step === 'intro' && <IntroPlayButton onPlay={handleIntroPlay} />}
+      {/* {step === 'intro' && <IntroPlayButton onPlay={handleIntroPlay} />}
       {step === 'video' && (
         <VideoAutoPlayer onComplete={handleVideoComplete} />
-      )}
+      )} */}
       {step === 'main' && (
-        <MainStartButton onPlay={handleLetsRun} />
+        <MainStartButton onPlay={() => setStep('home')} />
+      )}
+      {step === 'home' && (
+        <HomeClient />
       )}
       {/* Modal */}
       {selectedVideoId && selectedTokenData && (

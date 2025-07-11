@@ -38,3 +38,5 @@ export const useJobIdStore = create<JobIdState>((set) => ({
   setJobId: (jobId) => set({ jobId }),
   resetJobId: () => set({ jobId: null }),
 }));
+
+
