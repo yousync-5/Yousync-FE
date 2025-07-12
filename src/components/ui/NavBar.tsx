@@ -11,12 +11,6 @@ interface Actor {
   name: string;
   id: number;
 }
-
-
-interface Actor {
-  "name": string;
-  "id": number;
-}
 export const NavBar: React.FC = () => {
   const router = useRouter();
   const { user, isLoggedIn, isLoading: userLoading } = useUser();
@@ -30,6 +24,31 @@ export const NavBar: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+
+    // 스크롤을 오른쪽 끝으로 밀어줌
+    requestAnimationFrame(() => {
+      if(inputRef.current){
+        inputRef.current.scrollLeft= inputRef.current.scrollWidth;
+      }
+    })
+  }
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsLoggedIn(!!localStorage.getItem('access_token'));
+    }
+    const onStorage = () => setIsLoggedIn(!!localStorage.getItem('access_token'));
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -81,28 +100,35 @@ export const NavBar: React.FC = () => {
   }, [searchQuery, fetchActorsData]);
 
 
-  const handleUrlSearch = async () => {
+  const handleSearchClick = async () => {
+    // url 검색
     if (searchQuery.startsWith('http')) {
       try {
         const res = await axios.post<{ exists: boolean }>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/urls/check`, { youtube_url: searchQuery });
         if (res.data.exists === true) {
           const videoId = extractYoutubeVideoId(searchQuery);
           router.push(`/urlsearch?videoId=${videoId}`);
+          setSearchQuery("");
         } else {
           console.log("DB에 존재하지 않는 URL입니다.");
         }
       } catch (error) {
         console.log("URL 검색 중 오류 발생");
-
-  
       }
+    } 
+     // 배우 이름 검색
+    else if(searchQuery.trim()){
+      clickActor(searchQuery);
+      setSearchQuery("");
+      setShowDropdown(false);
+      setHighlightIndex(-1);
     }
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (searchQuery.startsWith("http")) {
       if (e.key === "Enter") {
-        handleUrlSearch();
+        handleSearchClick();
       }
       return;
     }
@@ -116,7 +142,7 @@ export const NavBar: React.FC = () => {
     } else if (e.key === "Enter") {
       if (highlightIndex >= 0 && highlightIndex < serachedMovies.length) {
         const selected = serachedMovies[highlightIndex];
-        setSearchQuery(selected.name);
+        setSearchQuery("");
         setShowDropdown(false);
         setHighlightIndex(-1);
         clickActor(selected.name);
@@ -164,16 +190,19 @@ export const NavBar: React.FC = () => {
                 <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
               </div>
               <input
+              ref={inputRef}
                 type="text"
                 placeholder="배우, url 검색..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-64 pl-10 pr-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                onChange={handleInputChange}
+                className="w-64 pl-10 pr-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 
+                focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 
+                overflow-x-auto whitespace-nowrap"                
                 onKeyDown={handleInputKeyDown}
               />
               <button
                 className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 bg-emerald-600 text-white rounded-md text-sm hover:bg-emerald-700 transition"
-                onClick={handleUrlSearch}
+                onClick={handleSearchClick}
               >
                 검색
               </button>
@@ -241,8 +270,6 @@ export const NavBar: React.FC = () => {
                 </button>
               </>
             )}
-
-          
           </div>
         </div>
       </div>
