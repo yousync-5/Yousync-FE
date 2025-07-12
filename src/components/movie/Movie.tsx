@@ -28,20 +28,13 @@ interface MovieProps {
 }
 
 export default function Movie({ tokens, isLoading, error, onOpenModal }: MovieProps) {
-  const [selectedTab, setSelectedTab] = useState("인기 영상");
+  
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const [playingVideo, setPlayingVideo] = useState<string | null>(null);
   const router = useRouter();
 
-  const tabs = [
-    "인기 배우",
-    "인기 영상",
-    "미국 배우",
-    "영국 배우",
-    "남자 배우",
-    "여자 배우",
-  ];
+  
 
   const videos = tokens.map(({ id, youtubeId, actor_name }) => ({
     videoId: String(id),
@@ -250,26 +243,12 @@ export default function Movie({ tokens, isLoading, error, onOpenModal }: MoviePr
           </div>
         )}
         <div className="max-w-7xl mx-auto px-2">
-          <div className="flex justify-center gap-6 text-sm font-medium mb-8">
-            {tabs.map((tab) => (
-              <button
-                key={tab}
-                className={`transition-all duration-200 px-6 py-3 rounded-full font-bold ${
-                  selectedTab === tab
-                    ? "bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white shadow-lg transform scale-105"
-                    : "text-gray-400 hover:text-green-400 hover:bg-gray-900"
-                }`}
-                onClick={() => setSelectedTab(tab)}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+          
           {isLoading && (
             <div className="flex items-center justify-center py-20">
               <div className="flex flex-col items-center space-y-4">
                 <div className="animate-spin w-8 h-8 border-3 border-green-400 border-t-transparent rounded-full" />
-                <div className="text-gray-500 font-medium">영화 목록을 불러오는 중...</div>
+                <div className="text-gray-500 font-medium">영화를 불러오는 중...</div>
               </div>
             </div>
           )}
