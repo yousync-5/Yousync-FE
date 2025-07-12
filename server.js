@@ -1,43 +1,30 @@
-const { createServer } = require('https')
-const { parse } = require('url')
-const next = require('next')
-const fs = require('fs')
+// server.js
+const { createServer } = require('https');
+const { parse }       = require('url');
+const next            = require('next');
+const fs              = require('fs');
+const path            = require('path');
 
-const dev = process.env.NODE_ENV !== 'production'
-const hostname = 'localhost'  // 로컬 개발용
-const port = 3000
+const dev = process.env.NODE_ENV !== 'production';
+const hostname = '0.0.0.0';
+const port     = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
-// when using middleware `hostname` and `port` must be provided below
-const app = next({ dev, hostname, port })
-const handle = app.getRequestHandler()
+const app = next({ dev, hostname, port });
+const handle = app.getRequestHandler();
 
+// DuckDNS 도메인용 인증서 경로
 const httpsOptions = {
-  key: fs.readFileSync('./localhost+1-key.pem'),
-  cert: fs.readFileSync('./localhost+1.pem'),
-}
+  key:  fs.readFileSync('/etc/letsencrypt/live/yousync.duckdns.org/privkey.pem'),
+  cert: fs.readFileSync('/etc/letsencrypt/live/yousync.duckdns.org/fullchain.pem'),
+};
 
 app.prepare().then(() => {
-  createServer(httpsOptions, async (req, res) => {
-    try {
-      // Be sure to pass `true` as the second argument to `url.parse`.
-      // This tells it to parse the query portion of the URL.
-      const parsedUrl = parse(req.url, true)
-      const { pathname, query } = parsedUrl
-
-      await handle(req, res, parsedUrl)
-    } catch (err) {
-      console.error('Error occurred handling', req.url, err)
-      res.statusCode = 500
-      res.end('internal server error')
-    }
+  createServer(httpsOptions, (req, res) => {
+    const parsedUrl = parse(req.url, true);
+    handle(req, res, parsedUrl);
   })
-    .once('error', (err) => {
-      console.error(err)
-      res.statusCode = 500
-      res.end('internal server error')
-    })
-    .listen(port, () => {
-      console.log(`> Ready on https://localhost:${port}`)
-      console.log(`> Also available on https://127.0.0.1:${port}`)
-    })
-})
+  .listen(port, hostname, err => {
+    if (err) throw err;
+    console.log(`> HTTPS Server running on https://yousync.duckdns.org:${port}`);
+  });
+});
