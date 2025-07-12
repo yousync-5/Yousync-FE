@@ -45,6 +45,10 @@ export function useDubbingRecorder({
     if (!scripts || !scripts[idx]) return;
     const blobs = getAllBlobs();
     const blob = blobs[idx];
+    if (!blob) {
+      console.error(`[ERROR][uploadScript] blob is undefined for idx=${idx}`);
+      return;
+    }
     const scriptId = scripts[idx].id;
 
     try {
@@ -75,6 +79,10 @@ export function useDubbingRecorder({
   };
 
   const stopScriptRecording = async (scriptIdx: number) => {
+    if (!recording) {
+      console.warn('[WARN][stopScriptRecording] called but not recording, skip');
+      return;
+    }
     console.log(`[DEBUG][stopScriptRecording] called idx=${scriptIdx}`);
     try {
       await stopRecording(scriptIdx);
