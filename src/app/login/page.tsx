@@ -63,7 +63,6 @@ export default function LoginPage() {
                   onError={handleGoogleError}
                   useOneTap={false}
                   size="large"
-                  width="100%"
                   text="signin_with"
                   shape="rectangular"
                   theme="outline"
