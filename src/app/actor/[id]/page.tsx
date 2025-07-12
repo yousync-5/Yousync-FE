@@ -16,6 +16,7 @@ export default function ActorPage() {
         setIsLoading(true);
         try {
             const res = await axios.get<ActorMovie[]>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/actors/${actorName}`)
+            console.log(res.data)
             setMovies(res.data);
         } catch (error) {
             console.error("영화목록 가져오기 실패", error);
