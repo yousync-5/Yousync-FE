@@ -15,6 +15,8 @@ interface SidebarProps {
   totalCount?: number;
   recording?: boolean;
   onStopLooping?: () => void;
+  recordedScripts?: boolean[];
+  hasAnalysisResult?: boolean;
 }
 
 export default function Sidebar({
@@ -25,6 +27,8 @@ export default function Sidebar({
   onScriptSelect,
   recording = false,
   onStopLooping,
+  recordedScripts = [],
+  hasAnalysisResult = false,
 }: SidebarProps) {
   useEffect(() => {
     console.log("[Sidebar] captions:", captions);
@@ -81,6 +85,73 @@ export default function Sidebar({
           <span>{analyzedCount} / {totalCount}</span>
         </div>
       </div>
+
+      {/* 진행률 표시 */}
+      <div className="px-6 py-4 border-b border-gray-800 bg-gray-900/80">
+        <div className="w-full h-12 bg-gray-800 rounded flex items-center justify-center p-2">
+          {/* 문장별 진행률 표시 */}
+          <div className="flex w-full h-full space-x-1">
+            {captions.map((caption, index) => {
+              const isRecorded = recordedScripts[index];
+              const isAnalyzed = hasAnalysisResult && index === currentScriptIndex;
+              const isCurrent = index === currentScriptIndex;
+              
+              return (
+                <div
+                  key={index}
+                  className={`flex-1 rounded transition-all duration-200 ${
+                    isAnalyzed 
+                      ? 'bg-green-500' 
+                      : isRecorded 
+                      ? 'bg-blue-500' 
+                      : isCurrent 
+                      ? 'bg-yellow-500' 
+                      : 'bg-gray-600'
+                  } relative group flex items-center justify-center`}
+                  title={`문장 ${index + 1}: ${isAnalyzed ? '분석 완료' : isRecorded ? '녹음 완료' : isCurrent ? '현재' : '미완료'}`}
+                >
+                  {/* 상태 아이콘 */}
+                  {isAnalyzed && (
+                    <div className="text-white text-xs">✓</div>
+                  )}
+                  {isRecorded && !isAnalyzed && (
+                    <div className="text-white text-xs">🎤</div>
+                  )}
+                  {isCurrent && !isRecorded && (
+                    <div className="text-white text-xs">●</div>
+                  )}
+                  
+                  {/* 툴팁 */}
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                    {`문장 ${index + 1}: ${isAnalyzed ? '분석 완료' : isRecorded ? '녹음 완료' : isCurrent ? '현재' : '미완료'}`}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        
+        {/* 범례 */}
+        <div className="flex items-center justify-center space-x-4 text-xs text-gray-400 mt-2">
+          <div className="flex items-center space-x-1">
+            <div className="w-3 h-3 bg-gray-600 rounded"></div>
+            <span>미완료</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+            <span>현재</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <div className="w-3 h-3 bg-blue-500 rounded"></div>
+            <span>녹음 완료</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <div className="w-3 h-3 bg-green-500 rounded"></div>
+            <span>분석 완료</span>
+          </div>
+        </div>
+      </div>
+
       <ul className="px-4 py-6 pb-32">
         {captions.map((caption, index) => (
           <li

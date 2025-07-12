@@ -57,6 +57,7 @@ export default function DubbingContainer({
     finalResults,
     latestResultByScript,
     recording,
+    recordingCompleted,
     setIsSidebarOpen,
     setShowCompleted,
     setShowResults,
@@ -66,6 +67,8 @@ export default function DubbingContainer({
     setFinalResults,
     setLatestResultByScript,
     setRecording,
+    setRecordingCompleted,
+    handleRecordingComplete,
     handlePlay,
     handlePause,
     handleScriptSelect
@@ -430,6 +433,43 @@ useEffect(() => {
     return str.toLowerCase().replace(/[^a-z0-9]/g, '');
   }
 
+  const [showAnalysisResult, setShowAnalysisResult] = useState(false);
+  const [isRecordingPlayback, setIsRecordingPlayback] = useState(false);
+
+  // 현재 문장의 분석 결과 가져오기
+  const currentScript = front_data.captions[currentScriptIndex];
+  const normKey = normalizeScript(currentScript?.script);
+  const analysisResult = latestResultByScript[normKey];
+
+  // 분석 결과가 들어오면 계속 표시
+  useEffect(() => {
+    if (analysisResult) {
+      console.log('[DubbingContainer] 분석 결과 도착 - recordingCompleted를 false로 설정');
+      setShowAnalysisResult(true);
+      // 분석 결과가 들어오면 녹음 완료 상태 해제 (다음 문장으로 넘어갈 수 있도록)
+      setRecordingCompleted(false);
+    }
+  }, [analysisResult]);
+
+  // 녹음이 시작되면 분석 결과 표시 해제
+  useEffect(() => {
+    if (recording) {
+      console.log('[DubbingContainer] 녹음 시작 - 분석 결과 표시 해제');
+      setShowAnalysisResult(false);
+    }
+  }, [recording]);
+
+  // 자동재생 상태에 따라 분석 결과 표시 제어
+  useEffect(() => {
+    if (isRecordingPlayback) {
+      console.log('[DubbingContainer] 자동재생 시작 - 분석 결과 표시 해제');
+      setShowAnalysisResult(false);
+    } else if (analysisResult && !recording) {
+      console.log('[DubbingContainer] 자동재생 완료 - 분석 결과 다시 표시');
+      setShowAnalysisResult(true);
+    }
+  }, [isRecordingPlayback, analysisResult, recording]);
+
   // --- 렌더링 ---
   if (!isReady) {
     return (
@@ -483,7 +523,10 @@ useEffect(() => {
               videoPlayerRef={videoPlayerRef}
               currentWords={currentWords}
               recording={recording}
+              recordingCompleted={recordingCompleted}
               onStopLooping={() => pitchRef.current?.stopLooping?.()}
+              showAnalysisResult={showAnalysisResult}
+              analysisResult={analysisResult}
             />
           </div>
   
@@ -510,7 +553,6 @@ useEffect(() => {
                     setFinalResults({});
                     setLatestResultByScript({});
                   }
-                  
                   // 2. jobId와 문장 인덱스 매핑 콘솔 출력
                   jobIds.forEach((jobId, idx) => {
                     const script = front_data.captions[idx]?.script;
@@ -521,43 +563,14 @@ useEffect(() => {
                 }
               }}
               onRecordingChange={setRecording}
+              handleRecordingComplete={handleRecordingComplete}
+              showAnalysisResult={showAnalysisResult}
+              recordingCompleted={recordingCompleted}
+              onRecordingPlaybackChange={setIsRecordingPlayback}
             />
           </div>
         </div>
-  
-        {/* 결과 섹션 */}
-        {/* {showCompleted && (
-          <motion.div
-            ref={resultsRef}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 30 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-          >
-            <TestResultAnalysisSection
-              result={front_data}
-              currentScriptIndex={currentScriptIndex}
-              getScoreColor={getScoreColor}
-              getScoreLevel={getScoreLevel}
-              serverPitchData={serverPitchData}
-              id={id}
-              resultsRef={resultsRef as React.RefObject<HTMLDivElement>}
-            />
-          </motion.div>
-        )} */}
-  
-        {/* 결과 보기 버튼 */}
-        {!showCompleted && (
-          <div className="text-center mt-8">
-            <button
-              onClick={showResultsSection}
-              className="px-8 py-4 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 hover:from-green-600 hover:via-emerald-600 hover:to-teal-600 text-white rounded-lg text-xl font-bold transition-all duration-200 transform hover:scale-105 shadow-lg"
-            >
-              결과 보기
-            </button>
-          </div>
-        )}
       </div>
-  
       {/* Sidebar - 오른쪽 고정 */}
       <Sidebar
         isOpen={isSidebarOpen}
@@ -571,8 +584,8 @@ useEffect(() => {
         totalCount={191}
         recording={recording}
         onStopLooping={() => pitchRef.current?.stopLooping?.()}
+        recordedScripts={recordingCompleted ? Array(front_data.captions.length).fill(false).map((_, i) => i === currentScriptIndex) : []}
       />
     </div>
   );
-  
-} 
+}

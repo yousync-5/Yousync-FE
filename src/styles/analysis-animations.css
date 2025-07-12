@@ -1,0 +1,35 @@
+/* 분석 애니메이션 전용 CSS */
+
+/* 스캔 바 효과 */
+@keyframes scan-line {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes scan-glow {
+  0%, 100% { 
+    box-shadow: 
+      0 0 5px rgba(59, 130, 246, 0.8),
+      0 0 10px rgba(59, 130, 246, 0.6),
+      0 0 15px rgba(59, 130, 246, 0.4);
+  }
+  50% { 
+    box-shadow: 
+      0 0 10px rgba(59, 130, 246, 1),
+      0 0 20px rgba(59, 130, 246, 0.8),
+      0 0 30px rgba(59, 130, 246, 0.6),
+      0 0 40px rgba(59, 130, 246, 0.4);
+  }
+}
+
+.animate-scan-line {
+  animation: scan-line 3s linear;
+}
+
+.animate-scan-glow {
+  animation: scan-glow 0.5s ease-in-out infinite;
+} 

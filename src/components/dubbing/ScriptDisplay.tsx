@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 import { VideoPlayerRef } from "./VideoPlayer";
 import PronunciationTimingGuide from "./PronunciationTimingGuide";
+import "@/styles/analysis-animations.css";
 
 interface ScriptDisplayProps {
   captions: Array<{
@@ -30,7 +31,10 @@ interface ScriptDisplayProps {
     id: number;
   }>;
   recording?: boolean;
+  recordingCompleted?: boolean;
   onStopLooping?: () => void;
+  showAnalysisResult?: boolean;
+  analysisResult?: any;
 }
 
 export default function ScriptDisplay({ 
@@ -42,12 +46,24 @@ export default function ScriptDisplay({
   videoPlayerRef,
   currentWords = [],
   recording = false,
+  recordingCompleted = false,
   onStopLooping,
+  showAnalysisResult = false,
+  analysisResult = null,
 }: ScriptDisplayProps) {
 
   const [animatedProgress, setAnimatedProgress] = useState(0);
   const [sentenceProgress, setSentenceProgress] = useState(0);
   const [sentenceAnimatedProgress, setSentenceAnimatedProgress] = useState(0);
+
+  
+
+
+
+
+
+
+
 
   // 현재 시간을 분:초 형식으로 변환
   const formatTime = (seconds: number) => {
@@ -64,12 +80,6 @@ export default function ScriptDisplay({
       const targetTime = captions[newIndex].start_time;
       videoPlayerRef.current.seekTo(targetTime);
       videoPlayerRef.current.playVideo(); // 항상 재생
-      console.log('스크립트 변경으로 영상 이동 및 재생:', {
-        newIndex,
-        targetTime,
-        script: captions[newIndex].script,
-        endTime: captions[newIndex].end_time
-      });
     }
   };
 
@@ -254,9 +264,16 @@ export default function ScriptDisplay({
                   🎧 {formatTime(playbackRange.startTime)} ~ {playbackRange.endTime ? formatTime(playbackRange.endTime) : '끝'}
                 </span>
               )}
-              <div className="text-sm font-medium text-green-400">
-                {Math.round(((currentScriptIndex + 1) / captions.length) * 100)}% 완료
-              </div>
+              {recordingCompleted && !analysisResult ? (
+                <div className="flex items-center space-x-2 text-sm font-medium text-blue-400">
+                  <div className="animate-spin w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full"></div>
+                  <span>분석 중</span>
+                </div>
+              ) : (
+                <div className="text-sm font-medium text-green-400">
+                  {Math.round(((currentScriptIndex + 1) / captions.length) * 100)}% 완료
+                </div>
+              )}
             </div>
           </div>
 
@@ -280,7 +297,7 @@ export default function ScriptDisplay({
                 if (onStopLooping) onStopLooping();
                 handleScriptChange(Math.max(0, currentScriptIndex - 1));
               }}
-              disabled={currentScriptIndex === 0 || recording}
+              disabled={currentScriptIndex === 0 || recording || recordingCompleted}
               className={`p-2 rounded-full transition-all duration-200 ${
                 currentScriptIndex === 0 
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
@@ -296,7 +313,20 @@ export default function ScriptDisplay({
                 background: `linear-gradient(to right, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.15) ${animatedProgress * 100}%, rgba(31, 41, 55, 1) ${animatedProgress * 100}%, rgba(31, 41, 55, 1) 100%)`
               }}
             >
-              {renderScriptWithWords()}
+              {recordingCompleted && !analysisResult ? (
+                <div className="flex flex-col items-center justify-center space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="animate-spin w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full"></div>
+                    <span className="text-blue-400 text-xl font-semibold">분석 중...</span>
+                  </div>
+                  <div className="text-gray-400 text-sm text-center">
+                    <p>🎤 녹음 완료! AI가 발음을 분석하고 있습니다</p>
+                    <p className="mt-1">잠시만 기다려주세요...</p>
+                  </div>
+                </div>
+              ) : (
+                renderScriptWithWords()
+              )}
             </div>
              
 
@@ -309,7 +339,7 @@ export default function ScriptDisplay({
                 if (onStopLooping) onStopLooping();
                 handleScriptChange(Math.min(captions.length - 1, currentScriptIndex + 1));
               }}
-              disabled={currentScriptIndex === captions.length - 1 || recording}
+              disabled={currentScriptIndex === captions.length - 1 || recording || recordingCompleted}
               className={`p-2 rounded-full transition-all duration-200 ${
                 currentScriptIndex === captions.length - 1 
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
@@ -320,13 +350,26 @@ export default function ScriptDisplay({
             </button>
           </div>
           {/* 🎯 직관적 타이밍 가이드 */}
-          {currentWords && currentWords.length > 0 && (
+          {showAnalysisResult ? (
             <PronunciationTimingGuide
               captions={captions}
               currentScriptIndex={currentScriptIndex}
               currentVideoTime={currentVideoTime}
               currentWords={currentWords}
+              showAnalysisResult={showAnalysisResult}
+              analysisResult={analysisResult}
+              recording={recording}
             />
+          ) : (
+            currentWords && currentWords.length > 0 && (
+              <PronunciationTimingGuide
+                captions={captions}
+                currentScriptIndex={currentScriptIndex}
+                currentVideoTime={currentVideoTime}
+                currentWords={currentWords}
+                recording={recording}
+              />
+            )
           )}
         </div>
       </div>

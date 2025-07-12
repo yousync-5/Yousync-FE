@@ -83,9 +83,6 @@ export function useVoiceRecorder() {
     startRecording,
     stopRecording,
     recording,
-    // getAllBlobs: () => allBlobsRef.current,  // 외부에서 전체 가져오기
-    getAllBlobs:()=>Object.entries(allBlobsRef.current)
-    .sort(([a], [b]) => Number(a) - Number(b))
-    .map(([, blob]) => blob),
+    getAllBlobs: () => allBlobsRef.current,  // Record<number, Blob> 형태로 반환
   };
 }

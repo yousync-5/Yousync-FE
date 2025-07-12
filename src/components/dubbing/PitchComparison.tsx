@@ -23,6 +23,10 @@ interface PitchComparisonProps {
   scripts?: ScriptItem[];
   onUploadComplete?: (success: boolean, jobIds?: string[]) => void;
   onRecordingChange?: (recording: boolean) => void;
+  handleRecordingComplete?: () => void;
+  showAnalysisResult?: boolean;
+  recordingCompleted?: boolean;
+  onRecordingPlaybackChange?: (isPlaying: boolean) => void;
 }
 
 const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComparisonProps>(function PitchComparison({ 
@@ -38,6 +42,10 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   scripts,
   onUploadComplete,
   onRecordingChange,
+  handleRecordingComplete,
+  showAnalysisResult = false,
+  recordingCompleted = false,
+  onRecordingPlaybackChange,
 }: PitchComparisonProps, ref) {
 
   const {
@@ -104,20 +112,24 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
     
     audio.onended = () => {
       setIsPlayingRecording(false);
+      onRecordingPlaybackChange?.(false);
       URL.revokeObjectURL(audioUrl);
     };
     
     audio.onerror = () => {
       setIsPlayingRecording(false);
+      onRecordingPlaybackChange?.(false);
       URL.revokeObjectURL(audioUrl);
       console.error('[ERROR] 오디오 재생 실패');
     };
 
     audio.play().then(() => {
       setIsPlayingRecording(true);
+      onRecordingPlaybackChange?.(true);
     }).catch((error) => {
       console.error('[ERROR] 오디오 재생 시작 실패:', error);
       setIsPlayingRecording(false);
+      onRecordingPlaybackChange?.(false);
       URL.revokeObjectURL(audioUrl);
     });
   };
@@ -129,6 +141,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
       audioRef.current = null;
     }
     setIsPlayingRecording(false);
+    onRecordingPlaybackChange?.(false);
   };
 
   // 컴포넌트 언마운트 시 오디오 정리
@@ -188,6 +201,15 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
     },
     stopLooping,
   }));
+
+  // 녹음 상태 변경 감지하여 완료 시 handleRecordingComplete 호출
+  useEffect(() => {
+    // 녹음이 true에서 false로 변경되었을 때만 (녹음 완료)
+    if (prevRecordingRef.current === true && recording === false && handleRecordingComplete) {
+      console.log('[DEBUG][PitchComparison] 녹음 완료 감지, handleRecordingComplete 호출');
+      handleRecordingComplete();
+    }
+  }, [recording, handleRecordingComplete]);
 
   // allRecorded, uploadAllRecordings 관련 useEffect 완전 제거
 
@@ -340,70 +362,90 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
           </div>
         </div>
         <div>
-          <div className="text-sm text-gray-400 mb-2">Original Pitch</div>
-          <div className="w-full h-16 bg-gray-800 rounded flex items-center justify-center">
-            {/* 녹음된 오디오 재생 버튼 */}
-            {recordedScripts[currentScriptIndex] && (
-              <button
-                onClick={isPlayingRecording ? stopRecordingPlayback : playRecording}
-                className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 ${
-                  isPlayingRecording 
-                    ? 'bg-red-500 hover:bg-red-600 text-white' 
-                    : 'bg-green-500 hover:bg-green-600 text-white'
-                }`}
-                title={isPlayingRecording ? '재생 중지' : '녹음본 재생'}
-              >
-                {isPlayingRecording ? (
-                  <>
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <rect x="6" y="4" width="8" height="12" rx="1" />
-                    </svg>
-                    <span className="text-sm">정지</span>
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <polygon points="6,4 14,10 6,16" />
-                    </svg>
-                    <span className="text-sm">재생</span>
-                  </>
-                )}
-              </button>
-            )}
-            {!recordedScripts[currentScriptIndex] && (
-              <span className="text-gray-500 text-sm">녹음 후 재생 가능</span>
-            )}
+          {/* <div className="text-sm text-gray-400 mb-2">
+            Original Pitch
+          </div> */}
+          
+                      {/* 분석 진행률 섹션 */}
+            <div className="mb-3">
+              <div className="text-xs text-gray-400 mb-2 flex items-center justify-between">
+                <span>📊 분석 진행률</span>
+                <span className="text-xs">
+                  {(() => {
+                    const total = captions.length;
+                    const recorded = Object.values(recordedScripts).filter(Boolean).length;
+                    const analyzed = showAnalysisResult ? 1 : 0;
+                    return `${recorded}/${total} 녹음, ${analyzed} 분석`;
+                  })()}
+                </span>
+              </div>
+              
+              {/* 녹음 재생 버튼 */}
+              {recordedScripts[currentScriptIndex] && (
+                <div className="flex justify-center mb-2">
+                  {/* <button
+                    onClick={isPlayingRecording ? stopRecordingPlayback : playRecording}
+                    className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 ${
+                      isPlayingRecording 
+                        ? 'bg-red-500 hover:bg-red-600 text-white' 
+                        : 'bg-green-500 hover:bg-green-600 text-white'
+                    }`}
+                    title={isPlayingRecording ? '재생 중지' : '녹음본 재생'}
+                  >
+                    {isPlayingRecording ? (
+                      <>
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <rect x="6" y="4" width="8" height="12" rx="1" />
+                        </svg>
+                        <span className="text-sm">정지</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <polygon points="6,4 14,10 6,16" />
+                        </svg>
+                        <span className="text-sm">재생</span>
+                      </>
+                    )}
+                  </button> */}
+                </div>
+              )}
+            
           </div>
+        
         </div>
         
         <div className="flex flex-col items-center space-y-2 mt-4">
           <div className="flex flex-row justify-center space-x-4">
             <button
               onClick={() => {
+                console.log('[DEBUG] 이전 버튼 클릭됨');
+                console.log('[DEBUG] recording:', recording);
+                console.log('[DEBUG] recordingCompleted:', recordingCompleted);
                 if (isLooping) stopLooping();
                 handlePrevScript();
               }}
               className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20"
               title="이전 문장으로 이동"
-              disabled={currentScriptIndex === 0 || recording}
+              disabled={currentScriptIndex === 0 || recording || recordingCompleted}
             >
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10 5l-7 5 7 5V5zM17 5h-2v10h2V5z" />
               </svg>
             </button>
             <div className="relative inline-block">
-              <button
-                onClick={() => {
-                  if (isVideoEnded) {
-                    const startTime = captions[currentScriptIndex]?.start_time || 0;
-                    videoPlayerRef?.current?.seekTo(startTime);
-                  }
-                  videoPlayerRef?.current?.playVideo();
-                }}
-                className="w-16 h-16 bg-gradient-to-r from-green-500 to-lime-500 hover:from-green-600 hover:to-lime-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20"
-                title="실행"
-                disabled={isVideoPlaying || !videoPlayerRef?.current || recording}
-              >
+                          <button
+              onClick={() => {
+                if (isVideoEnded) {
+                  const startTime = captions[currentScriptIndex]?.start_time || 0;
+                  videoPlayerRef?.current?.seekTo(startTime);
+                }
+                videoPlayerRef?.current?.playVideo();
+              }}
+              className="w-16 h-16 bg-gradient-to-r from-green-500 to-lime-500 hover:from-green-600 hover:to-lime-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20"
+              title="실행"
+              disabled={isVideoPlaying || !videoPlayerRef?.current || recording}
+            >
                 <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                   <polygon points="6,4 16,10 6,16" />
                 </svg>
@@ -414,7 +456,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
                 if (isLooping) stopLooping();
                 handleMicClick();
               }}
-              disabled={recording}
+              disabled={recording || recordingCompleted}
               className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20 ${recording ? 'bg-green-500 animate-pulse-mic' : 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white'}`}
               style={recording ? { boxShadow: '0 0 0 8px rgba(34,197,94,0.4), 0 0 0 16px rgba(34,197,94,0.2)' } : undefined}
             >
@@ -435,17 +477,22 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
             </button>
             <button
               onClick={() => {
+                console.log('[DEBUG] 다음 버튼 클릭됨');
+                console.log('[DEBUG] recording:', recording);
+                console.log('[DEBUG] recordingCompleted:', recordingCompleted);
+                console.log('[DEBUG] 버튼 비활성화 상태:', recording || recordingCompleted);
                 if (isLooping) stopLooping();
                 handleNextScript();
               }}
               className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20"
               title="다음 문장으로 이동"
-              disabled={recording}
+              disabled={recording || recordingCompleted}
             >
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10 5l7 5-7 5V5zM3 5h2v10H3V5z" />
               </svg>
             </button>
+
           </div>
           <div className="flex flex-row justify-center mt-2 space-x-4">
             <button
@@ -463,10 +510,15 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
               </svg>
             </button>
             <button
-              onClick={handleLoopToggle}
+              onClick={() => {
+                console.log('[DEBUG] 반복 버튼 클릭됨');
+                console.log('[DEBUG] recording:', recording);
+                console.log('[DEBUG] recordingCompleted:', recordingCompleted);
+                handleLoopToggle();
+              }}
               className={`w-16 h-16 ${isLooping ? 'bg-gradient-to-r from-yellow-400 to-orange-500' : 'bg-gradient-to-r from-gray-500 to-gray-700'} hover:from-yellow-500 hover:to-orange-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20`}
               title={isLooping ? '구간반복 해제' : '구간반복'}
-              disabled={recording}
+              disabled={recording || recordingCompleted}
             >
               <svg viewBox="0 0 48 48" fill="none" className={`w-7 h-7 ${isLooping ? 'animate-spin' : ''}`} stroke="currentColor" strokeWidth="4">
                 <path d="M8 24c0-8.837 7.163-16 16-16 4.418 0 8.418 1.79 11.314 4.686" strokeLinecap="round"/>
