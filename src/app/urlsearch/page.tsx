@@ -1,5 +1,5 @@
 // app/urlsearch/page.tsx
-import { api } from '@/services/api';
+import { backendApi } from '@/services/api';
 import UrlSearchContainer from '@/components/urlsearch/UrlSearchContainer';
 import type { TokenDetailResponse } from '@/types/pitch';
 import { extractYoutubeVideoId } from '@/utils/extractYoutubeVideoId';
@@ -10,7 +10,7 @@ interface UrlSearchPageProps {
 
 async function getTokens(url: string): Promise<TokenDetailResponse[]> {
   try {
-    const data = await api.get<TokenDetailResponse[]>(url);
+    const data = await backendApi.get<TokenDetailResponse[]>(url);
     if (Array.isArray(data) && data.length > 0) {
       return data.map(token => ({
         ...token,
@@ -28,7 +28,7 @@ export default async function UrlSearchPage(
   props: UrlSearchPageProps
 ) {
   // ★ searchParams 자체가 비동기 API라 await 필요
-  const searchParams = await props.searchParams;
+  const searchParams = props.searchParams;
 
   const videoId = searchParams?.videoId;
   let tokens: TokenDetailResponse[] = [];
