@@ -1,27 +1,44 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { GoogleOAuthProvider, useGoogleLogin } from "@react-oauth/google";
-// import { GoogleLoginButton } from "react-social-login-buttons";
-import { FcGoogle } from "react-icons/fc";
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { useState } from "react";
+import { authService } from "@/services/auth";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  // 실제 구글 로그인 로직
-  const login = useGoogleLogin({
-    onSuccess: (tokenResponse) => {
-      if (typeof window !== "undefined") {
-        localStorage.setItem("access_token", tokenResponse.access_token);
-        router.push("/");
+  // 구글 로그인 성공 처리
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    try {
+      setIsLoading(true);
+      
+      if (!credentialResponse.credential) {
+        throw new Error('구글 인증 정보를 받지 못했습니다.');
       }
-    },
-    onError: () => {
-      // 에러 무시 (UI에 표시하지 않음)
-    },
-  });
+      
+      // id_token을 백엔드로 전송
+      await authService.googleLogin(credentialResponse.credential);
+      
+      // 로그인 성공 시 홈으로 이동
+      router.push("/");
+    } catch (error) {
+      console.error("로그인 실패:", error);
+      if (error instanceof Error) {
+        console.error("에러 메시지:", error.message);
+      }
+      alert("로그인에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 구글 로그인 실패 처리
+  const handleGoogleError = () => {
+    console.error("구글 로그인 실패");
+    setIsLoading(false);
+  };
 
   return (
     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
@@ -40,14 +57,22 @@ export default function LoginPage() {
             </div>
             {/* 로그인 안내 */}
             <div className="mb-7 w-full">
-              <button
-                onClick={() => login()}
-                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl bg-white hover:bg-emerald-100 active:bg-emerald-200 transition font-semibold text-gray-800 shadow-md text-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                disabled={isLoading}
-              >
-                <FcGoogle className="text-2xl" />
-                <span>Google로 로그인</span>
-              </button>
+              {!isLoading ? (
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  useOneTap={false}
+                  size="large"
+                  width="100%"
+                  text="signin_with"
+                  shape="rectangular"
+                  theme="outline"
+                />
+              ) : (
+                <div className="w-full py-3 px-4 rounded-xl bg-gray-300 text-center text-gray-600 font-semibold">
+                  로그인 중...
+                </div>
+              )}
             </div>
             {/* 안내문구 */}
             <div className="w-full text-center mt-2">
