@@ -32,7 +32,11 @@ const SlotScript: FC<SlotScriptProps> = ({ captions, currentIdx }) => {
                 className="text-gray-400 blur-sm text-lg font-medium max-w-full text-center"
                 style={{ minHeight: 34, marginTop: i === 1 ? 2 : 0 }}
               >
-                {lines[i]!.script}
+                {(() => {
+                  const textarea = document.createElement('textarea');
+                  textarea.innerHTML = lines[i]!.script;
+                  return textarea.value;
+                })()}
               </div>
             ) : (
               <div key={i} style={{ minHeight: 34 }} />
@@ -54,7 +58,11 @@ const SlotScript: FC<SlotScriptProps> = ({ captions, currentIdx }) => {
                 minHeight: 44,
               }}
             >
-              {lines[2].script}
+              {(() => {
+                const textarea = document.createElement('textarea');
+                textarea.innerHTML = lines[2].script;
+                return textarea.value;
+              })()}
             </div>
           )}
         </div>
@@ -68,7 +76,11 @@ const SlotScript: FC<SlotScriptProps> = ({ captions, currentIdx }) => {
                 className="text-gray-400 blur-sm text-lg font-medium max-w-full text-center"
                 style={{ minHeight: 34, marginTop: 2 }}
               >
-                {lines[i]!.script}
+                {(() => {
+                  const textarea = document.createElement('textarea');
+                  textarea.innerHTML = lines[i]!.script;
+                  return textarea.value;
+                })()}
               </div>
             ) : (
               <div key={i} style={{ minHeight: 34 }} />

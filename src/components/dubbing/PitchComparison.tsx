@@ -46,26 +46,29 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
     uploading,
     startScriptRecording,
     stopScriptRecording,
-    allRecorded,
-    uploadAllRecordings,
+    getAllBlobs,
   } = useDubbingRecorder({
     captions,
     tokenId,
     scripts,
     onUploadComplete: (success: boolean, jobIds: string[]) => {
-      console.log('[DEBUG][PitchComparison] onUploadComplete 내부 콜백', { success, jobIds });
+      console.log(`[🔄 PitchComparison] onUploadComplete 콜백 호출됨`);
+      console.log(`[📊 결과] success: ${success}, jobIds: ${JSON.stringify(jobIds)}`);
+      
       if (success) {
         if (Array.isArray(jobIds)) {
-          jobIds.forEach((jobId, idx) => {
-            console.log(`[DEBUG][PitchComparison] 업로드 성공: jobId[${idx}]=${jobId}`);
+          jobIds.forEach((jobId) => {
+            console.log(`[✅ 업로드 성공] 문장 ${currentScriptIndex + 1}번 jobId: ${jobId}`);
           });
         } else {
-          console.warn('[DEBUG][PitchComparison] jobIds가 배열이 아님', jobIds);
+          console.warn(`[⚠️ 경고] jobIds가 배열이 아님: ${typeof jobIds}`);
         }
       } else {
-        console.warn('[DEBUG][PitchComparison] 업로드 실패', jobIds);
+        console.error(`[❌ 업로드 실패] 문장 ${currentScriptIndex + 1}번 업로드 실패`);
       }
-      onUploadComplete?.(success, jobIds)
+      
+      // 상위 컴포넌트로 콜백 전달
+      onUploadComplete?.(success, jobIds);
     },
   });
 
@@ -77,6 +80,70 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   const [isVideoEnded, setIsVideoEnded] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
   const loopIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
+  // 녹음된 오디오 재생 관련 상태
+  const [isPlayingRecording, setIsPlayingRecording] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // 녹음된 오디오 재생 함수
+  const playRecording = () => {
+    const blobs = getAllBlobs();
+    const currentBlob = blobs[currentScriptIndex];
+    
+    if (!currentBlob) {
+      console.warn('[WARN] 현재 문장의 녹음 파일이 없습니다.');
+      return;
+    }
+
+    // 기존 오디오 정지
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    // 새 오디오 생성 및 재생
+    const audioUrl = URL.createObjectURL(currentBlob);
+    const audio = new Audio(audioUrl);
+    audioRef.current = audio;
+    
+    audio.onended = () => {
+      setIsPlayingRecording(false);
+      URL.revokeObjectURL(audioUrl);
+    };
+    
+    audio.onerror = () => {
+      setIsPlayingRecording(false);
+      URL.revokeObjectURL(audioUrl);
+      console.error('[ERROR] 오디오 재생 실패');
+    };
+
+    audio.play().then(() => {
+      setIsPlayingRecording(true);
+    }).catch((error) => {
+      console.error('[ERROR] 오디오 재생 시작 실패:', error);
+      setIsPlayingRecording(false);
+      URL.revokeObjectURL(audioUrl);
+    });
+  };
+
+  // 오디오 정지 함수
+  const stopRecordingPlayback = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    setIsPlayingRecording(false);
+  };
+
+  // 컴포넌트 언마운트 시 오디오 정리
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!recording) {
@@ -126,11 +193,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
     stopLooping,
   }));
 
-  useEffect(() => {
-    if (allRecorded && !uploading) {
-      uploadAllRecordings();
-    }
-  }, [allRecorded, uploading, uploadAllRecordings]);
+  // allRecorded, uploadAllRecordings 관련 useEffect 완전 제거
 
   const handleNextScript = () => {
     if (!captions || captions.length === 0) return;
@@ -282,12 +345,38 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
         </div>
         <div>
           <div className="text-sm text-gray-400 mb-2">Original Pitch</div>
-          <div className="w-full h-16 bg-gray-800 rounded">
-            <ServerPitchGraph
-              captionState={{ currentIdx: currentScriptIndex, captions: captions }}
-              token_id={tokenId}
-              serverPitchData={serverPitchData}
-            />
+          <div className="w-full h-16 bg-gray-800 rounded flex items-center justify-center">
+            {/* 녹음된 오디오 재생 버튼 */}
+            {recordedScripts[currentScriptIndex] && (
+              <button
+                onClick={isPlayingRecording ? stopRecordingPlayback : playRecording}
+                className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 ${
+                  isPlayingRecording 
+                    ? 'bg-red-500 hover:bg-red-600 text-white' 
+                    : 'bg-green-500 hover:bg-green-600 text-white'
+                }`}
+                title={isPlayingRecording ? '재생 중지' : '녹음본 재생'}
+              >
+                {isPlayingRecording ? (
+                  <>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <rect x="6" y="4" width="8" height="12" rx="1" />
+                    </svg>
+                    <span className="text-sm">정지</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <polygon points="6,4 14,10 6,16" />
+                    </svg>
+                    <span className="text-sm">재생</span>
+                  </>
+                )}
+              </button>
+            )}
+            {!recordedScripts[currentScriptIndex] && (
+              <span className="text-gray-500 text-sm">녹음 후 재생 가능</span>
+            )}
           </div>
         </div>
         

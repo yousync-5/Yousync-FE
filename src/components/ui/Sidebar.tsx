@@ -113,7 +113,23 @@ export default function Sidebar({
                 )}
               </span>
               <span className="flex-1 leading-relaxed">
-                {caption.script}
+                {(() => {
+                  if (typeof window === 'undefined') {
+                    // 서버 사이드에서는 기본적인 HTML 엔티티만 처리
+                    return caption.script
+                      .replace(/&amp;/g, '&')
+                      .replace(/&lt;/g, '<')
+                      .replace(/&gt;/g, '>')
+                      .replace(/&quot;/g, '"')
+                      .replace(/&#39;/g, "'")
+                      .replace(/&nbsp;/g, ' ');
+                  }
+                  
+                  // 클라이언트 사이드에서는 textarea를 사용
+                  const textarea = document.createElement('textarea');
+                  textarea.innerHTML = caption.script;
+                  return textarea.value;
+                })()}
               </span>
             </div>
             {/* 타임라인 */}

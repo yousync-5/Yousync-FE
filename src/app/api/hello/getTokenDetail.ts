@@ -6,10 +6,6 @@ export async function getTokenDetail(tokenId: string) {
   const response = await axios.get<TokenDetailResponse>(
     `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${numericId}`
   );
-  console.log("데이터 수집2")
-  console.log(response.data.actor_name);
-  console.log(response.data.token_name);
-
   const token = response.data;
 
   // 서버에서 바로 사용할 데이터 가공

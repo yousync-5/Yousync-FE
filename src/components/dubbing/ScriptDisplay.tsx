@@ -197,13 +197,32 @@ export default function ScriptDisplay({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentScriptIndex]);
 
+  // HTML 엔티티를 디코딩하는 함수 (SSR 호환)
+  const decodeHtmlEntities = (text: string) => {
+    if (typeof window === 'undefined') {
+      // 서버 사이드에서는 기본적인 HTML 엔티티만 처리
+      return text
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ');
+    }
+    
+    // 클라이언트 사이드에서는 textarea를 사용
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value;
+  };
+
   // word 단위로 스크립트 렌더링
   const renderScriptWithWords = () => {
     if (!currentWords || currentWords.length === 0) {
       // word 데이터가 없으면 기존 방식으로 렌더링
       return (
         <div className="text-white text-2xl font-bold text-center leading-tight">
-          &quot;{captions[currentScriptIndex]?.script}&quot;
+          &quot;{decodeHtmlEntities(captions[currentScriptIndex]?.script || '')}&quot;
         </div>
       );
     }
@@ -221,7 +240,7 @@ export default function ScriptDisplay({
                   : 'text-white'
               }`}
             >
-              {word.word.replace(/'/g, "&apos;")}{index < currentWords.length - 1 ? ' ' : ''}
+              {decodeHtmlEntities(word.word)}{index < currentWords.length - 1 ? ' ' : ''}
             </span>
           );
         })}&quot;
