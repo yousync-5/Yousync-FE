@@ -152,13 +152,15 @@ export const NavBar: React.FC = () => {
 
   const clickActor = (actor: string) => router.push(`/actor/${actor}`);
 
-
+  const handleToMain = () => {
+    router.push('/')
+  }
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-b border-gray-800 shadow-2xl">
       <div className="max-w-7xl mx-auto px-2 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-8">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent animate-pulse">YouSync</h1>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent animate-pulse cursor-pointer" onClick={handleToMain}>YouSync</h1>
             <div className="hidden md:flex items-center space-x-6">
               <a href="#" className="text-gray-400 hover:text-green-400 transition-colors font-medium">홈</a>
               <a href="#" className="text-gray-400 hover:text-emerald-400 transition-colors font-medium">영화</a>
