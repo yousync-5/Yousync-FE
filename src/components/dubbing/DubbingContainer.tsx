@@ -11,20 +11,8 @@ import toast from "react-hot-toast";
 import { motion } from "framer-motion";
 import { useAudioStream } from "@/hooks/useAudioStream";
 import { useJobIdsStore } from '@/store/useJobIdsStore';
+import { useDubbingState } from "@/hooks/useDubbingState";
 import Sidebar from "../ui/Sidebar";
-
-const SIDEBAR_WIDTH = 320;
-
-function useIsWideScreen() {
-  const [isWide, setIsWide] = useState(true);
-  useEffect(() => {
-    const check = () => setIsWide(window.innerWidth > SIDEBAR_WIDTH * 2);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
-  return isWide;
-}
 
 export default function DubbingContainer({
   tokenData,
@@ -42,19 +30,46 @@ export default function DubbingContainer({
   // 데이터 준비 여부 체크
   const isReady = !!(front_data && tokenData && serverPitchData);
 
-  // 사이드바 상태
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [currentScriptIndex, setCurrentScriptIndex] = useState(0);
-  const [currentVideoTime, setCurrentVideoTime] = useState(0);
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [showCompleted, setShowCompleted] = useState(false);
+  // 기본 상태들을 훅으로 관리
+  const dubbingState = useDubbingState(front_data?.captions?.length || 0, {
+    onScriptChange: (index: number) => {
+      // 스크립트 변경 시 추가 로직이 필요하면 여기에
+    },
+    onPlay: () => {
+      // 재생 시 추가 로직이 필요하면 여기에
+    },
+    onPause: () => {
+      // 일시정지 시 추가 로직이 필요하면 여기에
+    },
+    onRecordingChange: (recording: boolean) => {
+      // 녹음 상태 변경 시 추가 로직이 필요하면 여기에
+    }
+  });
 
-  const [showResults, setShowResults] = useState(false);
-
-  const [finalResults, setFinalResults] = useState<Record<string, any>>({}); // jobId 기준 결과
-  const [latestResultByScript, setLatestResultByScript] = useState<Record<string, any>>({}); // script 기준 마지막 결과
-
-  const [recording, setRecording] = useState(false);
+  // 기존 상태들을 훅에서 가져오기
+  const {
+    isSidebarOpen,
+    showCompleted,
+    showResults,
+    currentScriptIndex,
+    currentVideoTime,
+    isVideoPlaying,
+    finalResults,
+    latestResultByScript,
+    recording,
+    setIsSidebarOpen,
+    setShowCompleted,
+    setShowResults,
+    setCurrentScriptIndex,
+    setCurrentVideoTime,
+    setIsVideoPlaying,
+    setFinalResults,
+    setLatestResultByScript,
+    setRecording,
+    handlePlay,
+    handlePause,
+    handleScriptSelect
+  } = dubbingState;
 
   const videoPlayerRef = useRef<VideoPlayerRef | null>(null);
   const pitchRef = useRef<{ handleExternalStop: () => void, stopLooping?: () => void } | null>(null);
@@ -114,13 +129,13 @@ useEffect(() => {
         console.log('[디버깅] idx:', idx);
 
         // 1. jobId 기준으로 저장 (진행상황용)
-        setFinalResults((prev) => ({
+        setFinalResults((prev: Record<string, any>) => ({
           ...prev,
           [jobId]: data.result.result
         }));
         
         // 2. script 기준으로 마지막 결과만 저장 (문장별 결과용)
-        setLatestResultByScript((prev) => {
+        setLatestResultByScript((prev: Record<string, any>) => {
           const newState = {
             ...prev,
             [resultScriptNorm]: data.result.result
@@ -362,14 +377,17 @@ useEffect(() => {
     }
   }, [isReady, currentScriptIndex, front_data?.captions]);
 
-  const handlePlay = () => setIsVideoPlaying(true);
-  const handlePause = () => setIsVideoPlaying(false);
+  // 기존 함수들을 훅의 함수로 대체
+  const customHandlePlay = () => {
+    handlePlay();
+  };
 
-  // 사이드바 관련 상태, 컴포넌트, 버튼, setSidebarOpen 등 모두 삭제
-  // 기존 VideoPlayer, ScriptDisplay, PitchComparison, 결과 섹션 등만 남김
+  const customHandlePause = () => {
+    handlePause();
+  };
 
   // 문장 클릭 시 녹음 중지, 영상 이동 및 정지, 인덱스 변경
-  const handleScriptSelect = (index: number) => {
+  const customHandleScriptSelect = (index: number) => {
     // 1. 녹음 중이면 PitchComparison의 녹음 중지 핸들 호출
     pitchRef.current?.handleExternalStop();
 
@@ -379,7 +397,7 @@ useEffect(() => {
     videoPlayerRef.current?.pauseVideo();
 
     // 3. 문장 인덱스 변경
-    setCurrentScriptIndex(index);
+    handleScriptSelect(index);
   };
 
   // jobId별로 SSE 연결 및 결과 콘솔 출력
@@ -453,8 +471,8 @@ useEffect(() => {
               onEndTimeReached={() => {
                 pitchRef.current?.handleExternalStop?.();
               }}
-              onPlay={handlePlay}
-              onPause={handlePause}
+              onPlay={customHandlePlay}
+              onPause={customHandlePause}
             />
             <ScriptDisplay
               captions={front_data.captions}
@@ -479,8 +497,8 @@ useEffect(() => {
               serverPitchData={serverPitchData}
               videoPlayerRef={videoPlayerRef}
               onNextScript={setCurrentScriptIndex}
-              onPlay={handlePlay}
-              onPause={handlePause}
+              onPlay={customHandlePlay}
+              onPause={customHandlePause}
               isVideoPlaying={isVideoPlaying}
               scripts={tokenData?.scripts}
               onUploadComplete={(success, jobIds) => {
@@ -546,7 +564,7 @@ useEffect(() => {
         onClose={() => setIsSidebarOpen(false)}
         captions={front_data.captions}
         currentScriptIndex={currentScriptIndex}
-        onScriptSelect={handleScriptSelect}
+        onScriptSelect={customHandleScriptSelect}
         actorName="톰 행크스"
         movieTitle="포레스트 검프"
         analyzedCount={12}
