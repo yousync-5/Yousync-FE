@@ -72,9 +72,12 @@ export function useDubbingRecorder({
         addJobId(res.data.job_id);
         setJobIds(prev => [...prev, res.data.job_id!]);
         console.log(`[DEBUG][uploadScript] jobId 추가됨: ${res.data.job_id}`);
+        // 문장별 업로드 성공 시 onUploadComplete 콜백 호출
+        if (onUploadComplete) onUploadComplete(true, [res.data.job_id]);
       }
     } catch (e) {
       console.error('[ERROR][uploadScript] 업로드 실패', e);
+      if (onUploadComplete) onUploadComplete(false, []);
     }
   };
 
@@ -98,28 +101,7 @@ export function useDubbingRecorder({
     }
   };
 
-  const uploadAllRecordings = async () => {
-    if (uploading) return;
-    setUploading(true);
-    
-    try {
-      const allJobIds = [...jobIds];
-      console.log('[DEBUG][uploadAllRecordings] 모든 업로드 완료, jobIds:', allJobIds);
-      
-      if (onUploadComplete) {
-        onUploadComplete(true, allJobIds);
-      }
-    } catch (error) {
-      console.error('[ERROR][uploadAllRecordings] 실패:', error);
-      if (onUploadComplete) {
-        onUploadComplete(false, []);
-      }
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const allRecorded = recordedScripts.every(Boolean);
+  // 일괄 업로드 관련 코드 제거
 
   return {
     recording,
@@ -127,7 +109,8 @@ export function useDubbingRecorder({
     uploading,
     startScriptRecording,
     stopScriptRecording,
-    allRecorded,
-    uploadAllRecordings,
+    getAllBlobs, // 녹음된 Blob들에 접근할 수 있도록 추가
+    // allRecorded, // 제거
+    // uploadAllRecordings, // 제거
   };
 }
