@@ -1,19 +1,19 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { authService } from "@/services/auth";
 import { extractYoutubeVideoId } from "@/utils/extractYoutubeVideoId";
+import { useUser } from "@/hooks/useUser";
 
 interface Actor {
   name: string;
   id: number;
 }
 export const NavBar: React.FC = () => {
-
   const router = useRouter();
+  const { user, isLoggedIn, isLoading: userLoading } = useUser();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [serachedMovies, setSearchedMovies] = useState<Actor[]>([]);
@@ -23,8 +23,8 @@ export const NavBar: React.FC = () => {
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -49,16 +49,16 @@ export const NavBar: React.FC = () => {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
+
   const handleLogout = async () => {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
     try {
       await authService.logout();
-      setIsLoggedIn(false);
+      // useUser 훅이 자동으로 상태를 업데이트하므로 setIsLoggedIn 호출 불필요
       router.push('/');
     } catch (error) {
       console.error('로그아웃 중 오류 발생:', error);
-      setIsLoggedIn(false);
       router.push('/');
     } finally {
       setIsLoggingOut(false);
@@ -227,6 +227,22 @@ export const NavBar: React.FC = () => {
             </div>
             {isLoggedIn ? (
               <>
+                {/* 사용자 정보 표시 */}
+                {user && (
+                  <div className="flex items-center space-x-3">
+                    {user.picture && (
+                      <img 
+                        src={user.picture} 
+                        alt={user.name}
+                        className="w-8 h-8 rounded-full border-2 border-emerald-400/50 hover:border-emerald-400 transition-colors"
+                      />
+                    )}
+                    <span className="text-emerald-300 font-medium hidden sm:block">
+                      {user.name}
+                    </span>
+                  </div>
+                )}
+                
                 <button
                   onClick={() => router.push('/mypage')}
                   className="px-4 py-2 text-emerald-400 hover:text-white border border-emerald-400 hover:bg-emerald-500/80 rounded-full font-semibold transition-colors duration-150"
