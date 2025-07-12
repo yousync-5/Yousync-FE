@@ -22,26 +22,22 @@ import { useRouter } from "next/navigation";
 
 interface MovieProps {
   tokens: TokenDetailResponse[];
+  popularTokens: TokenDetailResponse[];
+  latestTokens: TokenDetailResponse[];
+  romanticTokens: TokenDetailResponse[];
   isLoading: boolean;
   error: string | null;
   onOpenModal?: (youtubeId: string) => void;
 }
 
-export default function Movie({ tokens, isLoading, error, onOpenModal }: MovieProps) {
-  const [selectedTab, setSelectedTab] = useState("인기 영상");
+export default function Movie({ tokens, popularTokens, latestTokens, romanticTokens, isLoading, error, onOpenModal }: MovieProps) {
+  
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const [playingVideo, setPlayingVideo] = useState<string | null>(null);
   const router = useRouter();
 
-  const tabs = [
-    "인기 배우",
-    "인기 영상",
-    "미국 배우",
-    "영국 배우",
-    "남자 배우",
-    "여자 배우",
-  ];
+  
 
   const videos = tokens.map(({ id, youtubeId, actor_name }) => ({
     videoId: String(id),
@@ -85,24 +81,18 @@ export default function Movie({ tokens, isLoading, error, onOpenModal }: MoviePr
     { id: 1, name: "김더빙", followers: "12.5K", image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face" },
     { id: 2, name: "이연기", followers: "8.9K", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face" },
     { id: 3, name: "박목소리", followers: "15.2K", image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face" },
-    { id: 4, name: "최성우", followers: "6.7K", image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face" },
-    { id: 5, name: "정음성", followers: "9.3K", image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face" },
-    { id: 6, name: "한더빙왕", followers: "22.1K", image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face" },
-    { id: 7, name: "윤연기", followers: "11.8K", image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face" },
-    { id: 8, name: "임목소리", followers: "7.4K", image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face" },
-    { id: 9, name: "강성우", followers: "13.6K", image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&h=150&fit=crop&crop=face" },
-    { id: 10, name: "조음성", followers: "18.9K", image: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&h=150&fit=crop&crop=face" },
   ];
 
   const sections = [
     {
-      id: "trending-now",
-      title: "지금 핫한 더빙",
-      subtitle: "사람들이 미쳐서 하는 더빙들",
-      icon: <FireIcon className="w-6 h-6 text-orange-500" />,
-      videos: videos.slice(0, Math.min(10, videos.length)),
+      id: "top-collections",
+      title: "베스트 더빙",
+      subtitle: "완벽한 더빙의 정석",
+      icon: <StarIcon className="w-6 h-6 text-yellow-500" />,
+      videos: popularTokens.map(({ id, youtubeId, actor_name }) => ({ videoId: String(id), youtubeId, actor_name })),
       isPlayable: false,
     },
+    
     {
       id: "sync-collection",
       title: "싱크 컬렉션",
@@ -113,11 +103,11 @@ export default function Movie({ tokens, isLoading, error, onOpenModal }: MoviePr
       isShorts: true,
     },
     {
-      id: "top-collections",
-      title: "베스트 더빙",
-      subtitle: "완벽한 더빙의 정석",
-      icon: <StarIcon className="w-6 h-6 text-yellow-500" />,
-      videos: videos.slice(0, Math.min(10, videos.length)),
+      id: "new-releases",
+      title: "신상 더빙",
+      subtitle: "방금 나온 신작들",
+      icon: <SparklesIcon className="w-6 h-6 text-purple-500" />,
+      videos: latestTokens.map(({ id, youtubeId, actor_name }) => ({ videoId: String(id), youtubeId, actor_name })),
       isPlayable: false,
     },
     {
@@ -125,29 +115,14 @@ export default function Movie({ tokens, isLoading, error, onOpenModal }: MoviePr
       title: "로맨틱 더빙",
       subtitle: "설레는 더빙 연기",
       icon: <HeartIcon className="w-6 h-6 text-pink-500" />,
-      videos: videos.slice(0, Math.min(10, videos.length)),
+      videos: romanticTokens.map(({ id, youtubeId, actor_name }) => ({ videoId: String(id), youtubeId, actor_name })),
       isPlayable: false,
     },
-    {
-      id: "new-releases",
-      title: "신상 더빙",
-      subtitle: "방금 나온 신작들",
-      icon: <SparklesIcon className="w-6 h-6 text-purple-500" />,
-      videos: videos.slice(0, Math.min(10, videos.length)),
-      isPlayable: false,
-    },
-    {
-      id: "popular-actors",
-      title: "인기 배우들",
-      subtitle: "더빙계 스타들",
-      icon: <UserGroupIcon className="w-6 h-6 text-blue-500" />,
-      videos: videos.slice(0, Math.min(10, videos.length)),
-      isPlayable: false,
-    },
+    
   ];
 
   const featuredVideo = videos[0];
-  const heroVideos = videos.slice(0, 5);
+  const heroVideos = latestTokens.slice(0, 5);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const goToPrev = () => {
@@ -250,26 +225,12 @@ export default function Movie({ tokens, isLoading, error, onOpenModal }: MoviePr
           </div>
         )}
         <div className="max-w-7xl mx-auto px-2">
-          <div className="flex justify-center gap-6 text-sm font-medium mb-8">
-            {tabs.map((tab) => (
-              <button
-                key={tab}
-                className={`transition-all duration-200 px-6 py-3 rounded-full font-bold ${
-                  selectedTab === tab
-                    ? "bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 text-white shadow-lg transform scale-105"
-                    : "text-gray-400 hover:text-green-400 hover:bg-gray-900"
-                }`}
-                onClick={() => setSelectedTab(tab)}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+          
           {isLoading && (
             <div className="flex items-center justify-center py-20">
               <div className="flex flex-col items-center space-y-4">
                 <div className="animate-spin w-8 h-8 border-3 border-green-400 border-t-transparent rounded-full" />
-                <div className="text-gray-500 font-medium">영화 목록을 불러오는 중...</div>
+                <div className="text-gray-500 font-medium">영화를 불러오는 중...</div>
               </div>
             </div>
           )}
@@ -306,7 +267,7 @@ export default function Movie({ tokens, isLoading, error, onOpenModal }: MoviePr
                     <div className="mt-12">
                       <div className="flex items-center gap-3 mb-6">
                         <TrophyIcon className="w-6 h-6 text-yellow-500" />
-                        <h2 className="text-3xl font-bold bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent">Top Creators</h2>
+                        <h2 className="text-3xl font-bold bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent">Top User</h2>
                       </div>
                       <p className="text-gray-500 ml-9 font-medium mb-6">더빙계 인기 크리에이터들</p>
                       <div className="grid grid-cols-5 gap-8">
