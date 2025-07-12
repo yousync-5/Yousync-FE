@@ -2,10 +2,12 @@
   "name": "yousync-fe",
   "version": "0.1.0",
   "private": true,
+
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "NODE_ENV=development node server.js",   
+    "dev:https": "node server.js",
     "build": "next build",
-    "start": "next start -p $PORT",
+    "start": "next dev --turbopack", 
     "lint": "next lint"
   },
   "dependencies": {

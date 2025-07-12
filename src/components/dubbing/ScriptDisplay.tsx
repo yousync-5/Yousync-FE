@@ -29,6 +29,8 @@ interface ScriptDisplayProps {
     probability: number;
     id: number;
   }>;
+  recording?: boolean;
+  onStopLooping?: () => void;
 }
 
 export default function ScriptDisplay({ 
@@ -38,7 +40,9 @@ export default function ScriptDisplay({
   currentVideoTime = 0,
   playbackRange,
   videoPlayerRef,
-  currentWords = []
+  currentWords = [],
+  recording = false,
+  onStopLooping,
 }: ScriptDisplayProps) {
 
   const [animatedProgress, setAnimatedProgress] = useState(0);
@@ -272,8 +276,11 @@ export default function ScriptDisplay({
           {/* 스크립트 본문 + 내비게이션 */}
           <div className="flex items-center space-x-4 w-full">
             <button
-              onClick={() => handleScriptChange(Math.max(0, currentScriptIndex - 1))}
-              disabled={currentScriptIndex === 0}
+              onClick={() => {
+                if (onStopLooping) onStopLooping();
+                handleScriptChange(Math.max(0, currentScriptIndex - 1));
+              }}
+              disabled={currentScriptIndex === 0 || recording}
               className={`p-2 rounded-full transition-all duration-200 ${
                 currentScriptIndex === 0 
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
@@ -298,8 +305,11 @@ export default function ScriptDisplay({
 
 
             <button
-              onClick={() => handleScriptChange(Math.min(captions.length - 1, currentScriptIndex + 1))}
-              disabled={currentScriptIndex === captions.length - 1}
+              onClick={() => {
+                if (onStopLooping) onStopLooping();
+                handleScriptChange(Math.min(captions.length - 1, currentScriptIndex + 1));
+              }}
+              disabled={currentScriptIndex === captions.length - 1 || recording}
               className={`p-2 rounded-full transition-all duration-200 ${
                 currentScriptIndex === captions.length - 1 
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 

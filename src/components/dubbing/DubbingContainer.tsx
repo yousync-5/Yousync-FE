@@ -53,8 +53,10 @@ export default function DubbingContainer({
 
   const [finalResults, setFinalResults] = useState<any[]>([]); // SSE 결과 상태
 
+  const [recording, setRecording] = useState(false);
+
   const videoPlayerRef = useRef<VideoPlayerRef | null>(null);
-  const pitchRef = useRef<{ handleExternalStop: () => void } | null>(null);
+  const pitchRef = useRef<{ handleExternalStop: () => void, stopLooping?: () => void } | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
   useAudioStream();
@@ -430,6 +432,8 @@ useEffect(() => {
               playbackRange={getCurrentScriptPlaybackRange()}
               videoPlayerRef={videoPlayerRef}
               currentWords={currentWords}
+              recording={recording}
+              onStopLooping={() => pitchRef.current?.stopLooping?.()}
             />
           </div>
   
@@ -453,6 +457,7 @@ useEffect(() => {
                   setMultiJobIds(jobIds);
                 }
               }}
+              onRecordingChange={setRecording}
             />
           </div>
         </div>
@@ -501,6 +506,8 @@ useEffect(() => {
         movieTitle="포레스트 검프"
         analyzedCount={12}
         totalCount={191}
+        recording={recording}
+        onStopLooping={() => pitchRef.current?.stopLooping?.()}
       />
     </div>
   );
