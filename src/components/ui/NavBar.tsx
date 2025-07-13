@@ -1,25 +1,19 @@
 "use client";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { authService } from "@/services/auth";
 import { extractYoutubeVideoId } from "@/utils/extractYoutubeVideoId";
+import { useUser } from "@/hooks/useUser";
 
 interface Actor {
   name: string;
   id: number;
 }
-
-
-interface Actor {
-  "name": string;
-  "id": number;
-}
 export const NavBar: React.FC = () => {
-
   const router = useRouter();
+  const { user, isLoggedIn, isLoading: userLoading } = useUser();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [serachedMovies, setSearchedMovies] = useState<Actor[]>([]);
@@ -29,28 +23,32 @@ export const NavBar: React.FC = () => {
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setIsLoggedIn(!!localStorage.getItem('access_token'));
-    }
-    const onStorage = () => setIsLoggedIn(!!localStorage.getItem('access_token'));
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, []);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+
+    // 스크롤을 오른쪽 끝으로 밀어줌
+    requestAnimationFrame(() => {
+      if(inputRef.current){
+        inputRef.current.scrollLeft= inputRef.current.scrollWidth;
+      }
+    })
+  }
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
     try {
       await authService.logout();
-      setIsLoggedIn(false);
+      // useUser 훅이 자동으로 상태를 업데이트하므로 setIsLoggedIn 호출 불필요
       router.push('/');
     } catch (error) {
       console.error('로그아웃 중 오류 발생:', error);
-      setIsLoggedIn(false);
       router.push('/');
     } finally {
       setIsLoggingOut(false);
@@ -92,28 +90,35 @@ export const NavBar: React.FC = () => {
   }, [searchQuery, fetchActorsData]);
 
 
-  const handleUrlSearch = async () => {
+  const handleSearchClick = async () => {
+    // url 검색
     if (searchQuery.startsWith('http')) {
       try {
         const res = await axios.post<{ exists: boolean }>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/urls/check`, { youtube_url: searchQuery });
         if (res.data.exists === true) {
           const videoId = extractYoutubeVideoId(searchQuery);
           router.push(`/urlsearch?videoId=${videoId}`);
+          setSearchQuery("");
         } else {
           console.log("DB에 존재하지 않는 URL입니다.");
         }
       } catch (error) {
         console.log("URL 검색 중 오류 발생");
-
-  
       }
+    } 
+     // 배우 이름 검색
+    else if(searchQuery.trim()){
+      clickActor(searchQuery);
+      setSearchQuery("");
+      setShowDropdown(false);
+      setHighlightIndex(-1);
     }
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (searchQuery.startsWith("http")) {
       if (e.key === "Enter") {
-        handleUrlSearch();
+        handleSearchClick();
       }
       return;
     }
@@ -127,7 +132,7 @@ export const NavBar: React.FC = () => {
     } else if (e.key === "Enter") {
       if (highlightIndex >= 0 && highlightIndex < serachedMovies.length) {
         const selected = serachedMovies[highlightIndex];
-        setSearchQuery(selected.name);
+        setSearchQuery("");
         setShowDropdown(false);
         setHighlightIndex(-1);
         clickActor(selected.name);
@@ -152,13 +157,15 @@ export const NavBar: React.FC = () => {
 
   const clickActor = (actor: string) => router.push(`/actor/${actor}`);
 
-
+  const handleToMain = () => {
+    router.push('/')
+  }
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-b border-gray-800 shadow-2xl">
       <div className="max-w-7xl mx-auto px-2 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-8">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent animate-pulse">YouSync</h1>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent animate-pulse cursor-pointer" onClick={handleToMain}>YouSync</h1>
             <div className="hidden md:flex items-center space-x-6">
               <a href="#" className="text-gray-400 hover:text-green-400 transition-colors font-medium">홈</a>
               <a href="#" className="text-gray-400 hover:text-emerald-400 transition-colors font-medium">영화</a>
@@ -173,16 +180,19 @@ export const NavBar: React.FC = () => {
                 <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
               </div>
               <input
+              ref={inputRef}
                 type="text"
                 placeholder="배우, url 검색..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-64 pl-10 pr-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                onChange={handleInputChange}
+                className="w-64 pl-10 pr-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 
+                focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 
+                overflow-x-auto whitespace-nowrap"                
                 onKeyDown={handleInputKeyDown}
               />
               <button
                 className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 bg-emerald-600 text-white rounded-md text-sm hover:bg-emerald-700 transition"
-                onClick={handleUrlSearch}
+                onClick={handleSearchClick}
               >
                 검색
               </button>
@@ -207,6 +217,22 @@ export const NavBar: React.FC = () => {
             </div>
             {isLoggedIn ? (
               <>
+                {/* 사용자 정보 표시 */}
+                {user && (
+                  <div className="flex items-center space-x-3">
+                    {user.picture && (
+                      <img 
+                        src={user.picture} 
+                        alt={user.name}
+                        className="w-8 h-8 rounded-full border-2 border-emerald-400/50 hover:border-emerald-400 transition-colors"
+                      />
+                    )}
+                    <span className="text-emerald-300 font-medium hidden sm:block">
+                      {user.name}
+                    </span>
+                  </div>
+                )}
+                
                 <button
                   onClick={() => router.push('/mypage')}
                   className="px-4 py-2 text-emerald-400 hover:text-white border border-emerald-400 hover:bg-emerald-500/80 rounded-full font-semibold transition-colors duration-150"
@@ -234,8 +260,6 @@ export const NavBar: React.FC = () => {
                 </button>
               </>
             )}
-
-          
           </div>
         </div>
       </div>

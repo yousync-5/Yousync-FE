@@ -81,3 +81,33 @@ html, body, #__next {
 .animate-fade-in {
   animation: fadeIn 0.5s ease-out;
 }
+
+/* 분석 스캔 애니메이션 */
+@keyframes scan-glow {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 40px rgba(59, 130, 246, 0.4);
+  }
+  50% { 
+    box-shadow: 0 0 30px rgba(59, 130, 246, 1), 0 0 60px rgba(59, 130, 246, 0.6), 0 0 80px rgba(59, 130, 246, 0.3);
+  }
+}
+
+@keyframes scan-line {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-scan-line {
+  animation: scan-line 2s linear infinite;
+}
+
+/* 데이터 처리 애니메이션 */
+@keyframes data-process {
+  0% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.1); }
+  100% { opacity: 0.3; transform: scale(0.8); }
+}
+
+.animate-data-process {
+  animation: data-process 1.5s ease-in-out infinite;
+}

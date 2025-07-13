@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import MovieDetailModal from "@/components/modal/MovieDetailModal";
-import { useVideos } from "@/hooks/useVideos";
+import { useVideos, usePopularVideos, useLatestVideos, useRomanticVideos } from "@/hooks/useVideos";
 import Movie from "@/components/movie/Movie";
 import type { TokenDetailResponse } from "@/types/pitch";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -11,6 +11,9 @@ export default function HomeClient() {
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const { data: tokens = [], isLoading, error } = useVideos();
+  const { data: popularTokens = [] } = usePopularVideos();
+  const { data: latestTokens = [] } = useLatestVideos();
+  const { data: romanticTokens = [] } = useRomanticVideos();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -67,6 +70,9 @@ export default function HomeClient() {
       {!isLoading && !error && (
         <Movie
           tokens={tokens}
+          popularTokens={popularTokens}
+          latestTokens={latestTokens}
+          romanticTokens={romanticTokens}
           isLoading={isLoading}
           error={error}
           onOpenModal={openModal}
