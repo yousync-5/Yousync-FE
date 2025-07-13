@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Loader from './Loader';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -16,7 +17,13 @@ interface SidebarProps {
   recording?: boolean;
   onStopLooping?: () => void;
   recordedScripts?: boolean[];
-  hasAnalysisResult?: boolean;
+  latestResultByScript?: Record<string, any>; // 추가
+  recordingCompleted?: boolean; // 추가
+}
+
+function normalizeScript(str: string) {
+  if (!str || typeof str !== 'string') return '';
+  return str.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 export default function Sidebar({
@@ -28,8 +35,12 @@ export default function Sidebar({
   recording = false,
   onStopLooping,
   recordedScripts = [],
-  hasAnalysisResult = false,
+  latestResultByScript = {},
+  recordingCompleted = false,
 }: SidebarProps) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [detailIndex, setDetailIndex] = useState<number | null>(null); // 클릭 시 세부 정보 표시용
+
   useEffect(() => {
     console.log("[Sidebar] captions:", captions);
   }, [captions]);
@@ -38,7 +49,10 @@ export default function Sidebar({
   const actorName = (captions[0] && (captions[0] as any).actor && (captions[0] as any).actor.name) ? (captions[0] as any).actor.name : '-';
   const movieTitle = (captions[0] && (captions[0] as any).movie_name) ? (captions[0] as any).movie_name : '-';
   const totalCount = captions.length;
-  const analyzedCount = captions.filter(c => (c as any).isAnalyzed).length;
+  const analyzedCount = captions.filter(c => {
+    const scriptKey = normalizeScript(c.script);
+    return !!latestResultByScript[scriptKey];
+  }).length;
 
   // 시간 포맷 함수
   function formatTime(sec?: number) {
@@ -76,131 +90,133 @@ export default function Sidebar({
           <span className="font-semibold text-emerald-400">영화명</span>
           <span className="truncate">{movieTitle}</span>
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-300">
-          <span className="font-semibold text-emerald-400">문장 진행률</span>
-          <span>{currentScriptIndex + 1} / {totalCount}</span>
+
+        {/* 문장 진행률 게이지 */}
+        <div className="mt-2">
+          <div className="flex justify-between text-xs text-gray-400 mb-1">
+            <span>문장 진행률</span>
+            <span>{currentScriptIndex + 1} / {totalCount}</span>
+          </div>
+          <div className="w-full h-2 bg-gray-700 rounded">
+            <div
+              className="h-2 bg-emerald-400 rounded"
+              style={{ width: `${((currentScriptIndex + 1) / totalCount) * 100}%` }}
+            />
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-300">
-          <span className="font-semibold text-emerald-400">문장 분석완료</span>
-          <span>{analyzedCount} / {totalCount}</span>
+        {/* 분석 완료 게이지 */}
+        <div className="mt-2">
+          <div className="flex justify-between text-xs text-gray-400 mb-1">
+            <span>분석 완료</span>
+            <span>{analyzedCount} / {totalCount}</span>
+          </div>
+          <div className="w-full h-2 bg-gray-700 rounded">
+            <div
+              className="h-2 bg-blue-400 rounded"
+              style={{ width: `${(analyzedCount / totalCount) * 100}%` }}
+            />
+          </div>
         </div>
       </div>
-
-      {/* 진행률 표시 */}
-      <div className="px-6 py-4 border-b border-gray-800 bg-gray-900/80">
-        <div className="w-full h-12 bg-gray-800 rounded flex items-center justify-center p-2">
-          {/* 문장별 진행률 표시 */}
-          <div className="flex w-full h-full space-x-1">
-            {captions.map((caption, index) => {
-              const isRecorded = recordedScripts[index];
-              const isAnalyzed = hasAnalysisResult && index === currentScriptIndex;
-              const isCurrent = index === currentScriptIndex;
-              
-              return (
-                <div
-                  key={index}
-                  className={`flex-1 rounded transition-all duration-200 ${
-                    isAnalyzed 
-                      ? 'bg-green-500' 
-                      : isRecorded 
-                      ? 'bg-blue-500' 
-                      : isCurrent 
-                      ? 'bg-yellow-500' 
-                      : 'bg-gray-600'
-                  } relative group flex items-center justify-center`}
-                  title={`문장 ${index + 1}: ${isAnalyzed ? '분석 완료' : isRecorded ? '녹음 완료' : isCurrent ? '현재' : '미완료'}`}
-                >
-                  {/* 상태 아이콘 */}
-                  {isAnalyzed && (
-                    <div className="text-white text-xs">✓</div>
-                  )}
-                  {isRecorded && !isAnalyzed && (
-                    <div className="text-white text-xs">🎤</div>
-                  )}
-                  {isCurrent && !isRecorded && (
-                    <div className="text-white text-xs">●</div>
-                  )}
-                  
-                  {/* 툴팁 */}
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                    {`문장 ${index + 1}: ${isAnalyzed ? '분석 완료' : isRecorded ? '녹음 완료' : isCurrent ? '현재' : '미완료'}`}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      {/* 범례 */}
+      <div className="flex items-center justify-center space-x-4 text-xs text-gray-400 mt-2">
+        <div className="flex items-center space-x-1">
+          <div className="w-3 h-3 bg-gray-600 rounded"></div>
+          <span>미완료</span>
         </div>
-        
-        {/* 범례 */}
-        <div className="flex items-center justify-center space-x-4 text-xs text-gray-400 mt-2">
-          <div className="flex items-center space-x-1">
-            <div className="w-3 h-3 bg-gray-600 rounded"></div>
-            <span>미완료</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-            <span>현재</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-3 h-3 bg-blue-500 rounded"></div>
-            <span>녹음 완료</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-3 h-3 bg-green-500 rounded"></div>
-            <span>분석 완료</span>
-          </div>
+        <div className="flex items-center space-x-1">
+          <div className="w-3 h-3 bg-green-400 rounded"></div>
+          <span>분석중</span>
+        </div>
+        <div className="flex items-center space-x-1">
+          <div className="w-3 h-3 bg-blue-400 rounded"></div>
+          <span>분석완료</span>
         </div>
       </div>
 
       <ul className="px-4 py-6 pb-32">
-        {captions.map((caption, index) => (
-          <li
-            key={index}
-            onClick={() => {
-              if (recording) return;
-              if (onStopLooping) onStopLooping();
-              onScriptSelect(index);
-            }}
-            className={`cursor-pointer px-4 py-4 transition-all duration-150 select-none relative
-              ${currentScriptIndex === index
-                ? "bg-emerald-500/90 text-white shadow-md"
-                : "hover:bg-gray-800/50 hover:text-emerald-300 text-gray-200"}
-            `}
-            style={{ wordBreak: 'break-word', zIndex: 1 }}
-          >
-            <div className="flex items-start">
-              {/* 아이콘 + 번호 */}
-              <span className="flex items-center mr-3 mt-1 select-none" style={{ zIndex: 2 }}>
-                {currentScriptIndex === index ? (
-                  // 빙빙 도는 아이콘 (SVG)
-                  <svg className="w-4 h-4 mr-1 text-emerald-300 animate-spin" viewBox="0 0 20 20" fill="none" aria-label="재생 중">
-                    <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" strokeDasharray="20 10" />
-                  </svg>
-                ) : (
-                  // 플레이 아이콘 (SVG)
-                  <svg className="w-4 h-4 mr-1 text-gray-400 group-hover:text-emerald-300 transition-colors" viewBox="0 0 20 20" fill="currentColor" aria-label="플레이">
-                    <polygon points="6,4 16,10 6,16" />
-                  </svg>
-                )}
-              </span>
-              <span className="flex-1 leading-relaxed">
-                {caption.script}
-              </span>
-            </div>
-            {/* 타임라인 */}
-            {typeof (caption as any).start_time === 'number' && typeof (caption as any).end_time === 'number' && (
-              <div className={`text-xs mt-1 ml-8 font-mono transition-colors duration-150 ${currentScriptIndex === index ? 'text-white' : 'text-gray-400'}`}>
-                {formatTime((caption as any).start_time)} ~ {formatTime((caption as any).end_time)}
+        {captions.map((caption, index) => {
+          const scriptKey = normalizeScript(caption.script);
+          const isAnalyzed = !!latestResultByScript[scriptKey];
+          const isSelected = currentScriptIndex === index;
+          return (
+            <li
+              key={index}
+              onClick={() => {
+                if (recording) return;
+                if (onStopLooping) onStopLooping();
+                onScriptSelect(index);
+              }}
+              className={`cursor-pointer px-4 py-4 transition-all duration-150 select-none relative
+                ${isSelected
+                  ? "border-2 border-emerald-400 scale-[1.03] bg-transparent text-white shadow-md z-10"
+                  : isAnalyzed
+                  ? "border-2 border-emerald-400 bg-transparent text-white"
+                  : "hover:bg-gray-800/50 hover:text-emerald-300 text-gray-200"}
+                ${isSelected ? "transition-transform" : ""}
+              `}
+              style={{ wordBreak: 'break-word', zIndex: isSelected ? 10 : 1 }}
+            >
+              {/* Loader 오버레이 - 현재 선택된 문장에서만 표시 */}
+              {isSelected && !recording && recordingCompleted && (
+                <div className="absolute inset-0 bg-gray-900/30 backdrop-blur-[1px] flex items-center justify-center z-20 rounded pointer-events-none">
+                  <Loader />
+                </div>
+              )}
+              <div className="flex items-start">
+                {/* 아이콘 + 번호 */}
+                <span className="flex items-center mr-3 mt-1 select-none" style={{ zIndex: 2 }}>
+                  {isSelected ? (
+                    // 빙빙 도는 아이콘 (SVG)
+                    <svg className="w-4 h-4 mr-1 text-emerald-300 animate-spin" viewBox="0 0 20 20" fill="none" aria-label="재생 중">
+                      <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" strokeDasharray="20 10" />
+                    </svg>
+                  ) : isAnalyzed ? (
+                    // 체크 아이콘 (SVG) - 분석 완료
+                    <svg className="w-4 h-4 mr-1 text-emerald-400" viewBox="0 0 20 20" fill="currentColor" aria-label="분석 완료">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    // 플레이 아이콘 (SVG)
+                    <svg className="w-4 h-4 mr-1 text-gray-400 group-hover:text-emerald-300 transition-colors" viewBox="0 0 20 20" fill="currentColor" aria-label="플레이">
+                      <polygon points="6,4 16,10 6,16" />
+                    </svg>
+                  )}
+                </span>
+                <span className="flex-1 leading-relaxed">
+                  {caption.script}
+                </span>
               </div>
-            )}
-            {index < captions.length - 1 && (
-              <div className="absolute bottom-0 left-4 right-4 h-px"
-                style={{ background: currentScriptIndex === index ? '#34d399' : '#a3a3a3', opacity: currentScriptIndex === index ? 0.7 : 0.4, zIndex: 0 }}
-              />
-            )}
-          </li>
-        ))}
+              {/* 타임라인 */}
+              {typeof (caption as any).start_time === 'number' && typeof (caption as any).end_time === 'number' && (
+                <div className={`text-xs mt-1 ml-8 font-mono transition-colors duration-150 ${isSelected ? 'text-white' : 'text-gray-400'}`}>
+                  {formatTime((caption as any).start_time)} ~ {formatTime((caption as any).end_time)}
+                </div>
+              )}
+              {index < captions.length - 1 && (
+                <div className="absolute bottom-0 left-4 right-4 h-px"
+                  style={{ background: isSelected ? '#34d399' : '#a3a3a3', opacity: isSelected ? 0.7 : 0.4, zIndex: 0 }}
+                />
+              )}
+            </li>
+          );
+        })}
       </ul>
+      {/* 세부 정보 모달/패널 (분석 완료 문장 클릭 시) */}
+      {detailIndex !== null && latestResultByScript[normalizeScript(captions[detailIndex].script)] && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40" onClick={() => setDetailIndex(null)}>
+          <div className="bg-gray-900 rounded-lg p-6 min-w-[320px] max-w-[90vw] shadow-2xl relative" onClick={e => e.stopPropagation()}>
+            <button className="absolute top-2 right-2 text-gray-400 hover:text-white" onClick={() => setDetailIndex(null)}>×</button>
+            <div className="font-bold text-lg mb-2 text-emerald-300">문장 {detailIndex + 1} 분석 세부 정보</div>
+            <div className="mb-2 text-gray-200">{captions[detailIndex].script}</div>
+            <div className="space-y-1 text-sm">
+              {Object.entries(latestResultByScript[normalizeScript(captions[detailIndex].script)]).map(([k, v]) => (
+                <div key={k}><span className="text-emerald-300">{k}</span>: {typeof v === 'object' ? JSON.stringify(v, null, 2) : String(v)}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 7px;

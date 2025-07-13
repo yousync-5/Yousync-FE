@@ -58,6 +58,7 @@ export default function DubbingContainer({
     latestResultByScript,
     recording,
     recordingCompleted,
+    isAnalyzing,
     setIsSidebarOpen,
     setShowCompleted,
     setShowResults,
@@ -68,6 +69,7 @@ export default function DubbingContainer({
     setLatestResultByScript,
     setRecording,
     setRecordingCompleted,
+    setIsAnalyzing,
     handleRecordingComplete,
     handlePlay,
     handlePause,
@@ -147,6 +149,10 @@ useEffect(() => {
           console.log('- 이전 상태:', Object.keys(prev));
           console.log('- 새로 추가된 키:', resultScriptNorm);
           console.log('- 업데이트 후 전체 키:', Object.keys(newState));
+          
+          // 분석 결과가 도착하면 상태 초기화
+          setRecordingCompleted(false);
+          setIsAnalyzing(false);
           
           return newState;
         });
@@ -444,10 +450,8 @@ useEffect(() => {
   // 분석 결과가 들어오면 계속 표시
   useEffect(() => {
     if (analysisResult) {
-      console.log('[DubbingContainer] 분석 결과 도착 - recordingCompleted를 false로 설정');
+      console.log('[DubbingContainer] 분석 결과 도착');
       setShowAnalysisResult(true);
-      // 분석 결과가 들어오면 녹음 완료 상태 해제 (다음 문장으로 넘어갈 수 있도록)
-      setRecordingCompleted(false);
     }
   }, [analysisResult]);
 
@@ -493,14 +497,6 @@ useEffect(() => {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Column - Video & Script */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="flex gap-2 mb-2">
-              <button
-                onClick={() => setIsSidebarOpen(true)}
-                className="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700 transition"
-              >
-                📜 스크립트 목록
-              </button>
-            </div>
             <VideoPlayer
               videoId={front_data.movie.youtube_url.split("v=")[1]}
               onTimeUpdate={handleTimeUpdate}
@@ -524,6 +520,7 @@ useEffect(() => {
               currentWords={currentWords}
               recording={recording}
               recordingCompleted={recordingCompleted}
+              isAnalyzing={isAnalyzing}
               onStopLooping={() => pitchRef.current?.stopLooping?.()}
               showAnalysisResult={showAnalysisResult}
               analysisResult={analysisResult}
@@ -560,6 +557,8 @@ useEffect(() => {
                   });
                   // 3. 새 jobIds로 세팅
                   setMultiJobIds(jobIds);
+                  // 4. 분석 시작 상태 설정
+                  setIsAnalyzing(true);
                 }
               }}
               onRecordingChange={setRecording}
@@ -567,6 +566,7 @@ useEffect(() => {
               showAnalysisResult={showAnalysisResult}
               recordingCompleted={recordingCompleted}
               onRecordingPlaybackChange={setIsRecordingPlayback}
+              onOpenSidebar={() => setIsSidebarOpen(true)}
             />
           </div>
         </div>
@@ -585,6 +585,8 @@ useEffect(() => {
         recording={recording}
         onStopLooping={() => pitchRef.current?.stopLooping?.()}
         recordedScripts={recordingCompleted ? Array(front_data.captions.length).fill(false).map((_, i) => i === currentScriptIndex) : []}
+        latestResultByScript={latestResultByScript}
+        recordingCompleted={recordingCompleted}
       />
     </div>
   );

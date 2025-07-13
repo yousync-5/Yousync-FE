@@ -33,6 +33,9 @@ interface DubbingState {
   // 녹음 상태
   recording: boolean;
   recordingCompleted: boolean;
+  
+  // 분석 상태
+  isAnalyzing: boolean;
 }
 
 /**
@@ -80,6 +83,9 @@ interface DubbingActions {
   setRecording: (recording: boolean) => void;
   setRecordingCompleted: (completed: boolean) => void;
   handleRecordingComplete: () => void;
+  
+  // 분석 액션
+  setIsAnalyzing: (analyzing: boolean) => void;
   
   // 편의 메서드
   nextScript: () => void;
@@ -160,6 +166,9 @@ export function useDubbingState(
   // 녹음 상태
   const [recording, setRecording] = useState(false);
   const [recordingCompleted, setRecordingCompleted] = useState(false);
+  
+  // 분석 상태
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   
   // 외부 콜백들
   const { onScriptChange, onPlay, onPause, onRecordingChange } = options || {};
@@ -330,6 +339,7 @@ export function useDubbingState(
     latestResultByScript,
     recording,
     recordingCompleted,
+    isAnalyzing,
     
     // 액션
     setIsSidebarOpen,
@@ -344,6 +354,7 @@ export function useDubbingState(
     addLatestResultByScript,
     setRecording,
     setRecordingCompleted,
+    setIsAnalyzing,
     handleRecordingComplete,
     nextScript,
     prevScript,

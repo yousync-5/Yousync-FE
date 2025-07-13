@@ -35,7 +35,14 @@ export function useDubbingRecorder({
   const addJobId = useJobIdsStore((state) => state.addJobId);
 
   const startScriptRecording = (scriptIdx: number) => {
-    startRecording();
+    // 스크립트 정보 가져오기
+    const caption = captions[scriptIdx];
+    if (caption) {
+      startRecording(scriptIdx, caption.start_time, caption.end_time);
+    } else {
+      console.warn(`[WARN] 스크립트 ${scriptIdx} 정보를 찾을 수 없습니다.`);
+      startRecording(scriptIdx, 0, 0);
+    }
   };
 
   // 단일 문장 업로드 함수

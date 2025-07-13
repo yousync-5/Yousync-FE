@@ -27,6 +27,7 @@ interface PitchComparisonProps {
   showAnalysisResult?: boolean;
   recordingCompleted?: boolean;
   onRecordingPlaybackChange?: (isPlaying: boolean) => void;
+  onOpenSidebar?: () => void;
 }
 
 const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComparisonProps>(function PitchComparison({ 
@@ -46,6 +47,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   showAnalysisResult = false,
   recordingCompleted = false,
   onRecordingPlaybackChange,
+  onOpenSidebar,
 }: PitchComparisonProps, ref) {
 
   const {
@@ -184,12 +186,34 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   const handleMicClick = () => {
     if (videoPlayerRef?.current && captions[currentScriptIndex]) {
       const currentScript = captions[currentScriptIndex];
+      
+      console.log('[TIMING] 마이크 버튼 클릭 - 영상 재생 시작');
       videoPlayerRef.current.seekTo(currentScript.start_time);
       videoPlayerRef.current.playVideo();
-      if (typeof onNextScript === 'function') {
-        onNextScript(currentScriptIndex);
-      }
-      startScriptRecording(currentScriptIndex);
+      
+      // 영상이 실제로 재생되기 시작할 때까지 대기
+      const checkVideoPlaying = () => {
+        if (!videoPlayerRef?.current) return;
+        
+        const currentTime = videoPlayerRef.current.getCurrentTime();
+        const targetTime = currentScript.start_time;
+        
+        // 영상이 목표 시간에 도달했는지 확인 (0.1초 허용 오차)
+        if (Math.abs(currentTime - targetTime) < 0.1) {
+          console.log('[TIMING] 영상 재생 확인됨 - 녹음 시작');
+          startScriptRecording(currentScriptIndex);
+          
+          if (typeof onNextScript === 'function') {
+            onNextScript(currentScriptIndex);
+          }
+        } else {
+          // 아직 재생되지 않았으면 다시 체크
+          setTimeout(checkVideoPlaying, 50);
+        }
+      };
+      
+      // 100ms 후부터 체크 시작 (브라우저 렉 고려)
+      setTimeout(checkVideoPlaying, 100);
     }
   };
 
@@ -352,8 +376,29 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   };
 
   return (
-    <div className="bg-gray-900 rounded-xl p-6 h-[28em]">
-      <h3 className="text-lg font-semibold mb-4">Pitch Comparison</h3>
+    <div className="bg-gray-900 rounded-xl p-6 h-[28em] relative">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">Pitch Comparison</h3>
+        {onOpenSidebar && (
+          <button
+            onClick={onOpenSidebar}
+            className="flex items-center justify-center w-10 h-10 bg-gray-800 text-gray-700 rounded-md hover:bg-gray-700 transition"
+            title="스크립트 목록"
+            style={{ padding: 0 }}
+          >
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <g stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="5,8 8,11 13,6" />
+                <line x1="16" y1="8" x2="23" y2="8" />
+                <polyline points="5,16 8,19 13,14" />
+                <line x1="16" y1="16" x2="23" y2="16" />
+                <polyline points="5,24 8,27 13,22" />
+                <line x1="16" y1="24" x2="23" y2="24" />
+              </g>
+            </svg>
+          </button>
+        )}
+      </div>
       <div className="space-y-4">
         <div>
           <div className="text-sm text-gray-400 mb-2">Your Pitch</div>
@@ -366,56 +411,34 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
             Original Pitch
           </div> */}
           
-                      {/* 분석 진행률 섹션 */}
-            <div className="mb-3">
-              <div className="text-xs text-gray-400 mb-2 flex items-center justify-between">
-                <span>📊 분석 진행률</span>
-                <span className="text-xs">
-                  {(() => {
-                    const total = captions.length;
-                    const recorded = Object.values(recordedScripts).filter(Boolean).length;
-                    const analyzed = showAnalysisResult ? 1 : 0;
-                    return `${recorded}/${total} 녹음, ${analyzed} 분석`;
-                  })()}
-                </span>
-              </div>
-              
-              {/* 녹음 재생 버튼 */}
-              {recordedScripts[currentScriptIndex] && (
-                <div className="flex justify-center mb-2">
-                  {/* <button
-                    onClick={isPlayingRecording ? stopRecordingPlayback : playRecording}
-                    className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 ${
-                      isPlayingRecording 
-                        ? 'bg-red-500 hover:bg-red-600 text-white' 
-                        : 'bg-green-500 hover:bg-green-600 text-white'
-                    }`}
-                    title={isPlayingRecording ? '재생 중지' : '녹음본 재생'}
-                  >
-                    {isPlayingRecording ? (
-                      <>
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <rect x="6" y="4" width="8" height="12" rx="1" />
-                        </svg>
-                        <span className="text-sm">정지</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <polygon points="6,4 14,10 6,16" />
-                        </svg>
-                        <span className="text-sm">재생</span>
-                      </>
-                    )}
-                  </button> */}
-                </div>
-              )}
-            
-          </div>
+            {/* 모든 문장 분석 완료 시 버튼 표시 */}
+            {(() => {
+              const total = captions.length;
+              const analyzed = Object.values(recordedScripts).filter(Boolean).length;
+              if (analyzed === total && total > 0) {
+                return (
+                  <div className="flex flex-row justify-center gap-4 my-4">
+                    <button className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow transition">더빙본 들어보기</button>
+                    <button className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow transition">결과보기</button>
+                  </div>
+                );
+              }
+              return null;
+            })()}
         
         </div>
         
-        <div className="flex flex-col items-center space-y-2 mt-4">
+        {/* Video Player */}
+        {/* <VideoPlayer
+          videoId={tokenId}
+          onTimeUpdate={handleTimeUpdate}
+          startTime={getCurrentScriptPlaybackRange().startTime}
+          endTime={getCurrentScriptPlaybackRange().endTime}
+          disableAutoPause={true}
+          ref={videoPlayerRef}
+          onEndTimeReached={() => stopScriptRecording(currentScriptIndex)}
+        /> */}
+        <div className="absolute bottom-6 left-0 w-full flex flex-col items-center space-y-2">
           <div className="flex flex-row justify-center space-x-4">
             <button
               onClick={() => {
@@ -434,18 +457,18 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
               </svg>
             </button>
             <div className="relative inline-block">
-                          <button
-              onClick={() => {
-                if (isVideoEnded) {
-                  const startTime = captions[currentScriptIndex]?.start_time || 0;
-                  videoPlayerRef?.current?.seekTo(startTime);
-                }
-                videoPlayerRef?.current?.playVideo();
-              }}
-              className="w-16 h-16 bg-gradient-to-r from-green-500 to-lime-500 hover:from-green-600 hover:to-lime-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20"
-              title="실행"
-              disabled={isVideoPlaying || !videoPlayerRef?.current || recording}
-            >
+              <button
+                onClick={() => {
+                  if (isVideoEnded) {
+                    const startTime = captions[currentScriptIndex]?.start_time || 0;
+                    videoPlayerRef?.current?.seekTo(startTime);
+                  }
+                  videoPlayerRef?.current?.playVideo();
+                }}
+                className="w-16 h-16 bg-gradient-to-r from-green-500 to-lime-500 hover:from-green-600 hover:to-lime-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20"
+                title="실행"
+                disabled={isVideoPlaying || !videoPlayerRef?.current || recording}
+              >
                 <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                   <polygon points="6,4 16,10 6,16" />
                 </svg>
@@ -492,12 +515,12 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
                 <path d="M10 5l7 5-7 5V5zM3 5h2v10H3V5z" />
               </svg>
             </button>
-
           </div>
           <div className="flex flex-row justify-center mt-2 space-x-4">
             <button
               onClick={() => {
                 console.log('정지 버튼 클릭', videoPlayerRef?.current);
+                console.log('[MANUAL] 사용자 수동 정지 - 녹음 중지');
                 videoPlayerRef?.current?.pauseVideo();
                 stopScriptRecording(currentScriptIndex);
               }}
@@ -529,16 +552,6 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
             </button>
           </div>
         </div>
-        {/* Video Player */}
-        {/* <VideoPlayer
-          videoId={tokenId}
-          onTimeUpdate={handleTimeUpdate}
-          startTime={getCurrentScriptPlaybackRange().startTime}
-          endTime={getCurrentScriptPlaybackRange().endTime}
-          disableAutoPause={true}
-          ref={videoPlayerRef}
-          onEndTimeReached={() => stopScriptRecording(currentScriptIndex)}
-        /> */}
       </div>
     </div>
   );
