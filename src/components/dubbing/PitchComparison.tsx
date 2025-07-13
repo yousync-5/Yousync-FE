@@ -62,19 +62,23 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
     tokenId,
     scripts,
     onUploadComplete: (success: boolean, jobIds: string[]) => {
-      console.log('[DEBUG][PitchComparison] onUploadComplete 내부 콜백', { success, jobIds });
+      console.log(`[🔄 PitchComparison] onUploadComplete 콜백 호출됨`);
+      console.log(`[📊 결과] success: ${success}, jobIds: ${JSON.stringify(jobIds)}`);
+      
       if (success) {
         if (Array.isArray(jobIds)) {
-          jobIds.forEach((jobId, idx) => {
-            console.log(`[DEBUG][PitchComparison] 업로드 성공: jobId[${idx}]=${jobId}`);
+          jobIds.forEach((jobId) => {
+            console.log(`[✅ 업로드 성공] 문장 ${currentScriptIndex + 1}번 jobId: ${jobId}`);
           });
         } else {
-          console.warn('[DEBUG][PitchComparison] jobIds가 배열이 아님', jobIds);
+          console.warn(`[⚠️ 경고] jobIds가 배열이 아님: ${typeof jobIds}`);
         }
       } else {
-        console.warn('[DEBUG][PitchComparison] 업로드 실패', jobIds);
+        console.error(`[❌ 업로드 실패] 문장 ${currentScriptIndex + 1}번 업로드 실패`);
       }
-      onUploadComplete?.(success, jobIds)
+      
+      // 상위 컴포넌트로 콜백 전달
+      onUploadComplete?.(success, jobIds);
     },
   });
 
@@ -272,10 +276,6 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
       startTime: currentScript?.start_time || 0,
       endTime: currentScript?.end_time || undefined,
     };
-  };
-
-  const handleTimeUpdate = (currentTime: number) => {
-    // ... (필요시 기존 로직 복구) ...
   };
 
   // recording 값이 바뀔 때만 로그 출력

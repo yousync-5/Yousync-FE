@@ -1,25 +1,26 @@
 "use client";
 
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useRef, useCallback, useEffect, useState } from "react";
 import DubbingHeader from "@/components/dubbing/DubbingHeader";
 import VideoPlayer, { VideoPlayerRef } from "@/components/dubbing/VideoPlayer";
 import ScriptDisplay from "@/components/dubbing/ScriptDisplay";
 import PitchComparison from "@/components/dubbing/PitchComparison";
-import TestResultAnalysisSection from "@/components/result/TestResultAnalysisSection";
+import ResultContainer from "@/components/result/ResultComponent";
+import ResultViewBtn from "@/components/result/ResultViewBtn";
+
 import { Toaster } from "react-hot-toast";
 import toast from "react-hot-toast";
-import { motion } from "framer-motion";
 import { useAudioStream } from "@/hooks/useAudioStream";
 import { useJobIdsStore } from '@/store/useJobIdsStore';
 import { useDubbingState } from "@/hooks/useDubbingState";
-import Sidebar from "../ui/Sidebar";
+import Sidebar from "@/components/ui/Sidebar";
+
 
 export default function DubbingContainer({
   tokenData,
   front_data,
   serverPitchData,
   id,
-  modalId,
 }: {
   tokenData: any;
   front_data: any;
@@ -29,7 +30,7 @@ export default function DubbingContainer({
 }) {
   // 데이터 준비 여부 체크
   const isReady = !!(front_data && tokenData && serverPitchData);
-
+  
   // 기본 상태들을 훅으로 관리
   const dubbingState = useDubbingState(front_data?.captions?.length || 0, {
     onScriptChange: (index: number) => {
@@ -80,13 +81,21 @@ export default function DubbingContainer({
   const pitchRef = useRef<{ handleExternalStop: () => void, stopLooping?: () => void } | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
-  useAudioStream();
+  const { cleanupMic } = useAudioStream();
 
   // zustand에서 multiJobIds 읽기
   const multiJobIds = useJobIdsStore((state) => state.multiJobIds);
   const setMultiJobIds = useJobIdsStore((state) => state.setMultiJobIds);
 
-  
+  // 🆕 분석 결과 수신 상태 추가
+  const [hasAnalysisResults, setHasAnalysisResults] = useState(false);
+
+  // 🆕 hasAnalysisResults 상태 디버깅
+  useEffect(() => {
+    console.log('[🔍 상태 확인] hasAnalysisResults:', hasAnalysisResults);
+    console.log('[🔍 상태 확인] showResults:', showResults);
+    console.log('[🔍 상태 확인] showCompleted:', showCompleted);
+  }, [hasAnalysisResults, showResults, showCompleted]);
 
   // ✅ SSE 관련 상태 초기화
 const sseRef = useRef<EventSource | null>(null);
@@ -105,6 +114,7 @@ useEffect(() => {
     }
 
     console.log('[SSE] 연결 시도:', jobId);
+    console.log('[SSE] API URL:', `${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/analysis-progress/${jobId}`);
     connectedJobIdsRef.current.add(jobId);
 
     const sse = new EventSource(`${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/analysis-progress/${jobId}`);
@@ -153,12 +163,18 @@ useEffect(() => {
           // 분석 결과가 도착하면 상태 초기화
           setRecordingCompleted(false);
           setIsAnalyzing(false);
-          
           return newState;
         });
+
+        // 🆕 분석 결과 수신 시 상태 업데이트
+        setHasAnalysisResults(true);
+        console.log(`[✅ 분석 결과 수신] Job ID ${jobId} 분석 완료`);
+        console.log(`[✅ 상태 업데이트] hasAnalysisResults를 true로 설정`);
+        console.log(`[✅ 분석 데이터] 받은 결과:`, data.result.result);
       }
     
       if (["completed", "failed", "error"].includes(data.status)) {
+        console.log(`[SSE][${jobId}] 상태 변경: ${data.status}`, data);
         sse.close();
         connectedJobIdsRef.current.delete(jobId);
       }
@@ -166,13 +182,33 @@ useEffect(() => {
 
     sse.onerror = (e) => {
       console.error(`[SSE][${jobId}] 에러 발생`, e);
-      sse.close();
-      connectedJobIdsRef.current.delete(jobId);
+      console.error(`[SSE][${jobId}] 에러 타입:`, e.type);
+      console.error(`[SSE][${jobId}] 에러 상태:`, sse.readyState);
+      console.error(`[SSE][${jobId}] URL:`, sse.url);
+      
+      // 에러 상태에 따른 처리
+      if (sse.readyState === EventSource.CONNECTING) {
+        console.log(`[SSE][${jobId}] 재연결 시도 중...`);
+      } else if (sse.readyState === EventSource.CLOSED) {
+        console.log(`[SSE][${jobId}] 연결이 닫힘`);
+        connectedJobIdsRef.current.delete(jobId);
+        
+        // 3초 후 재연결 시도
+        setTimeout(() => {
+          if (!connectedJobIdsRef.current.has(jobId)) {
+            console.log(`[SSE][${jobId}] 재연결 시도`);
+            // 여기서 재연결 로직을 추가할 수 있음
+          }
+        }, 3000);
+      }
     };
   });
 
   return () => {
-    sseList.forEach((sse) => sse.close());
+    sseList.forEach((sse) => {
+      console.log('[SSE] 연결 해제:', sse.url);
+      sse.close();
+    });
   };
 }, [multiJobIds]);
 
@@ -234,12 +270,6 @@ useEffect(() => {
       console.log(JSON.stringify(latestResultByScript, null, 2));
     }
   }, [latestResultByScript, front_data.captions]);
-
-  
-
-
-
-
 
   // 점수 색상 헬퍼
   const getScoreColor = (score: number) => {
@@ -320,19 +350,34 @@ useEffect(() => {
   //   }
   // }, [latestResultByScript, front_data.captions.length]);
 
-  // 분석 완료 시 결과 섹션으로 스크롤
-  useEffect(() => {
-    if (showCompleted) {
-      const timer = setTimeout(() => {
-        resultsRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 200);
-      return () => clearTimeout(timer);
-    }
-  }, [showCompleted]);
+  // 분석 완료 시 토스트 해제
+  // useEffect(() => {
+  //   const totalCount = front_data.captions.length;
+  //   const resultCount = Object.keys(latestResultByScript).length;
+    
+  //   if (resultCount > 0 && resultCount < totalCount) {
+  //     // 분석 결과가 추가되었을 때 토스트 해제
+  //     setTimeout(() => {
+  //       toast.dismiss("analysis-loading-toast");
+  //     }, 100);
+  //   }
+  // }, [latestResultByScript, front_data.captions.length]);
 
   // 결과 보기 버튼 클릭 시 결과 섹션으로 스크롤
   const showResultsSection = useCallback(() => {
     setShowResults(true);
+    setTimeout(() => {
+      resultsRef.current?.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }, 100);
+  }, []);
+
+  // 🆕 결과 조회 버튼 클릭 핸들러
+  const handleViewResults = useCallback(() => {
+    setShowResults(true);
+    // 레이아웃 안정화를 위한 약간의 지연
     setTimeout(() => {
       resultsRef.current?.scrollIntoView({ 
         behavior: 'smooth',
@@ -473,6 +518,37 @@ useEffect(() => {
       setShowAnalysisResult(true);
     }
   }, [isRecordingPlayback, analysisResult, recording]);
+  // Job ID 유효성 확인 함수
+  const validateJobId = async (jobId: string): Promise<boolean> => {
+    try {
+      console.log(`[DEBUG] Job ID 유효성 확인: ${jobId}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/analysis-progress/${jobId}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`[DEBUG] Job ID ${jobId} 상태:`, data.status);
+        return data.status !== 'failed' && data.status !== 'error';
+      } else {
+        console.error(`[DEBUG] Job ID ${jobId} 확인 실패:`, response.status, response.statusText);
+        return false;
+      }
+    } catch (error) {
+      console.error(`[DEBUG] Job ID ${jobId} 확인 중 에러:`, error);
+      return false;
+    }
+  };
+
+  // Job ID 유효성 확인 후 SSE 연결
+  const connectSSEWithValidation = async (jobId: string) => {
+    const isValid = await validateJobId(jobId);
+    if (!isValid) {
+      console.error(`[SSE] Job ID ${jobId}가 유효하지 않습니다.`);
+      return null;
+    }
+    
+    console.log(`[SSE] Job ID ${jobId} 유효성 확인 완료, SSE 연결 시작`);
+    return new EventSource(`${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/analysis-progress/${jobId}`);
+  };
 
   // --- 렌더링 ---
   if (!isReady) {
@@ -486,6 +562,7 @@ useEffect(() => {
   return (
     <div className="min-h-screen bg-neutral-950 text-white relative overflow-hidden">
       <Toaster position="top-center" />
+      
       <DubbingHeader
         title={front_data.movie.title}
         category={front_data.movie.category}
@@ -542,7 +619,9 @@ useEffect(() => {
               isVideoPlaying={isVideoPlaying}
               scripts={tokenData?.scripts}
               onUploadComplete={(success, jobIds) => {
-                console.log('[DEBUG] onUploadComplete', { success, jobIds });
+                console.log(`[🔄 DubbingContainer] onUploadComplete 콜백 호출됨`);
+                console.log(`[📊 결과] success: ${success}, jobIds: ${JSON.stringify(jobIds)}`);
+                
                 if (success && Array.isArray(jobIds)) {
                   // 새로운 분석 시작 시에만 초기화 (기존 결과 유지)
                   if (multiJobIds.length === 0) {
@@ -570,6 +649,32 @@ useEffect(() => {
             />
           </div>
         </div>
+  
+        {/* 🆕 결과 섹션을 기존 레이아웃 안에 통합 */}
+        {(showCompleted || showResults) && (
+          <div ref={resultsRef} className="result-container mt-8">
+            <div className="animate-fade-in-up">
+              <ResultContainer
+                finalResults={finalResults}
+                latestResultByScript={latestResultByScript}
+                hasAnalysisResults={hasAnalysisResults}
+                showResults={showResults}
+                showCompleted={showCompleted}
+                onViewResults={handleViewResults}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* 🆕 분석 결과 조회 버튼 - 항상 렌더링 */}
+        <ResultViewBtn
+          hasAnalysisResults={hasAnalysisResults}
+          showResults={showResults}
+          showCompleted={showCompleted}
+          onViewResults={handleViewResults}
+        />
+
+
       </div>
       {/* Sidebar - 오른쪽 고정 */}
       <Sidebar

@@ -66,15 +66,6 @@ export default function ScriptDisplay({
   // 분석 결과 애니메이션을 위한 상태
   const [animatedScores, setAnimatedScores] = useState<Record<string, number>>({});
 
-  
-
-
-
-
-
-
-
-
   // 현재 시간을 분:초 형식으로 변환
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -302,6 +293,25 @@ export default function ScriptDisplay({
     }
     
     return `rgb(${r}, ${g}, ${b})`;
+  }
+
+  // HTML 엔티티를 디코딩하는 함수 (SSR 호환)
+  const decodeHtmlEntities = (text: string) => {
+    if (typeof window === 'undefined') {
+      // 서버 사이드에서는 기본적인 HTML 엔티티만 처리
+      return text
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ');
+    }
+    
+    // 클라이언트 사이드에서는 textarea를 사용
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value;
   };
 
   // word 단위로 스크립트 렌더링
@@ -310,7 +320,7 @@ export default function ScriptDisplay({
       // word 데이터가 없으면 기존 방식으로 렌더링
       return (
         <div className="text-white text-2xl font-bold text-center leading-tight">
-          &quot;{captions[currentScriptIndex]?.script}&quot;
+          &quot;{decodeHtmlEntities(captions[currentScriptIndex]?.script || '')}&quot;
         </div>
       );
     }
@@ -344,7 +354,7 @@ export default function ScriptDisplay({
                   : undefined
               }}
             >
-              {word.word.replace(/'/g, "&apos;")}{index < currentWords.length - 1 ? ' ' : ''}
+              {decodeHtmlEntities(word.word)}{index < currentWords.length - 1 ? ' ' : ''}
             </span>
           );
         })}&quot;
@@ -448,12 +458,7 @@ export default function ScriptDisplay({
                 renderScriptWithWords()
               )}
             </div>
-             
-
-              
-         
-
-
+            
             <button
               onClick={() => {
                 if (onStopLooping) onStopLooping();

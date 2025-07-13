@@ -9,7 +9,6 @@ export async function getServerPitchData(tokenId: string): Promise<ServerPitch[]
     const response = await axios.get<ServerPitch[]>(
       `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/${numericId}`
     );
-    console.log("데이터 수집")
     return response.data;
   } catch (error) {
     console.error("❌ 서버 pitch 데이터 가져오기 실패:", error);
