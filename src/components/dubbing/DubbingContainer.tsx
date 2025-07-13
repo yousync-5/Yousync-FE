@@ -646,6 +646,7 @@ useEffect(() => {
               recordingCompleted={recordingCompleted}
               onRecordingPlaybackChange={setIsRecordingPlayback}
               onOpenSidebar={() => setIsSidebarOpen(true)}
+              onShowResults={handleViewResults}
             />
           </div>
         </div>
@@ -667,12 +668,7 @@ useEffect(() => {
         )}
 
         {/* 🆕 분석 결과 조회 버튼 - 항상 렌더링 */}
-        <ResultViewBtn
-          hasAnalysisResults={hasAnalysisResults}
-          showResults={showResults}
-          showCompleted={showCompleted}
-          onViewResults={handleViewResults}
-        />
+        {/* ResultViewBtn 완전히 제거 */}
 
 
       </div>

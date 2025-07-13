@@ -59,9 +59,22 @@ const ResultComponent: React.FC<TestResultAnalysisSectionProps> = ({
 }) => {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
-  // 자동 스크롤용 ref
+  // 결과 컨테이너 ref
   const resultRef = useRef<HTMLDivElement>(null);
-  const btnRef = useRef<HTMLDivElement>(null);
+  const prevShowResults = useRef(showResults);
+
+  // showResults가 false -> true로 바뀔 때만 스크롤
+  useEffect(() => {
+    if (!prevShowResults.current && showResults && resultRef.current) {
+      requestAnimationFrame(() => {
+        resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (resultRef.current) {
+          window.scrollTo({ top: resultRef.current.offsetTop, behavior: "smooth" });
+        }
+      });
+    }
+    prevShowResults.current = showResults;
+  }, [showResults]);
 
   // props로 받은 데이터가 있으면 사용, 없으면 훅에서 가져오기
   const dubbingState = useDubbingState();
@@ -76,24 +89,6 @@ const ResultComponent: React.FC<TestResultAnalysisSectionProps> = ({
       : (finalResultsObj && typeof finalResultsObj === "object")
         ? Object.values(finalResultsObj)
         : [];
-
-  // 결과가 추가되거나 showResults, showCompleted가 true가 될 때 자동 스크롤
-  useEffect(() => {
-    if ((showResults || showCompleted) && resultRef.current) {
-      setTimeout(() => {
-        resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 0);
-    }
-  }, [finalResults.length, showResults, showCompleted]);
-
-  // 결과 조회 버튼이 나타날 때 자동 스크롤
-  useEffect(() => {
-    if (hasAnalysisResults && !showResults && !showCompleted && btnRef.current) {
-      setTimeout(() => {
-        btnRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 0);
-    }
-  }, [hasAnalysisResults, showResults, showCompleted]);
 
   const { totalScore, pitch, intonation, pronunciation } = getTotalScores(finalResults);
   const rank = getRank(totalScore);
@@ -129,49 +124,49 @@ const ResultComponent: React.FC<TestResultAnalysisSectionProps> = ({
 
   return (
     <>
-      <div ref={resultRef} className="min-h-screen flex flex-col items-center justify-center px-4 py-12 overflow-hidden" style={{ background: COLORS.bg, color: COLORS.text }}>
-        <ScoreCards
-          totalScore={totalScore}
-          pitch={pitch}
-          pronunciation={pronunciation}
-          intonation={intonation}
-        />
-        <div className="flex items-center justify-center mb-10" style={{ gap: 28 }}>
-          <div
-            style={{
-              fontSize: 88,
-              fontWeight: 900,
-              color: getRankColor(rank),
-              textShadow: `0 0 28px ${getRankColor(rank)}66, 0 6px 42px #000a`,
-              minWidth: 110
-            }}
-          >
-            {rank}
+      {(showResults || showCompleted) && (
+        <div ref={resultRef} className="min-h-screen flex flex-col items-center justify-center px-4 py-12 overflow-hidden" style={{ background: COLORS.bg, color: COLORS.text }}>
+          <ScoreCards
+            totalScore={totalScore}
+            pitch={pitch}
+            pronunciation={pronunciation}
+            intonation={intonation}
+          />
+          <div className="flex items-center justify-center mb-10" style={{ gap: 28 }}>
+            <div
+              style={{
+                fontSize: 88,
+                fontWeight: 900,
+                color: getRankColor(rank),
+                textShadow: `0 0 28px ${getRankColor(rank)}66, 0 6px 42px #000a`,
+                minWidth: 110
+              }}
+            >
+              {rank}
+            </div>
+            <div style={{
+              width: 220,
+              height: 220,
+              background: "#111317",
+              borderRadius: 18,
+              border: "2px solid #222f2b",
+              padding: 12,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center"
+            }}>
+              <Radar data={radarData} options={radarOptions} />
+            </div>
           </div>
-          <div style={{
-            width: 220,
-            height: 220,
-            background: "#111317",
-            borderRadius: 18,
-            border: "2px solid #222f2b",
-            padding: 12,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
-          }}>
-            <Radar data={radarData} options={radarOptions} />
-          </div>
+          <SentenceAnalysis finalResults={finalResults} />
         </div>
-        <SentenceAnalysis finalResults={finalResults} />
-      </div>
-      <div ref={btnRef}>
-        <ResultViewBtn
-          hasAnalysisResults={hasAnalysisResults}
-          showResults={showResults}
-          showCompleted={showCompleted}
-          onViewResults={onViewResults}
-        />
-      </div>
+      )}
+      <ResultViewBtn
+        hasAnalysisResults={hasAnalysisResults}
+        showResults={showResults}
+        showCompleted={showCompleted}
+        onViewResults={onViewResults}
+      />
     </>
   );
 };

@@ -1,21 +1,11 @@
 "use client";
-import React, { useRef, useEffect } from "react";
+import React from "react";
 
 interface SentenceAnalysisProps {
   finalResults: any[];
 }
 
 const SentenceAnalysis: React.FC<SentenceAnalysisProps> = ({ finalResults }) => {
-  const lastItemRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (finalResults.length > 0 && lastItemRef.current) {
-      setTimeout(() => {
-        lastItemRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 0);
-    }
-  }, [finalResults.length, JSON.stringify(finalResults)]);
-
   // 디버깅을 위한 콘솔 로그 추가
   React.useEffect(() => {
     console.log('[🔍 SentenceAnalysis] finalResults:', finalResults);
@@ -67,7 +57,6 @@ const SentenceAnalysis: React.FC<SentenceAnalysisProps> = ({ finalResults }) => 
           return (
             <div
               key={result.id ?? idx}
-              ref={idx === finalResults.length - 1 ? lastItemRef : undefined}
               className="p-6 rounded-lg bg-gray-800 border border-gray-700"
             >
               <div className="flex items-center justify-between mb-4">

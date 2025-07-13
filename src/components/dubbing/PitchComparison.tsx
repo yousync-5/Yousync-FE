@@ -28,6 +28,7 @@ interface PitchComparisonProps {
   recordingCompleted?: boolean;
   onRecordingPlaybackChange?: (isPlaying: boolean) => void;
   onOpenSidebar?: () => void;
+  onShowResults?: () => void;
 }
 
 const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComparisonProps>(function PitchComparison({ 
@@ -48,6 +49,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   recordingCompleted = false,
   onRecordingPlaybackChange,
   onOpenSidebar,
+  onShowResults,
 }: PitchComparisonProps, ref) {
 
   const {
@@ -419,7 +421,12 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
                 return (
                   <div className="flex flex-row justify-center gap-4 my-4">
                     <button className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow transition">더빙본 들어보기</button>
-                    <button className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow transition">결과보기</button>
+                    <button
+                      className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow transition"
+                      onClick={onShowResults}
+                    >
+                      결과보기
+                    </button>
                   </div>
                 );
               }
