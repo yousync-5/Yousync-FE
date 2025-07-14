@@ -456,10 +456,10 @@ useEffect(() => {
     // 1. 녹음 중이면 PitchComparison의 녹음 중지 핸들 호출
     pitchRef.current?.handleExternalStop();
 
-    // 2. 영상 해당 시점으로 이동 및 정지
+    // 2. 영상 해당 시점으로 이동 및 재생
     const startTime = front_data.captions[index]?.start_time ?? 0;
     videoPlayerRef.current?.seekTo(startTime);
-    videoPlayerRef.current?.pauseVideo();
+    videoPlayerRef.current?.playVideo();
 
     // 3. 문장 인덱스 변경
     handleScriptSelect(index);
@@ -593,7 +593,30 @@ useEffect(() => {
               disableAutoPause={true}
               ref={videoPlayerRef}
               onEndTimeReached={() => {
-                pitchRef.current?.handleExternalStop?.();
+                const nextIndex = currentScriptIndex + 1;
+                const nextScript = front_data.captions[nextIndex];
+                const isCurrentMyLine = front_data.captions[currentScriptIndex]?.actor?.name === "Second Speaker";
+                const isNextMyLine = nextScript?.actor?.name === "Second Speaker";
+
+                // 내 대사가 끝났을 때 녹음 정지
+                if (isCurrentMyLine && pitchRef.current) {
+                  pitchRef.current.handleExternalStop();
+                }
+
+                // 상대 → 내 대사로 넘어갈 때 자동 이동/재생
+                if (!isCurrentMyLine && isNextMyLine) {
+                  setCurrentScriptIndex(nextIndex);
+                  videoPlayerRef.current?.seekTo(nextScript.start_time);
+                  videoPlayerRef.current?.playVideo();
+                  return;
+                }
+                // 상대 → 상대 대사인 경우 자동 이동/재생
+                if(!isCurrentMyLine && !isNextMyLine && nextScript){
+                  setCurrentScriptIndex(nextIndex);
+                  videoPlayerRef.current?.seekTo(nextScript.start_time);
+                  videoPlayerRef.current?.playVideo();
+                  return;
+                }
               }}
               onPlay={customHandlePlay}
               onPause={customHandlePause}

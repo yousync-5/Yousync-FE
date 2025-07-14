@@ -118,7 +118,7 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
       videos: romanticTokens.map(({ id, youtubeId, actor_name }) => ({ videoId: String(id), youtubeId, actor_name })),
       isPlayable: false,
     },
-    
+   
   ];
 
   const featuredVideo = videos[0];
@@ -147,6 +147,13 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
   };
   //슬라이드가 왼쪽/오른쪽으로 이동하는지 구분
   const [direction, setDirection] = useState(0); // -1: 왼쪽, 1: 오른쪽
+
+  // 임시 듀엣 더빙용 데이터 (실제 데이터로 교체 가능)
+  const duetTokens = [
+    { videoId: "201", youtubeId: "duet1abc", actor_name: "AI 배우 김연기" },
+    { videoId: "202", youtubeId: "duet2def", actor_name: "AI 배우 이배우" },
+    { videoId: "203", youtubeId: "duet3ghi", actor_name: "AI 배우 박명장면" },
+  ];
 
   return (
     <div className="bg-black min-h-screen text-white font-sans overflow-x-hidden flex flex-col">
@@ -263,7 +270,7 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                     </div>
                     <p className="text-gray-500 ml-9 font-medium">{section.subtitle}</p>
                   </div>
-                  {/* 여기서 MovieList만! 아래 map 반복 구현 완전히 제거 */}
+                  {/* MovieList만! */}
                   <MovieList
                     sectionId={section.id}
                     videos={section.videos}
@@ -274,32 +281,65 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                     onOpenModal={openModal}
                     onStop={stopDubbing}
                   />
+                  {/* 싱크 컬렉션 아래에만 듀엣 더빙 섹션 삽입 */}
                   {section.id === "sync-collection" && (
-                    <div className="mt-12">
-                      <div className="flex items-center gap-3 mb-6">
-                        <TrophyIcon className="w-6 h-6 text-yellow-500" />
-                        <h2 className="text-3xl font-bold bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent">Top User</h2>
+                    <div className="relative group mt-16">
+                      <div className="mb-6">
+                        <div className="flex items-center gap-3 mb-2">
+                          <UserGroupIcon className="w-6 h-6 text-blue-400" />
+                          <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                            배우와 듀엣 더빙
+                          </h2>
+                        </div>
+                        <p className="text-gray-500 ml-9 font-medium">실제 배우와 함께 명장면을 연기해보세요!</p>
                       </div>
-                      <p className="text-gray-500 ml-9 font-medium mb-6">더빙계 인기 크리에이터들</p>
-                      <div className="grid grid-cols-5 gap-8">
-                        {topCreators.map((creator) => (
-                          <div key={creator.id} className="text-center group cursor-pointer">
-                            <div className="relative mb-3">
-                              <img
-                                src={creator.image}
-                                alt={creator.name}
-                                className="w-20 h-20 rounded-full object-cover border-2 border-gray-700 group-hover:border-green-500 transition-all duration-200 transform group-hover:scale-110"
-                              />
-                              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                                <span className="text-xs font-bold text-white">✓</span>
+                      <div className="flex gap-6 overflow-x-auto pb-4">
+                        {duetTokens.map((video) => (
+                          <div
+                            key={video.videoId}
+                            className="relative bg-gray-900 border-2 border-gray-800 rounded-3xl overflow-hidden hover:border-blue-400 hover:shadow-2xl transition-all duration-300 cursor-pointer flex-shrink-0 transform hover:scale-105 aspect-video"
+                            style={{ minWidth: "280px", maxWidth: "280px" }}
+                            onClick={() => playDubbing(video.videoId)}
+                          >
+                            {/* 듀엣 전용 오버레이 */}
+                            <div className="absolute inset-0 z-10 flex flex-col justify-between pointer-events-none">
+                              <div className="flex justify-between p-3">
+                                {/* 배우 아이콘 */}
+                                <div className="flex items-center gap-1 bg-blue-500/80 text-white px-2 py-1 rounded-full text-xs font-bold shadow">
+                                  <span className="inline-block w-5 h-5 bg-white/30 rounded-full mr-1" style={{backgroundImage:'url(https://img.icons8.com/ios-filled/50/ffffff/user-male-circle.png)',backgroundSize:'cover'}}></span>
+                                  배우
+                                </div>
+                                {/* 내 실루엣/마이크 */}
+                                <div className="flex items-center gap-1 bg-green-500/80 text-white px-2 py-1 rounded-full text-xs font-bold shadow">
+                                  <span className="inline-block w-5 h-5 bg-white/30 rounded-full mr-1" style={{backgroundImage:'url(https://img.icons8.com/ios-filled/50/ffffff/microphone.png)',backgroundSize:'cover'}}></span>
+                                  나
+                                </div>
+                              </div>
+                              <div className="flex justify-center mb-3">
+                                <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">듀엣 더빙</span>
                               </div>
                             </div>
-                            <h3 className="text-sm font-bold text-white group-hover:text-green-400 transition-colors truncate">
-                              {creator.name}
-                            </h3>
-                            <p className="text-xs text-gray-500 font-medium">
-                              {creator.followers}
-                            </p>
+                            {/* 유튜브 썸네일 */}
+                            <img
+                              src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`}
+                              alt={video.actor_name}
+                              className="w-full h-full object-cover"
+                              draggable={false}
+                            />
+                            {/* 카드 설명 영역 */}
+                            <div className="p-6 relative z-20 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
+                              <h3 className="font-bold mb-2 text-white text-lg">
+                                {video.actor_name}와 듀엣
+                              </h3>
+                              <p className="text-sm text-gray-300 font-medium mb-3">AI 배우와 함께 명장면을 연기해보세요!</p>
+                              <button
+                                className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-colors shadow-lg bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 text-white hover:brightness-110"
+                                style={{ pointerEvents: 'auto' }}
+                              >
+                                <PlayIcon className="w-4 h-4" />
+                                듀엣 시작
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -307,6 +347,8 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                   )}
                 </div>
               ))}
+              {/* 듀엣 더빙 전용 섹션 */}
+              {/* This section is now rendered inside the sections.map loop */}
             </div>
           )}
         </div>
