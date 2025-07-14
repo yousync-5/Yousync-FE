@@ -1,5 +1,8 @@
 import { PlayIcon, SpeakerWaveIcon } from "@heroicons/react/24/outline";
 import type { MovieItemProps } from "@/types/video";
+import { useBookmark } from '@/hooks/useBookmark';
+import { BookmarkIcon } from '@heroicons/react/24/solid';
+import { useState } from 'react';
 
 export default function MovieItem({
   video,
@@ -13,9 +16,25 @@ export default function MovieItem({
   // 디버깅용 로그
   // console.log('MovieItem video:', video);
 
+  // 북마크 훅 사용
+  const { isLoading, isSuccess, isError, addBookmark } = useBookmark();
+  // 북마크 상태를 로컬에서 관리 (true/false)
+  const [bookmarked, setBookmarked] = useState(false);
+
+  const handleBookmarkClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!bookmarked) {
+      setBookmarked(true);
+      await addBookmark(Number(video.videoId));
+    } else {
+      setBookmarked(false);
+      // TODO: 북마크 해제 API가 있다면 여기에 추가
+    }
+  };
+
   return (
     <div
-      className={`group/video bg-gray-900 border-2 border-gray-800 rounded-3xl overflow-hidden hover:border-green-500 hover:shadow-2xl transition-all duration-300 cursor-pointer flex-shrink-0 transform hover:scale-105 ${
+      className={`relative group/video bg-gray-900 border-2 border-gray-800 rounded-3xl overflow-hidden hover:border-green-500 hover:shadow-2xl transition-all duration-300 cursor-pointer flex-shrink-0 transform hover:scale-105 ${
         isShorts ? "aspect-[9/16]" : "aspect-video"
       }`}
       style={{
@@ -30,6 +49,15 @@ export default function MovieItem({
         }
       }}
     >
+      {/* 북마크 버튼 - 카드 우상단 */}
+      <button
+        className="absolute top-3 right-3 z-20 bg-white/80 rounded-full p-2 hover:bg-green-200 opacity-0 group-hover/video:opacity-100 transition-all"
+        onClick={handleBookmarkClick}
+        disabled={isLoading}
+        title="북마크 추가"
+      >
+        <BookmarkIcon className={`w-6 h-6`} style={{ color: bookmarked ? '#22ff88' : '#9ca3af', transition: 'color 0.2s' }} />
+      </button>
       {/* 유튜브 썸네일만 표시 */}
       {video.youtubeId ? (
         <img
