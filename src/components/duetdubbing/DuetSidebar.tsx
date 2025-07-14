@@ -185,7 +185,9 @@ export default function Sidebar({
               }}
               className={`cursor-pointer px-4 py-4 transition-all duration-150 select-none relative
                 ${isSelected
-                  ? "border-2 border-emerald-400 scale-[1.03] bg-transparent text-white shadow-md z-10"
+                  ? isMyLine
+                    ? "border-2 border-emerald-400 scale-[1.03] bg-transparent text-white shadow-md z-10"
+                    : "border-2 border-blue-400 scale-[1.03] bg-transparent text-white shadow-md z-10"
                   : isAnalyzed
                   ? "border-2 border-emerald-400 bg-transparent text-white"
                   : "hover:bg-gray-800/50 hover:text-emerald-300 text-gray-200"}
@@ -200,7 +202,8 @@ export default function Sidebar({
               style={{ wordBreak: 'break-word', zIndex: isSelected ? 10 : 1 }}
             >
               {/* Loader 오버레이 - 현재 선택된 문장에서만 표시 */}
-              {isSelected && !recording && recordingCompleted && (
+              {isSelected && !isMyLine && !recording && recordingCompleted && null}
+              {isSelected && isMyLine && !recording && recordingCompleted && (
                 <div className="absolute inset-0 bg-gray-900/30 backdrop-blur-[1px] flex items-center justify-center z-20 rounded pointer-events-none">
                   <Loader />
                 </div>
@@ -209,10 +212,17 @@ export default function Sidebar({
                 {/* 아이콘 + 번호 */}
                 <span className="flex items-center mr-3 mt-1 select-none" style={{ zIndex: 2 }}>
                   {isSelected ? (
-                    // 빙빙 도는 아이콘 (SVG)
-                    <svg className="w-4 h-4 mr-1 text-emerald-300 animate-spin" viewBox="0 0 20 20" fill="none" aria-label="재생 중">
-                      <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" strokeDasharray="20 10" />
-                    </svg>
+                    isMyLine ? (
+                      // 내 대사 - 빙글빙글 없이 초록색 강조
+                      <svg className="w-4 h-4 mr-1 text-emerald-400" viewBox="0 0 20 20" fill="currentColor" aria-label="선택됨">
+                        <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" />
+                      </svg>
+                    ) : (
+                      // 상대 대사 - 빙글빙글 없음, 강조만 파란색
+                      <svg className="w-4 h-4 mr-1 text-blue-400" viewBox="0 0 20 20" fill="currentColor" aria-label="선택됨">
+                        <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" />
+                      </svg>
+                    )
                   ) : isAnalyzed ? (
                     // 체크 아이콘 (SVG) - 분석 완료
                     <svg className="w-4 h-4 mr-1 text-emerald-400" viewBox="0 0 20 20" fill="currentColor" aria-label="분석 완료">
@@ -220,10 +230,8 @@ export default function Sidebar({
                     </svg>
                   ) : isMyLine ? (
                     // 내 대사 - 사용자 아이콘
-                    <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg">
-                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                      </svg>
+                    <div className="px-2 py-1 text-xs font-medium text-green-300 bg-green-900/50 border border-green-400 rounded-full">
+                      나
                     </div>
                   ) : (
                     // 상대 대사 - "상대" 텍스트

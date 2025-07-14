@@ -468,23 +468,59 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
               </svg>
             </button>
             <div className="relative inline-block">
+              {/* 재생/정지 토글 버튼 */}
               <button
                 onClick={() => {
-                  if (isVideoEnded) {
-                    const startTime = captions[currentScriptIndex]?.start_time || 0;
-                    videoPlayerRef?.current?.seekTo(startTime);
+                  // 기존 재생 버튼의 onClick 함수 그대로 사용
+                  if (isVideoPlaying || recording) {
+                    videoPlayerRef?.current?.pauseVideo();
+                    // 녹음 중이면 녹음도 정지
+                    if (recording) {
+                      stopScriptRecording(currentScriptIndex);
+                    }
+                  } else {
+                       // 내 대사일 때만 동작
+                    if (isMyLine) {
+                      // 내 대사 이전에 가장 가까운 상대 배우 대사 찾기
+                      let prevActorIdx = currentScriptIndex - 1;
+                      while (prevActorIdx >= 0) {
+                        if (captions[prevActorIdx]?.actor?.name !== "Second Speaker") {
+                          break;
+                        }
+                        prevActorIdx--;
+                      }
+
+                      if (prevActorIdx >= 0) {
+                        // 상대 배우 대사가 있으면 그 인덱스로 이동 + 시킹 + 재생
+                        if (onNextScript) onNextScript(prevActorIdx);
+                        videoPlayerRef?.current?.seekTo(captions[prevActorIdx].start_time);
+                        videoPlayerRef?.current?.playVideo();
+                        return;
+                      }
+                    } 
+                    if (isVideoEnded) {
+                      const startTime = captions[currentScriptIndex]?.start_time || 0;
+                      videoPlayerRef?.current?.seekTo(startTime);
+                    }
+                    videoPlayerRef?.current?.playVideo();
                   }
-                  videoPlayerRef?.current?.playVideo();
                 }}
-                className="w-16 h-16 bg-gradient-to-r from-green-500 to-lime-500 hover:from-green-600 hover:to-lime-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20"
-                title="실행"
-                disabled={isVideoPlaying || !videoPlayerRef?.current || recording}
+                className={`w-16 h-16 bg-gradient-to-r from-green-500 to-lime-500 hover:from-green-600 hover:to-lime-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20 play-btn disabled:text-gray-300 disabled:cursor-not-allowed`}
+                title={isVideoPlaying || recording ? '정지' : '실행'}
+                disabled={!videoPlayerRef?.current}
               >
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                  <polygon points="6,4 16,10 6,16" />
-                </svg>
+                {isVideoPlaying || recording ? (
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <rect x="5" y="5" width="10" height="10" rx="2" />
+                  </svg>
+                ) : (
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <polygon points="6,4 16,10 6,16" />
+                  </svg>
+                )}
               </button>
             </div>
+            {/* 기존 마이크(녹음) 버튼은 그대로 유지 */}
             <button
               onClick={() => {
                 if (isLooping) stopLooping();
@@ -535,7 +571,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
             </button>
           </div>
           <div className="flex flex-row justify-center mt-2 space-x-4">
-            <button
+            {/* <button
               onClick={() => {
                 console.log('정지 버튼 클릭', videoPlayerRef?.current);
                 console.log('[MANUAL] 사용자 수동 정지 - 녹음 중지');
@@ -549,7 +585,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                 <rect x="5" y="5" width="10" height="10" rx="2" />
               </svg>
-            </button>
+            </button> */}
             <button
               onClick={() => {
                 console.log('[DEBUG] 반복 버튼 클릭됨');
