@@ -14,23 +14,23 @@ import { useAudioStream } from "@/hooks/useAudioStream";
 import { useJobIdsStore } from '@/store/useJobIdsStore';
 import { useDubbingState } from "@/hooks/useDubbingState";
 import Sidebar from "@/components/ui/Sidebar";
+import DuetSidebar from "./DuetSidebar";
+import DuetPitchComparison from "./DuetPitchComparison";
+import DuetScriptDisplay from "./DuetScriptDisplay";
 
 
-interface DubbingContainerProps {
+export default function DubbingContainer({
+  tokenData,
+  front_data,
+  serverPitchData,
+  id,
+}: {
   tokenData: any;
   front_data: any;
   serverPitchData: any;
   id: string;
   modalId?: string;
-}
-
-const DubbingContainer = ({
-  tokenData,
-  front_data,
-  serverPitchData,
-  id,
-  modalId,
-}: DubbingContainerProps) => {
+}) {
   // 데이터 준비 여부 체크
   const isReady = !!(front_data && tokenData && serverPitchData);
   
@@ -215,18 +215,26 @@ useEffect(() => {
   };
 }, [multiJobIds]);
 
-// ✅ 결과 개수로 전체 완료 감지
+// ✅ 내 대사만 완료 감지
 useEffect(() => {
   if (!multiJobIds.length) return;
   
-  const totalCount = front_data.captions.length;
-  const resultCount = Object.keys(latestResultByScript).length;
-  const allDone = resultCount === totalCount && totalCount > 0;
+  // 내 대사만 필터링
+  const myLines = front_data.captions.filter((caption: any) => caption.actor?.name === "Second Speaker");
+  const myLinesCount = myLines.length;
   
-  console.log('[완료 감지] totalCount:', totalCount, 'resultCount:', resultCount, 'allDone:', allDone);
+  // 내 대사의 분석 결과만 카운트
+  const myLinesResults = myLines.filter((caption: any) => {
+    const scriptKey = normalizeScript(caption.script);
+    return !!latestResultByScript[scriptKey];
+  }).length;
   
-  if (allDone) {
-    console.log('[완료 감지] 분석 완료 - showCompleted를 true로 설정');
+  const allMyLinesDone = myLinesResults === myLinesCount && myLinesCount > 0;
+  
+  console.log('[완료 감지] 내 대사 개수:', myLinesCount, '내 대사 분석 완료:', myLinesResults, 'allMyLinesDone:', allMyLinesDone);
+  
+  if (allMyLinesDone) {
+    console.log('[완료 감지] 내 대사 분석 완료 - showCompleted를 true로 설정');
     // 토스트 강제 해제
     toast.dismiss("analysis-loading-toast");
     toast.dismiss(); // 모든 토스트 해제
@@ -234,7 +242,7 @@ useEffect(() => {
   } else {
     setShowCompleted(false);
   }
-}, [latestResultByScript, multiJobIds.length, front_data.captions.length]);
+}, [latestResultByScript, multiJobIds.length, front_data.captions]);
 
 // 분석 완료 시 토스트 해제
 // useEffect(() => {
@@ -590,7 +598,7 @@ useEffect(() => {
               onPlay={customHandlePlay}
               onPause={customHandlePause}
             />
-            <ScriptDisplay
+            <DuetScriptDisplay
               captions={front_data.captions}
               currentScriptIndex={currentScriptIndex}
               onScriptChange={setCurrentScriptIndex}
@@ -609,8 +617,7 @@ useEffect(() => {
   
           {/* Right Column */}
           <div className="space-y-6">
-            {/* latestResultByScript 값 확인용 로그 (렌더링 중이 아닌 useEffect에서 출력) */}
-            <PitchComparison
+            <DuetPitchComparison
               ref={pitchRef}
               currentScriptIndex={currentScriptIndex}
               captions={front_data.captions}
@@ -651,13 +658,12 @@ useEffect(() => {
               onRecordingPlaybackChange={setIsRecordingPlayback}
               onOpenSidebar={() => setIsSidebarOpen(true)}
               onShowResults={handleViewResults}
-              latestResultByScript={latestResultByScript || {}}
             />
           </div>
         </div>
   
         {/* 🆕 결과 섹션을 기존 레이아웃 안에 통합 */}
-        {showResults && (
+        {(showCompleted || showResults) && (
           <div ref={resultsRef} className="result-container mt-8">
             <div className="animate-fade-in-up">
               <ResultContainer
@@ -678,7 +684,7 @@ useEffect(() => {
 
       </div>
       {/* Sidebar - 오른쪽 고정 */}
-      <Sidebar
+      <DuetSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         captions={front_data.captions}
@@ -686,8 +692,8 @@ useEffect(() => {
         onScriptSelect={customHandleScriptSelect}
         actorName="톰 행크스"
         movieTitle="포레스트 검프"
-        analyzedCount={12}
-        totalCount={191}
+        analyzedCount={Object.keys(latestResultByScript).length}
+        totalCount={front_data.captions.filter((caption: any) => caption.actor?.name === "Second Speaker").length}
         recording={recording}
         onStopLooping={() => pitchRef.current?.stopLooping?.()}
         recordedScripts={recordingCompleted ? Array(front_data.captions.length).fill(false).map((_, i) => i === currentScriptIndex) : []}
@@ -697,5 +703,3 @@ useEffect(() => {
     </div>
   );
 }
-
-export default DubbingContainer;

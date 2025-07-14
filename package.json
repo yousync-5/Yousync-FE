@@ -2,12 +2,11 @@
   "name": "yousync-fe",
   "version": "0.1.0",
   "private": true,
-
   "scripts": {
-    "dev": "NODE_ENV=development node server.js",   
+    "dev": "NODE_ENV=development node server.js",
     "dev:https": "node server.js",
     "build": "next build",
-    "start": "next dev --turbopack", 
+    "start": "next dev --turbopack",
     "lint": "next lint"
   },
   "dependencies": {
@@ -18,10 +17,13 @@
     "@tanstack/react-query": "^5.81.5",
     "apexcharts": "^4.7.0",
     "axios": "^1.10.0",
+    "chart.js": "^4.5.0",
     "clsx": "^2.1.1",
     "firebase": "^11.10.0",
-    "framer-motion": "^12.20.1",
+    "framer-motion": "^12.23.3",
     "gsap": "^3.13.0",
+    "intro.js": "^8.3.2",
+    "intro.js-react": "^1.0.0",
     "next": "15.3.4",
     "pitchfinder": "^2.3.2",
     "react": "^19.0.0",
@@ -52,7 +54,7 @@
     "@types/youtube": "^0.1.2",
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
-    "tailwindcss": "^4",
+    "tailwindcss": "^4.1.11",
     "typescript": "^5"
   }
 }

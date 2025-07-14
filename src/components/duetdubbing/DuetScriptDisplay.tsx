@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
-import { VideoPlayerRef } from "./VideoPlayer";
-import PronunciationTimingGuide from "./PronunciationTimingGuide";
+import { VideoPlayerRef } from "../dubbing/VideoPlayer";
+import PronunciationTimingGuide from "../dubbing/PronunciationTimingGuide";
 import "@/styles/analysis-animations.css";
 
 interface ScriptDisplayProps {
@@ -13,6 +13,10 @@ interface ScriptDisplayProps {
     translation: string;
     start_time: number;
     end_time: number;
+    actor?: {
+      name: string;
+      id: number;
+    };
   }>;
   currentScriptIndex: number;
   onScriptChange: (index: number) => void;
@@ -53,6 +57,10 @@ export default function ScriptDisplay({
   showAnalysisResult = false,
   analysisResult = null,
 }: ScriptDisplayProps) {
+
+  // 화자 구분 로직 - Second Speaker가 내 대사
+  const currentScript = captions[currentScriptIndex];
+  const isMyLine = currentScript?.actor?.name === "Second Speaker";
 
   const [animatedProgress, setAnimatedProgress] = useState(0);
   const [sentenceProgress, setSentenceProgress] = useState(0);
@@ -346,12 +354,12 @@ export default function ScriptDisplay({
             <span 
               key={word.id}
               className={`transition-all duration-200 ${
-                isCurrent ? 'font-bold bg-green-400/10 px-1 rounded' : ''
+                isCurrent ? 'font-bold bg-yellow-400/10 px-1 rounded' : ''
               }`}
               style={{
-                color: animatedScore > 0
-                  ? getGradientColor(animatedScore)
-                  : (isCurrent ? '#22c55e' : undefined)
+                color: animatedScore > 0 && !isCurrent 
+                  ? getGradientColor(animatedScore) 
+                  : undefined
               }}
             >
               {decodeHtmlEntities(word.word)}{index < currentWords.length - 1 ? ' ' : ''}
@@ -431,11 +439,17 @@ export default function ScriptDisplay({
             </button>
 
             <div 
-              className="bg-gray-800 rounded-lg p-4 flex-1 shadow-inner border border-gray-700 flex items-center justify-center min-h-[100px] relative overflow-hidden"
+              className={`rounded-lg p-4 flex-1 shadow-inner border flex items-center justify-center min-h-[100px] relative overflow-hidden transition-all duration-500 ease-out ${
+                isMyLine 
+                  ? 'bg-gradient-to-br from-emerald-900/50 to-emerald-800/30 border-emerald-500 shadow-lg shadow-emerald-500/20' 
+                  : 'bg-gradient-to-br from-blue-900/50 to-blue-800/30 border-blue-500 shadow-lg shadow-blue-500/20'
+              }`}
               style={{
                 background: isAnalyzing 
                   ? 'rgba(31, 41, 55, 1)' // 분석 중일 때는 회색
-                  : `linear-gradient(to right, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.15) ${animatedProgress * 100}%, rgba(31, 41, 55, 1) ${animatedProgress * 100}%, rgba(31, 41, 55, 1) 100%)`, // 그 외에는 초록색 그라데이션
+                  : isMyLine
+                    ? `linear-gradient(to right, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.15) ${animatedProgress * 100}%, rgba(31, 41, 55, 1) ${animatedProgress * 100}%, rgba(31, 41, 55, 1) 100%)` // 내 대사는 초록색 그라데이션
+                    : `linear-gradient(to right, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) ${animatedProgress * 100}%, rgba(31, 41, 55, 1) ${animatedProgress * 100}%, rgba(31, 41, 55, 1) 100%)`, // 상대 대사는 파란색 그라데이션
                 transition: disableTransition ? 'none' : 'background 0.3s ease-out'
               }}
             >
@@ -455,7 +469,51 @@ export default function ScriptDisplay({
                   </div>
                 </div>
               ) : (
-                renderScriptWithWords()
+                <div className="relative w-full h-full flex items-center justify-center">
+                  {/* 배우 정보 배지 */}
+                  <div className={`absolute top-3 left-3 flex items-center gap-2 px-3 py-1 rounded-full text-xl font-semibold ${
+                    isMyLine 
+                      ? 'bg-emerald-600 text-white' 
+                      : 'bg-blue-600 text-white'
+                  }`}>
+                    {isMyLine ? (
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
+                      </svg>
+                    )}
+                    {isMyLine ? '내 대사' : '상대 대사'}
+                  </div>
+
+                  {/* 대사 내용 */}
+                  <div className="text-center">
+                    <div className={`text-2xl font-bold leading-tight ${
+                      isMyLine ? 'text-emerald-100' : 'text-blue-100'
+                    }`}>
+                      {renderScriptWithWords()}
+                    </div>
+                    
+                    {/* 배우 이름 */}
+                    <div className={`text-sm mt-3 font-medium ${
+                      isMyLine ? 'text-emerald-300' : 'text-blue-300'
+                    }`}>
+                      {currentScript?.actor?.name || 'Unknown'}
+                    </div>
+                  </div>
+
+                  {/* 시간 정보 */}
+                  <div className={`absolute bottom-3 right-3 text-xs font-mono ${
+                    isMyLine ? 'text-emerald-300' : 'text-blue-300'
+                  }`}>
+                    {String(Math.floor(captions[currentScriptIndex]?.start_time / 60)).padStart(2, "0")}:
+                    {String(Math.floor(captions[currentScriptIndex]?.start_time % 60)).padStart(2, "0")} ~ 
+                    {String(Math.floor(captions[currentScriptIndex]?.end_time / 60)).padStart(2, "0")}:
+                    {String(Math.floor(captions[currentScriptIndex]?.end_time % 60)).padStart(2, "0")}
+                  </div>
+                </div>
               )}
             </div>
             
@@ -475,25 +533,28 @@ export default function ScriptDisplay({
             </button>
           </div>
           {/* 🎯 직관적 타이밍 가이드 */}
-          {showAnalysisResult ? (
-            <PronunciationTimingGuide
-              captions={captions}
-              currentScriptIndex={currentScriptIndex}
-              currentVideoTime={currentVideoTime}
-              currentWords={currentWords}
-              showAnalysisResult={showAnalysisResult}
-              analysisResult={analysisResult}
-              recording={recording}
-            />
-          ) : (
-            currentWords && currentWords.length > 0 && (
+          {/* 내 대사인 경우에만 표시 */}
+          {isMyLine && (
+            showAnalysisResult ? (
               <PronunciationTimingGuide
                 captions={captions}
                 currentScriptIndex={currentScriptIndex}
                 currentVideoTime={currentVideoTime}
                 currentWords={currentWords}
+                showAnalysisResult={showAnalysisResult}
+                analysisResult={analysisResult}
                 recording={recording}
               />
+            ) : (
+              currentWords && currentWords.length > 0 && (
+                <PronunciationTimingGuide
+                  captions={captions}
+                  currentScriptIndex={currentScriptIndex}
+                  currentVideoTime={currentVideoTime}
+                  currentWords={currentWords}
+                  recording={recording}
+                />
+              )
             )
           )}
         </div>

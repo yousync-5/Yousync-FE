@@ -2,12 +2,20 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import Loader from './Loader';
+import Loader from "../ui/Loader";
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  captions: { script: string }[];
+  captions: { 
+    script: string;
+    actor?: {
+      name: string;
+      id: number;
+    };
+    start_time?: number;
+    end_time?: number;
+  }[];
   currentScriptIndex: number;
   onScriptSelect: (index: number) => void;
   actorName?: string;
@@ -40,6 +48,16 @@ export default function Sidebar({
 }: SidebarProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [detailIndex, setDetailIndex] = useState<number | null>(null); // 클릭 시 세부 정보 표시용
+  const [showMyLinesOnly, setShowMyLinesOnly] = useState(false);
+
+  // 화자 구분 로직 - Second Speaker가 내 대사
+  const currentScript = captions[currentScriptIndex];
+  const isMyLine = currentScript?.actor?.name === "Second Speaker";
+
+  // 내 대사만 필터링
+  const filteredCaptions = showMyLinesOnly 
+    ? captions.filter(caption => caption.actor?.name === "Second Speaker")
+    : captions;
 
   useEffect(() => {
     console.log("[Sidebar] captions:", captions);
@@ -82,9 +100,24 @@ export default function Sidebar({
       </div>
       {/* 상단 정보 박스 */}
       <div className="px-6 py-4 border-b border-gray-800 bg-gray-900/80 flex flex-col gap-2">
-        <div className="flex items-center gap-2 text-sm text-gray-300">
-          <span className="font-semibold text-emerald-400">배우명</span>
-          <span className="truncate">{actorName}</span>
+        <div className="flex items-center justify-between text-sm text-gray-300">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-emerald-400">배우명</span>
+            <span className="truncate">{actorName}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400">내 대사만</span>
+            <button 
+              onClick={() => setShowMyLinesOnly(!showMyLinesOnly)}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                showMyLinesOnly ? 'bg-emerald-500' : 'bg-gray-600'
+              }`}
+            >
+              <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                showMyLinesOnly ? 'translate-x-5' : 'translate-x-1'
+              }`} />
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-300">
           <span className="font-semibold text-emerald-400">영화명</span>
@@ -95,19 +128,19 @@ export default function Sidebar({
         <div className="mt-2">
           <div className="flex justify-between text-xs text-gray-400 mb-1">
             <span>문장 진행률</span>
-            <span>{currentScriptIndex + 1} / {totalCount}</span>
+            <span>{filteredCaptions.length} / {totalCount}</span>
           </div>
           <div className="w-full h-2 bg-gray-700 rounded">
             <div
               className="h-2 bg-emerald-400 rounded"
-              style={{ width: `${((currentScriptIndex + 1) / totalCount) * 100}%` }}
+              style={{ width: `${(filteredCaptions.length / totalCount) * 100}%` }}
             />
           </div>
         </div>
         {/* 분석 완료 게이지 */}
         <div className="mt-2">
           <div className="flex justify-between text-xs text-gray-400 mb-1">
-            <span>분석 완료</span>
+            <span>문장 분석완료</span>
             <span>{analyzedCount} / {totalCount}</span>
           </div>
           <div className="w-full h-2 bg-gray-700 rounded">
@@ -135,17 +168,20 @@ export default function Sidebar({
       </div>
 
       <ul className="px-4 py-6 pb-32">
-        {captions.map((caption, index) => {
+        {filteredCaptions.map((caption, index) => {
           const scriptKey = normalizeScript(caption.script);
           const isAnalyzed = !!latestResultByScript[scriptKey];
-          const isSelected = currentScriptIndex === index;
+          const originalIndex = captions.findIndex(c => c === caption);
+          const isSelected = currentScriptIndex === originalIndex;
+          const isMyLine = caption.actor?.name === "Second Speaker";
+          
           return (
             <li
               key={index}
               onClick={() => {
                 if (recording) return;
                 if (onStopLooping) onStopLooping();
-                onScriptSelect(index);
+                onScriptSelect(originalIndex);
               }}
               className={`cursor-pointer px-4 py-4 transition-all duration-150 select-none relative
                 ${isSelected
@@ -153,6 +189,12 @@ export default function Sidebar({
                   : isAnalyzed
                   ? "border-2 border-emerald-400 bg-transparent text-white"
                   : "hover:bg-gray-800/50 hover:text-emerald-300 text-gray-200"}
+                ${isMyLine && !isSelected && !isAnalyzed
+                  ? "bg-emerald-900/30 border-l-4 border-emerald-400 shadow-lg" 
+                  : ""}
+                ${!isMyLine && !isSelected && !isAnalyzed
+                  ? "bg-blue-900/30 border-l-4 border-blue-400 shadow-lg" 
+                  : ""}
                 ${isSelected ? "transition-transform" : ""}
               `}
               style={{ wordBreak: 'break-word', zIndex: isSelected ? 10 : 1 }}
@@ -176,11 +218,18 @@ export default function Sidebar({
                     <svg className="w-4 h-4 mr-1 text-emerald-400" viewBox="0 0 20 20" fill="currentColor" aria-label="분석 완료">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
+                  ) : isMyLine ? (
+                    // 내 대사 - 사용자 아이콘
+                    <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg">
+                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      </svg>
+                    </div>
                   ) : (
-                    // 플레이 아이콘 (SVG)
-                    <svg className="w-4 h-4 mr-1 text-gray-400 group-hover:text-emerald-300 transition-colors" viewBox="0 0 20 20" fill="currentColor" aria-label="플레이">
-                      <polygon points="6,4 16,10 6,16" />
-                    </svg>
+                    // 상대 대사 - "상대" 텍스트
+                    <div className="px-2 py-1 text-xs font-medium text-blue-300 bg-blue-900/50 border border-blue-400 rounded-full">
+                      상대
+                    </div>
                   )}
                 </span>
                 <span className="flex-1 leading-relaxed">
