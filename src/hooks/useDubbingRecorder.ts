@@ -102,6 +102,8 @@ export function useDubbingRecorder({
       
       console.log(`[DEBUG] 전송할 헤더:`, headers);
 
+      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/${scriptId}/upload-audio`;
+      console.log(`[DEBUG] 요청 URL:`, url);
       
       const res = await axios.post<UploadAudioResponse>(
         url,
