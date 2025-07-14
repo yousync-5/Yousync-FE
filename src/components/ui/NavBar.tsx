@@ -153,22 +153,15 @@ export const NavBar: React.FC = () => {
       className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-b border-gray-800 shadow-2xl"
     >
       <div className="max-w-7xl mx-auto px-2 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-8">
+        <div className="flex items-center w-full">
+          {/* 왼쪽: 로고 */}
+          <div className="flex-shrink-0">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent animate-pulse cursor-pointer" onClick={handleToMain}>
               YouSync
             </h1>
-            <div className="hidden md:flex items-center space-x-6">
-              <a href="#" className="text-gray-400 hover:text-green-400 transition-colors font-medium">홈</a>
-              <a href="#" className="text-gray-400 hover:text-emerald-400 transition-colors font-medium">영화</a>
-              <a href="#" className="text-gray-400 hover:text-teal-400 transition-colors font-medium">배우</a>
-              <a href="#" className="text-gray-400 hover:text-green-400 transition-colors font-medium">결과</a>
-            </div>
           </div>
-
-          {/* 검색창 및 로그인 버튼 영역 */}
-          <div className="flex items-center space-x-4">
-            {/* 검색창 */}
+          {/* 중앙: input */}
+          <div className="flex-1 flex justify-center">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
@@ -180,13 +173,16 @@ export const NavBar: React.FC = () => {
                 value={searchQuery}
                 onChange={handleInputChange}
                 onKeyDown={handleInputKeyDown}
-                className="w-64 pl-10 pr-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 overflow-x-auto whitespace-nowrap"
+                className="w-[36rem] pl-10 pr-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 overflow-x-auto whitespace-nowrap"
               />
               <button
-                className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 bg-emerald-600 text-white rounded-md text-sm hover:bg-emerald-700 transition"
+                type="button"
                 onClick={handleSearchClick}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-emerald-700/30 focus:bg-emerald-700/40 transition cursor-pointer"
+                tabIndex={0}
+                aria-label="검색"
               >
-                검색
+                <MagnifyingGlassIcon className="h-6 w-6 text-emerald-400 hover:text-emerald-500 transition" />
               </button>
               {showDropdown && (
                 <div ref={dropdownRef} className="absolute top-full left-0 right-0 mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-lg z-50">
@@ -207,8 +203,9 @@ export const NavBar: React.FC = () => {
                 </div>
               )}
             </div>
-
-            {/* 로그인/유저 영역 */}
+          </div>
+          {/* 오른쪽: 버튼들 */}
+          <div className="flex-shrink-0 flex items-center space-x-4">
             {isLoggedIn ? (
               <>
                 {user && (
@@ -241,9 +238,9 @@ export const NavBar: React.FC = () => {
                 >
                   로그인
                 </button>
-                <button className="px-6 py-2 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 hover:from-green-600 hover:via-emerald-600 hover:to-teal-600 text-white rounded-full transition-all duration-200 font-bold shadow-lg hover:shadow-xl transform hover:scale-105">
+                {/* <button className="px-6 py-2 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 hover:from-green-600 hover:via-emerald-600 hover:to-teal-600 text-white rounded-full transition-all duration-200 font-bold shadow-lg hover:shadow-xl transform hover:scale-105">
                   시작하기
-                </button>
+                </button> */}
               </>
             )}
           </div>

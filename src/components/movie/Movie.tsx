@@ -1,5 +1,5 @@
 // src/components/movie/Movie.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MovieDetailModal from "@/components/modal/MovieDetailModal";
 import MovieList from "./MovieList";
 import { NavBar } from "@/components/ui/NavBar";
@@ -124,6 +124,14 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
   const featuredVideo = videos[0];
   const heroVideos = latestTokens.slice(0, 5);
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  // 5초마다 자동으로 오른쪽(다음)으로 이동
+  useEffect(() => {
+    const interval = setInterval(() => {
+      goToNext();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [heroVideos.length, currentIndex]);
 
   const goToPrev = () => {
     setDirection(-1);
