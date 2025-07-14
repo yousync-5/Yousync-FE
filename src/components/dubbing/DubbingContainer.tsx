@@ -652,7 +652,7 @@ useEffect(() => {
         </div>
   
         {/* 🆕 결과 섹션을 기존 레이아웃 안에 통합 */}
-        {(showCompleted || showResults) && (
+        {showResults && (
           <div ref={resultsRef} className="result-container mt-8">
             <div className="animate-fade-in-up">
               <ResultContainer
