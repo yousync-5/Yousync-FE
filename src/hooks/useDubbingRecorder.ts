@@ -35,30 +35,55 @@ export function useDubbingRecorder({
   const addJobId = useJobIdsStore((state) => state.addJobId);
 
   const startScriptRecording = (scriptIdx: number) => {
-    startRecording();
+    // 스크립트 정보 가져오기
+    const caption = captions[scriptIdx];
+    if (caption) {
+      startRecording(scriptIdx, caption.start_time, caption.end_time);
+    } else {
+      console.warn(`[WARN] 스크립트 ${scriptIdx} 정보를 찾을 수 없습니다.`);
+      startRecording(scriptIdx, 0, 0);
+    }
   };
 
   // 단일 문장 업로드 함수
   const uploadScript = async (idx: number) => {
     console.log(`[DEBUG][uploadScript] 업로드 시작 idx=${idx}`);
-    if (!audioCtx) return;
-    if (!scripts || !scripts[idx]) return;
+    console.log(`[DEBUG][uploadScript] API_BASE_URL: ${process.env.NEXT_PUBLIC_API_BASE_URL}`);
+    
+    if (!audioCtx) {
+      console.error('[ERROR][uploadScript] audioCtx is undefined');
+      return;
+    }
+    if (!scripts || !scripts[idx]) {
+      console.error(`[ERROR][uploadScript] scripts or scripts[${idx}] is undefined`);
+      return;
+    }
+    
     const blobs = getAllBlobs();
+    console.log(`[DEBUG][uploadScript] blobs:`, blobs);
+    console.log(`[DEBUG][uploadScript] idx: ${idx}`);
+    
     const blob = blobs[idx];
     if (!blob) {
       console.error(`[ERROR][uploadScript] blob is undefined for idx=${idx}`);
+      console.error(`[ERROR][uploadScript] available keys:`, Object.keys(blobs));
       return;
     }
+    
     const scriptId = scripts[idx].id;
+    console.log(`[DEBUG][uploadScript] scriptId: ${scriptId}`);
 
     try {
+      console.log(`[🔄 변환 중] 문장 ${idx + 1}번 오디오 변환 시작`);
       const arrayBuffer = await blob.arrayBuffer();
       const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
       const { encodeWav } = await import('@/utils/encodeWav');
       const wavBlob = encodeWav(audioBuffer);
+      console.log(`[✅ 변환 완료] 문장 ${idx + 1}번 WAV 변환 완료, 크기: ${wavBlob.size} bytes`);
 
       const formData = new FormData();
       formData.append('file', wavBlob, `dub_${idx + 1}.wav`);
+
 
       console.log(`[DEBUG][uploadScript] axios.post 시작 idx=${idx}, scriptId=${scriptId}`);
       
@@ -76,35 +101,61 @@ export function useDubbingRecorder({
       }
       
       console.log(`[DEBUG] 전송할 헤더:`, headers);
+
       
       const res = await axios.post<UploadAudioResponse>(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/${scriptId}/upload-audio`,
+        url,
         formData,
         { headers }
       );
-      console.log(`[DEBUG][uploadScript] axios.post 응답 idx=${idx}, job_id=${res.data?.job_id}`);
+      
+      console.log(`[📥 서버 응답] 문장 ${idx + 1}번 서버 응답:`, res.data);
+      console.log(`[🆔 Job ID 수신] 문장 ${idx + 1}번 job_id: ${res.data?.job_id}`);
 
       if (res.data && res.data.job_id) {
         addJobId(res.data.job_id);
         setJobIds(prev => [...prev, res.data.job_id!]);
-        console.log(`[DEBUG][uploadScript] jobId 추가됨: ${res.data.job_id}`);
+        console.log(`[✅ 업로드 성공] 문장 ${idx + 1}번 업로드 완료!`);
+        console.log(`[📊 Job ID 추가] 총 ${jobIds.length + 1}개의 Job ID 수집됨`);
+        
+        // 🆕 분석 조회 API 호출
+        try {
+          console.log(`[🔍 분석 조회] 문장 ${idx + 1}번 분석 결과 조회 시작`);
+          const analysisResponse = await axios.get(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/analysis-result/${res.data.job_id}`
+          );
+          console.log(`[✅ 분석 조회 성공] 문장 ${idx + 1}번 분석 결과:`, analysisResponse.data);
+        } catch (analysisError) {
+          console.error(`[❌ 분석 조회 실패] 문장 ${idx + 1}번 분석 조회 실패:`, analysisError);
+          // 분석 조회 실패해도 업로드는 성공했으므로 계속 진행
+        }
+        
         // 문장별 업로드 성공 시 onUploadComplete 콜백 호출
-        if (onUploadComplete) onUploadComplete(true, [res.data.job_id]);
+        if (onUploadComplete) {
+          console.log(`[🔄 콜백 호출] 문장 ${idx + 1}번 onUploadComplete 호출`);
+          onUploadComplete(true, [res.data.job_id]);
+        }
+      } else {
+        console.error(`[❌ 업로드 실패] 문장 ${idx + 1}번 job_id가 응답에 없습니다.`);
+        if (onUploadComplete) onUploadComplete(false, []);
       }
     } catch (e) {
-      console.error('[ERROR][uploadScript] 업로드 실패', e);
+      console.error(`[❌ 업로드 실패] 문장 ${idx + 1}번 업로드 중 에러:`, e);
       if (onUploadComplete) onUploadComplete(false, []);
     }
   };
 
   const stopScriptRecording = async (scriptIdx: number) => {
     if (!recording) {
-      console.warn('[WARN][stopScriptRecording] called but not recording, skip');
+      console.warn(`[⚠️ 녹음 중지] 문장 ${scriptIdx + 1}번 - 녹음 중이 아니므로 건너뜀`);
       return;
     }
-    console.log(`[DEBUG][stopScriptRecording] called idx=${scriptIdx}`);
+    console.log(`[🛑 녹음 중지] 문장 ${scriptIdx + 1}번 녹음 중지 시작`);
     try {
+      console.log(`[🎤 녹음 종료] 문장 ${scriptIdx + 1}번 녹음 종료 처리`);
       await stopRecording(scriptIdx);
+      
+      console.log(`[📝 상태 업데이트] 문장 ${scriptIdx + 1}번 녹음 완료 상태로 변경`);
       setRecordedScripts((prev) => {
         const next = [...prev];
         next[scriptIdx] = true;
@@ -116,8 +167,6 @@ export function useDubbingRecorder({
       console.error('[ERROR][stopScriptRecording] in useDubbingRecorder failed', e);
     }
   };
-
-  // 일괄 업로드 관련 코드 제거
 
   return {
     recording,

@@ -23,6 +23,13 @@ interface PitchComparisonProps {
   scripts?: ScriptItem[];
   onUploadComplete?: (success: boolean, jobIds?: string[]) => void;
   onRecordingChange?: (recording: boolean) => void;
+  handleRecordingComplete?: () => void;
+  showAnalysisResult?: boolean;
+  recordingCompleted?: boolean;
+  onRecordingPlaybackChange?: (isPlaying: boolean) => void;
+  onOpenSidebar?: () => void;
+  onShowResults?: () => void;
+  isAnalyzing?: boolean;
 }
 
 const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComparisonProps>(function PitchComparison({ 
@@ -38,6 +45,13 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   scripts,
   onUploadComplete,
   onRecordingChange,
+  handleRecordingComplete,
+  showAnalysisResult = false,
+  recordingCompleted = false,
+  onRecordingPlaybackChange,
+  onOpenSidebar,
+  onShowResults,
+  isAnalyzing = false,
 }: PitchComparisonProps, ref) {
 
   const {
@@ -52,19 +66,23 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
     tokenId,
     scripts,
     onUploadComplete: (success: boolean, jobIds: string[]) => {
-      console.log('[DEBUG][PitchComparison] onUploadComplete 내부 콜백', { success, jobIds });
+      console.log(`[🔄 PitchComparison] onUploadComplete 콜백 호출됨`);
+      console.log(`[📊 결과] success: ${success}, jobIds: ${JSON.stringify(jobIds)}`);
+      
       if (success) {
         if (Array.isArray(jobIds)) {
-          jobIds.forEach((jobId, idx) => {
-            console.log(`[DEBUG][PitchComparison] 업로드 성공: jobId[${idx}]=${jobId}`);
+          jobIds.forEach((jobId) => {
+            console.log(`[✅ 업로드 성공] 문장 ${currentScriptIndex + 1}번 jobId: ${jobId}`);
           });
         } else {
-          console.warn('[DEBUG][PitchComparison] jobIds가 배열이 아님', jobIds);
+          console.warn(`[⚠️ 경고] jobIds가 배열이 아님: ${typeof jobIds}`);
         }
       } else {
-        console.warn('[DEBUG][PitchComparison] 업로드 실패', jobIds);
+        console.error(`[❌ 업로드 실패] 문장 ${currentScriptIndex + 1}번 업로드 실패`);
       }
-      onUploadComplete?.(success, jobIds)
+      
+      // 상위 컴포넌트로 콜백 전달
+      onUploadComplete?.(success, jobIds);
     },
   });
 
@@ -104,20 +122,24 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
     
     audio.onended = () => {
       setIsPlayingRecording(false);
+      onRecordingPlaybackChange?.(false);
       URL.revokeObjectURL(audioUrl);
     };
     
     audio.onerror = () => {
       setIsPlayingRecording(false);
+      onRecordingPlaybackChange?.(false);
       URL.revokeObjectURL(audioUrl);
       console.error('[ERROR] 오디오 재생 실패');
     };
 
     audio.play().then(() => {
       setIsPlayingRecording(true);
+      onRecordingPlaybackChange?.(true);
     }).catch((error) => {
       console.error('[ERROR] 오디오 재생 시작 실패:', error);
       setIsPlayingRecording(false);
+      onRecordingPlaybackChange?.(false);
       URL.revokeObjectURL(audioUrl);
     });
   };
@@ -129,6 +151,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
       audioRef.current = null;
     }
     setIsPlayingRecording(false);
+    onRecordingPlaybackChange?.(false);
   };
 
   // 컴포넌트 언마운트 시 오디오 정리
@@ -171,12 +194,34 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   const handleMicClick = () => {
     if (videoPlayerRef?.current && captions[currentScriptIndex]) {
       const currentScript = captions[currentScriptIndex];
+      
+      console.log('[TIMING] 마이크 버튼 클릭 - 영상 재생 시작');
       videoPlayerRef.current.seekTo(currentScript.start_time);
       videoPlayerRef.current.playVideo();
-      if (typeof onNextScript === 'function') {
-        onNextScript(currentScriptIndex);
-      }
-      startScriptRecording(currentScriptIndex);
+      
+      // 영상이 실제로 재생되기 시작할 때까지 대기
+      const checkVideoPlaying = () => {
+        if (!videoPlayerRef?.current) return;
+        
+        const currentTime = videoPlayerRef.current.getCurrentTime();
+        const targetTime = currentScript.start_time;
+        
+        // 영상이 목표 시간에 도달했는지 확인 (0.1초 허용 오차)
+        if (Math.abs(currentTime - targetTime) < 0.1) {
+          console.log('[TIMING] 영상 재생 확인됨 - 녹음 시작');
+          startScriptRecording(currentScriptIndex);
+          
+          if (typeof onNextScript === 'function') {
+            onNextScript(currentScriptIndex);
+          }
+        } else {
+          // 아직 재생되지 않았으면 다시 체크
+          setTimeout(checkVideoPlaying, 50);
+        }
+      };
+      
+      // 100ms 후부터 체크 시작 (브라우저 렉 고려)
+      setTimeout(checkVideoPlaying, 100);
     }
   };
 
@@ -188,6 +233,15 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
     },
     stopLooping,
   }));
+
+  // 녹음 상태 변경 감지하여 완료 시 handleRecordingComplete 호출
+  useEffect(() => {
+    // 녹음이 true에서 false로 변경되었을 때만 (녹음 완료)
+    if (prevRecordingRef.current === true && recording === false && handleRecordingComplete) {
+      console.log('[DEBUG][PitchComparison] 녹음 완료 감지, handleRecordingComplete 호출');
+      handleRecordingComplete();
+    }
+  }, [recording, handleRecordingComplete]);
 
   // allRecorded, uploadAllRecordings 관련 useEffect 완전 제거
 
@@ -226,10 +280,6 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
       startTime: currentScript?.start_time || 0,
       endTime: currentScript?.end_time || undefined,
     };
-  };
-
-  const handleTimeUpdate = (currentTime: number) => {
-    // ... (필요시 기존 로직 복구) ...
   };
 
   // recording 값이 바뀔 때만 로그 출력
@@ -330,8 +380,29 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   };
 
   return (
-    <div className="bg-gray-900 rounded-xl p-6 h-[28em]">
-      <h3 className="text-lg font-semibold mb-4">Pitch Comparison</h3>
+    <div className="bg-gray-900 rounded-xl p-6 h-[28em] relative">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">Pitch Comparison</h3>
+        {onOpenSidebar && (
+          <button
+            onClick={onOpenSidebar}
+            className="flex items-center justify-center w-10 h-10 bg-gray-800 text-gray-700 rounded-md hover:bg-gray-700 transition"
+            title="스크립트 목록"
+            style={{ padding: 0 }}
+          >
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <g stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="5,8 8,11 13,6" />
+                <line x1="16" y1="8" x2="23" y2="8" />
+                <polyline points="5,16 8,19 13,14" />
+                <line x1="16" y1="16" x2="23" y2="16" />
+                <polyline points="5,24 8,27 13,22" />
+                <line x1="16" y1="24" x2="23" y2="24" />
+              </g>
+            </svg>
+          </button>
+        )}
+      </div>
       <div className="space-y-4">
         <div>
           <div className="text-sm text-gray-400 mb-2">Your Pitch</div>
@@ -340,52 +411,55 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
           </div>
         </div>
         <div>
-          <div className="text-sm text-gray-400 mb-2">Original Pitch</div>
-          <div className="w-full h-16 bg-gray-800 rounded flex items-center justify-center">
-            {/* 녹음된 오디오 재생 버튼 */}
-            {recordedScripts[currentScriptIndex] && (
-              <button
-                onClick={isPlayingRecording ? stopRecordingPlayback : playRecording}
-                className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-all duration-200 ${
-                  isPlayingRecording 
-                    ? 'bg-red-500 hover:bg-red-600 text-white' 
-                    : 'bg-green-500 hover:bg-green-600 text-white'
-                }`}
-                title={isPlayingRecording ? '재생 중지' : '녹음본 재생'}
-              >
-                {isPlayingRecording ? (
-                  <>
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <rect x="6" y="4" width="8" height="12" rx="1" />
-                    </svg>
-                    <span className="text-sm">정지</span>
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <polygon points="6,4 14,10 6,16" />
-                    </svg>
-                    <span className="text-sm">재생</span>
-                  </>
-                )}
-              </button>
-            )}
-            {!recordedScripts[currentScriptIndex] && (
-              <span className="text-gray-500 text-sm">녹음 후 재생 가능</span>
-            )}
-          </div>
+          {/* <div className="text-sm text-gray-400 mb-2">
+            Original Pitch
+          </div> */}
+          
+            {/* 모든 문장 분석 완료 시 버튼 표시 */}
+            {(() => {
+              const total = captions.length;
+              const analyzed = Object.values(recordedScripts).filter(Boolean).length;
+              if (analyzed === total && total > 0) {
+                return (
+                  <div className="flex flex-row justify-center gap-4 my-4">
+                    <button className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow transition">더빙본 들어보기</button>
+                    <button
+                      className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow transition"
+                      onClick={onShowResults}
+                    >
+                      결과보기
+                    </button>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+        
         </div>
         
-        <div className="flex flex-col items-center space-y-2 mt-4">
+        {/* Video Player */}
+        {/* <VideoPlayer
+          videoId={tokenId}
+          onTimeUpdate={handleTimeUpdate}
+          startTime={getCurrentScriptPlaybackRange().startTime}
+          endTime={getCurrentScriptPlaybackRange().endTime}
+          disableAutoPause={true}
+          ref={videoPlayerRef}
+          onEndTimeReached={() => stopScriptRecording(currentScriptIndex)}
+        /> */}
+        <div className="absolute bottom-6 left-0 w-full flex flex-col items-center space-y-2">
           <div className="flex flex-row justify-center space-x-4">
             <button
               onClick={() => {
+                console.log('[DEBUG] 이전 버튼 클릭됨');
+                console.log('[DEBUG] recording:', recording);
+                console.log('[DEBUG] recordingCompleted:', recordingCompleted);
                 if (isLooping) stopLooping();
                 handlePrevScript();
               }}
               className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20"
               title="이전 문장으로 이동"
-              disabled={currentScriptIndex === 0 || recording}
+              disabled={currentScriptIndex === 0 || recording || recordingCompleted}
             >
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10 5l-7 5 7 5V5zM17 5h-2v10h2V5z" />
@@ -414,7 +488,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
                 if (isLooping) stopLooping();
                 handleMicClick();
               }}
-              disabled={recording}
+              disabled={recording || isAnalyzing}
               className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20 ${recording ? 'bg-green-500 animate-pulse-mic' : 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white'}`}
               style={recording ? { boxShadow: '0 0 0 8px rgba(34,197,94,0.4), 0 0 0 16px rgba(34,197,94,0.2)' } : undefined}
             >
@@ -435,12 +509,16 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
             </button>
             <button
               onClick={() => {
+                console.log('[DEBUG] 다음 버튼 클릭됨');
+                console.log('[DEBUG] recording:', recording);
+                console.log('[DEBUG] recordingCompleted:', recordingCompleted);
+                console.log('[DEBUG] 버튼 비활성화 상태:', recording || recordingCompleted);
                 if (isLooping) stopLooping();
                 handleNextScript();
               }}
               className="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20"
               title="다음 문장으로 이동"
-              disabled={recording}
+              disabled={recording || recordingCompleted}
             >
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10 5l7 5-7 5V5zM3 5h2v10H3V5z" />
@@ -451,6 +529,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
             <button
               onClick={() => {
                 console.log('정지 버튼 클릭', videoPlayerRef?.current);
+                console.log('[MANUAL] 사용자 수동 정지 - 녹음 중지');
                 videoPlayerRef?.current?.pauseVideo();
                 stopScriptRecording(currentScriptIndex);
               }}
@@ -463,10 +542,15 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
               </svg>
             </button>
             <button
-              onClick={handleLoopToggle}
+              onClick={() => {
+                console.log('[DEBUG] 반복 버튼 클릭됨');
+                console.log('[DEBUG] recording:', recording);
+                console.log('[DEBUG] recordingCompleted:', recordingCompleted);
+                handleLoopToggle();
+              }}
               className={`w-16 h-16 ${isLooping ? 'bg-gradient-to-r from-yellow-400 to-orange-500' : 'bg-gradient-to-r from-gray-500 to-gray-700'} hover:from-yellow-500 hover:to-orange-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20`}
               title={isLooping ? '구간반복 해제' : '구간반복'}
-              disabled={recording}
+              disabled={recording || recordingCompleted}
             >
               <svg viewBox="0 0 48 48" fill="none" className={`w-7 h-7 ${isLooping ? 'animate-spin' : ''}`} stroke="currentColor" strokeWidth="4">
                 <path d="M8 24c0-8.837 7.163-16 16-16 4.418 0 8.418 1.79 11.314 4.686" strokeLinecap="round"/>
@@ -477,16 +561,6 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
             </button>
           </div>
         </div>
-        {/* Video Player */}
-        {/* <VideoPlayer
-          videoId={tokenId}
-          onTimeUpdate={handleTimeUpdate}
-          startTime={getCurrentScriptPlaybackRange().startTime}
-          endTime={getCurrentScriptPlaybackRange().endTime}
-          disableAutoPause={true}
-          ref={videoPlayerRef}
-          onEndTimeReached={() => stopScriptRecording(currentScriptIndex)}
-        /> */}
       </div>
     </div>
   );

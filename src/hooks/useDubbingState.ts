@@ -13,6 +13,7 @@ import { useState, useCallback, useRef } from 'react';
  * @property {Record<string, any>} finalResults - jobId별 분석 결과 저장 (SSE로 실시간 수신)
  * @property {Record<string, any>} latestResultByScript - 스크립트별 최신 분석 결과 (문장별 결과 표시용)
  * @property {boolean} recording - 녹음 진행 상태 (PitchComparison에서 녹음 시작/종료 시 변경)
+ * @property {boolean} recordingCompleted - 녹음 완료 상태 (녹음 종료 후 3초간 분석 애니메이션용)
  */
 interface DubbingState {
   // UI 상태
@@ -31,6 +32,10 @@ interface DubbingState {
   
   // 녹음 상태
   recording: boolean;
+  recordingCompleted: boolean;
+  
+  // 분석 상태
+  isAnalyzing: boolean;
 }
 
 /**
@@ -48,6 +53,8 @@ interface DubbingState {
  * @property {Function} addFinalResult - jobId별 결과 추가 (SSE completed 이벤트 시 호출)
  * @property {Function} addLatestResultByScript - 스크립트별 결과 추가 (SSE completed 이벤트 시 호출)
  * @property {Function} setRecording - 녹음 상태 설정 (PitchComparison에서 녹음 시작/종료 시 호출)
+ * @property {Function} setRecordingCompleted - 녹음 완료 상태 설정 (녹음 종료 시 호출)
+ * @property {Function} handleRecordingComplete - 녹음 완료 핸들러 (녹음 종료 후 3초간 분석 애니메이션 시작)
  * @property {Function} nextScript - 다음 스크립트로 이동 (스크립트 네비게이션 버튼 클릭 시 호출)
  * @property {Function} prevScript - 이전 스크립트로 이동 (스크립트 네비게이션 버튼 클릭 시 호출)
  * @property {Function} resetState - 모든 상태 초기화 (새로운 분석 시작 시 호출)
@@ -74,6 +81,11 @@ interface DubbingActions {
   
   // 녹음 액션
   setRecording: (recording: boolean) => void;
+  setRecordingCompleted: (completed: boolean) => void;
+  handleRecordingComplete: () => void;
+  
+  // 분석 액션
+  setIsAnalyzing: (analyzing: boolean) => void;
   
   // 편의 메서드
   nextScript: () => void;
@@ -153,6 +165,10 @@ export function useDubbingState(
   
   // 녹음 상태
   const [recording, setRecording] = useState(false);
+  const [recordingCompleted, setRecordingCompleted] = useState(false);
+  
+  // 분석 상태
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   
   // 외부 콜백들
   const { onScriptChange, onPlay, onPause, onRecordingChange } = options || {};
@@ -293,6 +309,22 @@ export function useDubbingState(
     setFinalResults({});
     setLatestResultByScript({});
     setRecording(false);
+    setRecordingCompleted(false);
+  }, []);
+  
+  /**
+   * 녹음 완료 핸들러
+   * 
+   * @description
+   * - 녹음 완료 상태를 true로 설정
+   * - 분석 결과가 들어올 때까지 유지
+   * 
+   * 사용 시점: PitchComparison에서 녹음 종료 시
+   */
+  const handleRecordingComplete = useCallback(() => {
+    console.log('[DEBUG] handleRecordingComplete 호출됨 - recordingCompleted를 true로 설정');
+    setRecordingCompleted(true);
+    // 자동으로 false로 변경하지 않음 - 분석 결과가 들어올 때까지 유지
   }, []);
   
   return {
@@ -306,6 +338,8 @@ export function useDubbingState(
     finalResults,
     latestResultByScript,
     recording,
+    recordingCompleted,
+    isAnalyzing,
     
     // 액션
     setIsSidebarOpen,
@@ -319,6 +353,9 @@ export function useDubbingState(
     addFinalResult,
     addLatestResultByScript,
     setRecording,
+    setRecordingCompleted,
+    setIsAnalyzing,
+    handleRecordingComplete,
     nextScript,
     prevScript,
     resetState,
