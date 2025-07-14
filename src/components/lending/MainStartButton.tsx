@@ -1,7 +1,8 @@
 "use client";
-import React, { useRef, useLayoutEffect } from "react";
+import React, { useRef, useEffect } from "react";
 import { gsap } from "gsap";
-import { useRouter } from "next/navigation";  // 추가
+import { useRouter } from "next/navigation";
+// import { auth } from "@/lib/firebaseAuth";
 
 interface MainStartButtonProps {
   onPlay?: () => void;
@@ -22,9 +23,9 @@ const posters = [
 export default function DoubleGridBlurSlider({ onPlay }: MainStartButtonProps) {
   const blurRef = useRef(null);
   const clearRef = useRef(null);
-  const router = useRouter(); // 추가
+  const router = useRouter();
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (blurRef.current) {
       gsap.fromTo(
         blurRef.current,
@@ -42,8 +43,10 @@ export default function DoubleGridBlurSlider({ onPlay }: MainStartButtonProps) {
   }, []);
 
   const renderPosterFrame = (src: string, i: number) => (
-    <div className={"frame" + (!src ? " empty" : "") } key={i}>
-      {src ? <img src={src} alt="" /> : null}
+    <div className={"frame" + (!src ? " empty" : "")} key={i}>
+      {src ? (
+        <img src={src} alt="" />
+      ) : null}
     </div>
   );
 
@@ -118,16 +121,40 @@ export default function DoubleGridBlurSlider({ onPlay }: MainStartButtonProps) {
           filter: brightness(0.50) blur(3.2px) saturate(0.88);
         }
         .frame {
-          transform:rotate(10deg);border-radius:1.2rem;overflow:hidden;
-          background:#131e18;box-shadow:0 8px 36px #12ffae2e,0 1.5px 4px #0003;
+          aspect-ratio: 16/9;
+          width: 100%;
+          height: 100%;
+          border-radius: 1.2rem;
+          overflow: hidden;
+          background: #131e18;
+          box-shadow: 0 8px 36px #12ffae2e, 0 1.5px 4px #0003;
         }
         .frame img {
-          width:100%;height:100%;object-fit:cover;display:block;
-          filter:brightness(0.91);
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+          filter: brightness(0.91);
         }
         .frame.empty {
           background: #1e2b25;
-          border: 2px dashed #00ffae55;
+          border: 2px dashed #00ffae33;
+          width: 100%;
+          height: 100%;
+          aspect-ratio: 16/9;
+        }
+        .no-image {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          color: #00ffc3;
+          opacity: 0.7;
+          font-size: 1.1rem;
+          font-weight: 600;
+          user-select: none;
+        }
+        .no-image svg {
+          margin-bottom: 0.3em;
         }
         .frame:hover img, .frame:focus-visible img {
           filter:brightness(1.13);

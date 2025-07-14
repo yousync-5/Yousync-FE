@@ -1,12 +1,14 @@
+"use client";
 import { GoogleLoginButton } from "react-social-login-buttons";
-import { GoogleAuthProvider, signInWithPopup, getIdToken } from "firebase/auth";
+import { GoogleAuthProvider, getIdToken } from "firebase/auth";
 // import { auth } from "../../Firebase/firebase-config";
 import { useNavigate } from "react-router-dom"; 
 import axios from "axios";
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { FaSignInAlt } from "react-icons/fa";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
+import { auth, provider, signInWithPopup } from "@/lib/firebaseAuth";
 
 const Login2Container = styled.div`
   display: flex;
