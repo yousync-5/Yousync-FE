@@ -34,8 +34,10 @@ export const NavBar: React.FC = () => {
       if (inputRef.current) {
         inputRef.current.scrollLeft = inputRef.current.scrollWidth;
       }
+
     });
   };
+
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
