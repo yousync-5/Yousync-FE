@@ -29,7 +29,6 @@ interface PitchComparisonProps {
   onRecordingPlaybackChange?: (isPlaying: boolean) => void;
   onOpenSidebar?: () => void;
   onShowResults?: () => void;
-  isAnalyzing?: boolean;
 }
 
 const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComparisonProps>(function PitchComparison({ 
@@ -51,7 +50,6 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   onRecordingPlaybackChange,
   onOpenSidebar,
   onShowResults,
-  isAnalyzing = false,
 }: PitchComparisonProps, ref) {
 
   const {
@@ -488,7 +486,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
                 if (isLooping) stopLooping();
                 handleMicClick();
               }}
-              disabled={recording || isAnalyzing}
+              disabled={recording || recordingCompleted}
               className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20 ${recording ? 'bg-green-500 animate-pulse-mic' : 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white'}`}
               style={recording ? { boxShadow: '0 0 0 8px rgba(34,197,94,0.4), 0 0 0 16px rgba(34,197,94,0.2)' } : undefined}
             >
