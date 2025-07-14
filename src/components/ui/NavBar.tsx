@@ -40,14 +40,14 @@ export const NavBar: React.FC = () => {
     })
   }
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setIsLoggedIn(!!localStorage.getItem('access_token'));
-    }
-    const onStorage = () => setIsLoggedIn(!!localStorage.getItem('access_token'));
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, []);
+  // useEffect(() => {
+  //   if (typeof window !== 'undefined') {
+  //     setIsLoggedIn(!!localStorage.getItem('access_token'));
+  //   }
+  //   const onStorage = () => setIsLoggedIn(!!localStorage.getItem('access_token'));
+  //   window.addEventListener('storage', onStorage);
+  //   return () => window.removeEventListener('storage', onStorage);
+  // }, []);
 
 
   const handleLogout = async () => {
