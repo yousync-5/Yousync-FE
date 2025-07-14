@@ -346,12 +346,12 @@ export default function ScriptDisplay({
             <span 
               key={word.id}
               className={`transition-all duration-200 ${
-                isCurrent ? 'font-bold bg-yellow-400/10 px-1 rounded' : ''
+                isCurrent ? 'font-bold bg-green-400/10 px-1 rounded' : ''
               }`}
               style={{
-                color: animatedScore > 0 && !isCurrent 
-                  ? getGradientColor(animatedScore) 
-                  : undefined
+                color: animatedScore > 0
+                  ? getGradientColor(animatedScore)
+                  : (isCurrent ? '#22c55e' : undefined)
               }}
             >
               {decodeHtmlEntities(word.word)}{index < currentWords.length - 1 ? ' ' : ''}

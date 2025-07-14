@@ -19,11 +19,18 @@ function getTotalScores(finalResults: any[]) {
   const allWords = safeResults.flatMap(s =>
     Array.isArray(s.word_analysis) ? s.word_analysis : []
   );
-  const totalScore = calcAvg(allWords.map(w => w.word_score));
-  const pitch = calcAvg(safeResults.map(s => s.pitch_score));
-  const pronunciation = calcAvg(safeResults.map(s => s.pronunciation_score));
-  const intonation = calcAvg(safeResults.map(s => s.intonation_score));
-  return { totalScore, pitch, pronunciation, intonation };
+  // 발음: word_score 평균
+  const pronunciation = calcAvg(allWords.map(w => w.word_score));
+  // 억양: mfcc_similarity 평균
+  const intonation = calcAvg(allWords.map(w => w.mfcc_similarity));
+  // 발화타임: text_status === 'pass' 비율
+  const timing =
+    allWords.length > 0
+      ? allWords.filter(w => w.text_status === 'pass').length / allWords.length
+      : 0;
+  // 싱크율 %: 세 점수의 평균
+  const syncRate = (pronunciation + intonation + timing) / 3;
+  return { syncRate, pronunciation, intonation, timing };
 }
 
 function getRank(score: number) {
@@ -90,19 +97,27 @@ const ResultComponent: React.FC<TestResultAnalysisSectionProps> = ({
         ? Object.values(finalResultsObj)
         : [];
 
-  const { totalScore, pitch, intonation, pronunciation } = getTotalScores(finalResults);
-  const rank = getRank(totalScore);
+  const { syncRate, pronunciation, intonation, timing } = getTotalScores(finalResults);
+  const rank = getRank(syncRate);
 
   const radarData = {
-    labels: ["총점", "피치", "발음", "억양"],
+    labels: ["싱크율 %", "발음", "발화타임", "억양"],
     datasets: [
       {
         label: "Score",
-        data: [totalScore, pitch, pronunciation, intonation].map(v => Math.round(v)),
-        backgroundColor: "rgba(34,255,136,0.16)",
-        borderColor: COLORS.point,
-        borderWidth: 3,
-        pointBackgroundColor: COLORS.point
+        data: [
+          Math.round(syncRate * 100),
+          Math.round(pronunciation * 100),
+          Math.round(timing * 100),
+          Math.round(intonation * 100)
+        ],
+        backgroundColor: "rgba(34,255,136,0.18)", // 더 연한 내부 색(반투명)
+        borderColor: "rgba(34,255,136,0.2)", // 연한 선
+        borderWidth: 1, // 매우 가는 선
+        pointBackgroundColor: "rgba(0,0,0,0)", // 점 완전 투명
+        pointRadius: 1, // 아주 작은 점
+        pointHoverRadius: 2,
+        fill: true
       }
     ]
   };
@@ -125,12 +140,12 @@ const ResultComponent: React.FC<TestResultAnalysisSectionProps> = ({
   return (
     <>
       {(showResults || showCompleted) && (
-        <div ref={resultRef} className="min-h-screen flex flex-col items-center justify-center px-4 py-12 overflow-hidden" style={{ background: COLORS.bg, color: COLORS.text }}>
+        <div ref={resultRef} className="min-h-screen flex flex-col items-center justify-center px-4 py-12 overflow-hidden" style={{ background: '#232B3A', color: COLORS.text }}>
           <ScoreCards
-            totalScore={totalScore}
-            pitch={pitch}
+            syncRate={syncRate}
             pronunciation={pronunciation}
             intonation={intonation}
+            timing={timing}
           />
           <div className="flex items-center justify-center mb-10" style={{ gap: 28 }}>
             <div
@@ -145,9 +160,9 @@ const ResultComponent: React.FC<TestResultAnalysisSectionProps> = ({
               {rank}
             </div>
             <div style={{
-              width: 220,
-              height: 220,
-              background: "#111317",
+              width: 260,
+              height: 260,
+              background: "#181F2A", // 딥 네이비
               borderRadius: 18,
               border: "2px solid #222f2b",
               padding: 12,

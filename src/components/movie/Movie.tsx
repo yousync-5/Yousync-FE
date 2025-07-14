@@ -1,5 +1,5 @@
 // src/components/movie/Movie.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MovieDetailModal from "@/components/modal/MovieDetailModal";
 import MovieList from "./MovieList";
 import { NavBar } from "@/components/ui/NavBar";
@@ -125,6 +125,14 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
   const heroVideos = latestTokens.slice(0, 5);
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  // 5초마다 자동으로 오른쪽(다음)으로 이동
+  useEffect(() => {
+    const interval = setInterval(() => {
+      goToNext();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [heroVideos.length, currentIndex]);
+
   const goToPrev = () => {
     setDirection(-1);
     setCurrentIndex((prev) => (prev === 0 ? heroVideos.length - 1 : prev - 1))
@@ -194,7 +202,10 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                       <PlayIcon className="w-6 h-6" />
                       재생하기
                     </button>
-                    <button className="flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-full font-bold hover:bg-white/20 transition-all duration-200 transform hover:scale-105 border border-white/20">
+                    <button
+                      className="flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-full font-bold hover:bg-white/20 transition-all duration-200 transform hover:scale-105 border border-white/20"
+                      onClick={() => router.push(`/actor/${encodeURIComponent(heroVideos[currentIndex].actor_name)}`)}
+                    >
                       <InformationCircleIcon className="w-6 h-6" />
                       더 자세히
                     </button>

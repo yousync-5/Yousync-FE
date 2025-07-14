@@ -1,24 +1,19 @@
 "use client";
 import React from "react";
 
-interface ScoreCardsProps {
-  totalScore: number;
-  pitch: number;
+export interface ScoreCardsProps {
+  syncRate: number;
   pronunciation: number;
   intonation: number;
+  timing: number;
 }
 
-const ScoreCards: React.FC<ScoreCardsProps> = ({
-  totalScore,
-  pitch,
-  pronunciation,
-  intonation
-}) => {
+const ScoreCards: React.FC<ScoreCardsProps> = ({ syncRate, pronunciation, intonation, timing }) => {
   const scoreCards = [
-    { icon: "⭐️", label: "총점", value: Math.round(totalScore) },
-    { icon: "🎵", label: "피치", value: Math.round(pitch) },
-    { icon: "P", label: "발음", value: Math.round(pronunciation) },
-    { icon: "🪗", label: "억양", value: Math.round(intonation) }
+    { icon: "⭐️", label: "싱크율 %", value: Math.round(syncRate * 100) },
+    { icon: "P", label: "발음", value: Math.round(pronunciation * 100) },
+    { icon: "🕒", label: "발화타임", value: Math.round(timing * 100) },
+    { icon: "🪗", label: "억양", value: Math.round(intonation * 100) }
   ];
   return (
     <div className="w-full max-w-2xl mx-auto mb-9">

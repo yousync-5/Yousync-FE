@@ -43,10 +43,8 @@ export default function DoubleGridBlurSlider({ onPlay }: MainStartButtonProps) {
   }, []);
 
   const renderPosterFrame = (src: string, i: number) => (
-    <div className={"frame" + (!src ? " empty" : "")} key={i}>
-      {src ? (
-        <img src={src} alt="" />
-      ) : null}
+    <div className={"frame" + (!src ? " empty" : "") } key={i}>
+      {src ? <img src={src} alt="" /> : null}
     </div>
   );
 
