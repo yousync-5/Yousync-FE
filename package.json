@@ -22,6 +22,8 @@
     "firebase": "^11.10.0",
     "framer-motion": "^12.23.3",
     "gsap": "^3.13.0",
+    "intro.js": "^8.3.2",
+    "intro.js-react": "^1.0.0",
     "next": "15.3.4",
     "pitchfinder": "^2.3.2",
     "react": "^19.0.0",

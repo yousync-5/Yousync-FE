@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface LiquidGaugeProps {
   value?: number; // 0~100, undefined 허용
@@ -8,14 +8,40 @@ interface LiquidGaugeProps {
 const LiquidGauge: React.FC<LiquidGaugeProps> = ({ value = 33, size = 80 }) => {
   const waveRef = useRef<SVGPathElement>(null);
 
-  // 물결 애니메이션 효과
+  // value(0~100)에 따라 물 높이 계산
+  const percent = Math.max(0, Math.min(100, Number(value) || 0));
+  const targetWaveHeight = size * (1 - percent / 100);
+
+  // 부드러운 애니메이션을 위한 state
+  const [displayedHeight, setDisplayedHeight] = useState(() => size);
+
+  // value가 바뀔 때 목표값까지 부드럽게 변화
+  useEffect(() => {
+    if (Math.abs(displayedHeight - targetWaveHeight) < 0.5) {
+      setDisplayedHeight(targetWaveHeight);
+      return;
+    }
+    let frame: number;
+    function animate() {
+      setDisplayedHeight(prev => {
+        const diff = targetWaveHeight - prev;
+        if (Math.abs(diff) < 0.5) return targetWaveHeight;
+        return prev + diff * 0.15;
+      });
+      frame = requestAnimationFrame(animate);
+    }
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetWaveHeight]);
+
+  // 물결 애니메이션 효과 (좌우 움직임)
   useEffect(() => {
     let frame = 0;
     let anim: number;
     function animate() {
       frame++;
       if (waveRef.current) {
-        // 진폭 20, 속도 빠르게
         waveRef.current.setAttribute(
           "transform",
           `translate(${Math.sin(frame / 8) * 20},0)`
@@ -26,10 +52,6 @@ const LiquidGauge: React.FC<LiquidGaugeProps> = ({ value = 33, size = 80 }) => {
     animate();
     return () => cancelAnimationFrame(anim);
   }, []);
-
-  // value(0~100)에 따라 물 높이 계산
-  const percent = Math.max(0, Math.min(100, Number(value) || 0));
-  const waveHeight = size * (1 - percent / 100);
 
   return (
     <div className="absolute bottom-[17em] left-1/2 -translate-x-1/2 z-10">
@@ -52,10 +74,11 @@ const LiquidGauge: React.FC<LiquidGaugeProps> = ({ value = 33, size = 80 }) => {
           </clipPath>
           <g clipPath="url(#liquid-clip)">
             <path
+              ref={waveRef}
               d={`
-                M 0 ${waveHeight + 10}
-                Q 20 ${waveHeight - 10}, 40 ${waveHeight + 10}
-                T 80 ${waveHeight + 10}
+                M 0 ${displayedHeight + 10}
+                Q 20 ${displayedHeight - 10}, 40 ${displayedHeight + 10}
+                T 80 ${displayedHeight + 10}
                 V 80
                 H 0
                 Z

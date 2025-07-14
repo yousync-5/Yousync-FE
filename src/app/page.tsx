@@ -41,7 +41,7 @@ export default function LandingPage() {
     setSelectedVideoId(null);
     setSelectedTokenData(null);
   };
-
+  
   return (
     <div className="bg-neutral-950 text-white min-h-screen">
       {/* {step === 'intro' && <IntroPlayButton onPlay={handleIntroPlay} />}

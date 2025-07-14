@@ -16,18 +16,21 @@ import { useDubbingState } from "@/hooks/useDubbingState";
 import Sidebar from "@/components/ui/Sidebar";
 
 
-export default function DubbingContainer({
-  tokenData,
-  front_data,
-  serverPitchData,
-  id,
-}: {
+interface DubbingContainerProps {
   tokenData: any;
   front_data: any;
   serverPitchData: any;
   id: string;
   modalId?: string;
-}) {
+}
+
+const DubbingContainer = ({
+  tokenData,
+  front_data,
+  serverPitchData,
+  id,
+  modalId,
+}: DubbingContainerProps) => {
   // 데이터 준비 여부 체크
   const isReady = !!(front_data && tokenData && serverPitchData);
   
@@ -606,6 +609,7 @@ useEffect(() => {
   
           {/* Right Column */}
           <div className="space-y-6">
+            {/* latestResultByScript 값 확인용 로그 (렌더링 중이 아닌 useEffect에서 출력) */}
             <PitchComparison
               ref={pitchRef}
               currentScriptIndex={currentScriptIndex}
@@ -647,6 +651,7 @@ useEffect(() => {
               onRecordingPlaybackChange={setIsRecordingPlayback}
               onOpenSidebar={() => setIsSidebarOpen(true)}
               onShowResults={handleViewResults}
+              latestResultByScript={latestResultByScript || {}}
             />
           </div>
         </div>
@@ -692,3 +697,5 @@ useEffect(() => {
     </div>
   );
 }
+
+export default DubbingContainer;
