@@ -84,13 +84,31 @@ export function useDubbingRecorder({
       const formData = new FormData();
       formData.append('file', wavBlob, `dub_${idx + 1}.wav`);
 
+
+      console.log(`[DEBUG][uploadScript] axios.post 시작 idx=${idx}, scriptId=${scriptId}`);
+      
+      // Authorization 헤더 가져오기
+      const accessToken = localStorage.getItem('access_token');
+      console.log(`[DEBUG] accessToken 존재:`, !!accessToken);
+      
+      const headers: Record<string, string> = {};
+      
+      if (accessToken) {
+        headers.Authorization = `Bearer ${accessToken}`;
+        console.log(`[DEBUG] Authorization 헤더 추가됨`);
+      } else {
+        console.log(`[DEBUG] 비로그인 상태로 요청 전송 (user_id는 NULL로 저장됨)`);
+      }
+      
+      console.log(`[DEBUG] 전송할 헤더:`, headers);
+
       const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/${scriptId}/upload-audio`;
-      console.log(`[DEBUG][uploadScript] axios.post 시작 idx=${idx}, scriptId=${scriptId}, url=${url}`);
+      console.log(`[DEBUG] 요청 URL:`, url);
       
       const res = await axios.post<UploadAudioResponse>(
         url,
         formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
+        { headers }
       );
       
       console.log(`[📥 서버 응답] 문장 ${idx + 1}번 서버 응답:`, res.data);
