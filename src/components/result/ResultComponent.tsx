@@ -40,7 +40,7 @@ function getRankColor(rank: string) {
   return COLORS.fail;
 }
 
-interface TestResultAnalysisSectionProps {
+export interface TestResultAnalysisSectionProps {
   finalResults?: Record<string, any>;
   latestResultByScript?: Record<string, any>;
   hasAnalysisResults?: boolean;

@@ -9,6 +9,7 @@ import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 're
 import { useAudioStore } from '@/store/useAudioStore';
 import { ScriptItem } from "@/types/pitch";
 import { useJobIdsStore } from '@/store/useJobIdsStore';
+import LiquidGauge from '@/components/result/LiquidGauge';
 
 interface PitchComparisonProps {
   currentScriptIndex: number;
@@ -379,8 +380,11 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
     }
   };
 
+  const totalScripts = captions.length;
+  const percent = totalScripts > 0 ? Math.round(((currentScriptIndex + 1) / totalScripts) * 100) : 0;
+
   return (
-    <div className="bg-gray-900 rounded-xl p-6 h-[28em] relative">
+    <div className="bg-gray-900 rounded-xl p-6 h-auto min-h-[28em] relative">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold">Pitch Comparison</h3>
         {onOpenSidebar && (
@@ -404,11 +408,8 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
         )}
       </div>
       <div className="space-y-4">
-        <div>
-          <div className="text-sm text-gray-400 mb-2">Your Pitch</div>
-          <div className="w-full h-16 bg-gray-800 rounded">
-            <MyPitchGraph currentIdx={currentScriptIndex} />
-          </div>
+        <div className="w-full h-40 flex justify-center items-center">
+          <LiquidGauge value={percent} size={64} />
         </div>
         <div>
           {/* <div className="text-sm text-gray-400 mb-2">
@@ -421,7 +422,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
               const analyzed = Object.values(recordedScripts).filter(Boolean).length;
               if (analyzed === total && total > 0) {
                 return (
-                  <div className="flex flex-row justify-center gap-4 my-4">
+                  <div className="w-full flex flex-row justify-center gap-4 my-4 z-10 mt-6">
                     <button className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow transition">더빙본 들어보기</button>
                     <button
                       className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow transition"
@@ -447,7 +448,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
           ref={videoPlayerRef}
           onEndTimeReached={() => stopScriptRecording(currentScriptIndex)}
         /> */}
-        <div className="absolute bottom-6 left-0 w-full flex flex-col items-center space-y-2">
+        <div className="w-full flex flex-col items-center space-y-2 mt-6">
           <div className="flex flex-row justify-center space-x-4">
             <button
               onClick={() => {

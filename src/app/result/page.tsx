@@ -1,5 +1,5 @@
-import ResultComponent from '@/components/result/ResultComponent';
+import ResultContainer from '@/components/result/ResultContainer';
 
 export default function ResultPage() {
-  return <ResultComponent />;
+  return <ResultContainer />;
 } 
