@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 interface MainStartButtonProps {
   onPlay?: () => void;
 }
-
 const posters = [
   "",
   "https://image.tmdb.org/t/p/w500/6b7swg6DLqXCO3XUsMnv6EhdpsE.jpg",
