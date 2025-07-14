@@ -647,6 +647,7 @@ useEffect(() => {
               onRecordingPlaybackChange={setIsRecordingPlayback}
               onOpenSidebar={() => setIsSidebarOpen(true)}
               onShowResults={handleViewResults}
+              isAnalyzing={isAnalyzing}
             />
           </div>
         </div>
