@@ -202,7 +202,10 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                       <PlayIcon className="w-6 h-6" />
                       재생하기
                     </button>
-                    <button className="flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-full font-bold hover:bg-white/20 transition-all duration-200 transform hover:scale-105 border border-white/20">
+                    <button
+                      className="flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-full font-bold hover:bg-white/20 transition-all duration-200 transform hover:scale-105 border border-white/20"
+                      onClick={() => router.push(`/actor/${encodeURIComponent(heroVideos[currentIndex].actor_name)}`)}
+                    >
                       <InformationCircleIcon className="w-6 h-6" />
                       더 자세히
                     </button>
