@@ -15,7 +15,8 @@ export default async function Page({
     const { id } = params;
     const modalId = searchParams.modalId as string | undefined;
   
-    const { tokenData, front_data } = await getTokenDetail(id);
+    const { tokenData, front_data } = await getTokenDetail(id[0]);
+   
     const serverPitchData = await getServerPitchData(id);
   
     return (

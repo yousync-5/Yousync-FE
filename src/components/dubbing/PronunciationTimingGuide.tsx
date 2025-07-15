@@ -82,9 +82,10 @@ export default function PronunciationTimingGuide({
 
   // 현재 문장의 분석 결과가 있으면 무조건 분석 결과 표시
   const hasAnalysisResult = analysisResult?.word_analysis;
-  const half = Math.ceil(words.length / 2);
-  const firstLine = words.slice(0, half);
-  const secondLine = words.slice(half);
+  const WORDS_PER_LINE = 10;
+  const firstLine = words.slice(0, WORDS_PER_LINE);
+  const secondLine = words.slice(WORDS_PER_LINE, WORDS_PER_LINE * 2);
+  const thirdLine = words.slice(WORDS_PER_LINE * 2);
 
   // 게이지 색상
   const getScoreColor = (score: number) => {
@@ -197,6 +198,75 @@ export default function PronunciationTimingGuide({
         {secondLine.length > 0 && (
           <div className="flex items-center justify-center space-x-4">
             {secondLine.map((word: any, idx: number) => {
+              if (hasAnalysisResult) {
+                const animatedScore = animatedScores[word.word] || 0;
+                return (
+                  <div
+                    key={word.word + idx}
+                    className="flex flex-col items-center px-2 py-1 rounded-lg transition-all duration-150"
+                  >
+                    <span 
+                      className="text-xl font-bold mb-2"
+                      style={{ color: getGradientColor(animatedScore) }}
+                    >
+                      {word.word}
+                    </span>
+                    <div className="w-20 h-3 bg-gray-700 rounded-full overflow-hidden mb-1">
+                      <div
+                        className="h-full transition-all duration-200"
+                        style={{ 
+                          width: `${Math.round(animatedScore * 100)}%`,
+                          backgroundColor: getGradientColor(animatedScore)
+                        }}
+                      />
+                    </div>
+                    <span className="text-sm text-gray-400 mt-1">
+                      정확도 {Math.round(animatedScore * 100)}%
+                    </span>
+                  </div>
+                );
+              }
+              const isCurrent = currentVideoTime >= word.start_time && currentVideoTime <= word.end_time;
+              const isUpcoming = currentVideoTime < word.start_time;
+              const isCompleted = currentVideoTime > word.end_time;
+              return (
+                <div
+                  key={word.id}
+                  className="flex flex-col items-center px-2 py-1 rounded-lg transition-all duration-150 cursor-pointer hover:bg-gray-600/60 hover:shadow-lg hover:scale-105"
+                >
+                  <span className={`text-xl font-bold mb-2 ${
+                    isCurrent ? 'text-yellow-400' : 
+                    isCompleted ? 'text-green-400' : 
+                    isUpcoming ? 'text-gray-400' : 'text-white'
+                  }`}>
+                    {word.word}
+                  </span>
+                  <div className="w-20 h-3 bg-gray-700 rounded-full overflow-hidden mb-1">
+                    <div 
+                      className={`h-full transition-all duration-200 ${
+                        isCurrent ? 'bg-yellow-400' : 
+                        isCompleted ? 'bg-green-400' : 
+                        isUpcoming ? 'bg-gray-500' : 'bg-gray-600'
+                      }`}
+                      style={{
+                        width: isCurrent ? 
+                          `${((currentVideoTime - word.start_time) / (word.end_time - word.start_time)) * 100}%` :
+                          isCompleted ? '100%' : '0%'
+                      }}
+                    />
+                  </div>
+                  <span className="text-sm text-gray-400 mt-1">
+                    {word.start_time?.toFixed(1) ?? ''}s
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {/* 세 번째 줄 (있을 때만) */}
+        {thirdLine.length > 0 && (
+          <div className="flex items-center justify-center space-x-4">
+            {thirdLine.map((word: any, idx: number) => {
               if (hasAnalysisResult) {
                 const animatedScore = animatedScores[word.word] || 0;
                 return (
