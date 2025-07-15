@@ -219,7 +219,7 @@ useEffect(() => {
   if (!multiJobIds.length) return;
   
   // 내 대사만 필터링
-  const myLines = front_data.captions.filter((caption: any) => caption.actor?.name === "Second Speaker");
+  const myLines = front_data.captions.filter((caption: any) => caption.actor?.name === "나");
   const myLinesCount = myLines.length;
   
   // 내 대사의 분석 결과만 카운트
@@ -594,8 +594,8 @@ useEffect(() => {
               onEndTimeReached={() => {
                 const nextIndex = currentScriptIndex + 1;
                 const nextScript = front_data.captions[nextIndex];
-                const isCurrentMyLine = front_data.captions[currentScriptIndex]?.actor?.name === "Second Speaker";
-                const isNextMyLine = nextScript?.actor?.name === "Second Speaker";
+                const isCurrentMyLine = front_data.captions[currentScriptIndex]?.actor?.name === "나";
+                const isNextMyLine = nextScript?.actor?.name === "나";
 
                 // 내 대사가 끝났을 때 녹음 정지
                 if (isCurrentMyLine && pitchRef.current) {
@@ -715,7 +715,7 @@ useEffect(() => {
         actorName="톰 행크스"
         movieTitle="포레스트 검프"
         analyzedCount={Object.keys(latestResultByScript).length}
-        totalCount={front_data.captions.filter((caption: any) => caption.actor?.name === "Second Speaker").length}
+        totalCount={front_data.captions.filter((caption: any) => caption.actor?.name === "나").length}
         recording={recording}
         onStopLooping={() => pitchRef.current?.stopLooping?.()}
         recordedScripts={recordingCompleted ? Array(front_data.captions.length).fill(false).map((_, i) => i === currentScriptIndex) : []}

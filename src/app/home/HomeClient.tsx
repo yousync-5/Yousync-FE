@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import MovieDetailModal from "@/components/modal/MovieDetailModal";
-import { useVideos, usePopularVideos, useLatestVideos, useRomanticVideos } from "@/hooks/useVideos";
+import { useVideos, usePopularVideos, useLatestVideos, useRomanticVideos, useDuetScenes } from "@/hooks/useVideos";
 import Movie from "@/components/movie/Movie";
 import type { TokenDetailResponse } from "@/types/pitch";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -14,6 +14,7 @@ export default function HomeClient() {
   const { data: popularTokens = [] } = usePopularVideos();
   const { data: latestTokens = [] } = useLatestVideos();
   const { data: romanticTokens = [] } = useRomanticVideos();
+  const { data: duetScenes = [], isLoading: duetScenesLoading, error: duetScenesError } = useDuetScenes();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -75,6 +76,9 @@ export default function HomeClient() {
           romanticTokens={romanticTokens}
           isLoading={isLoading}
           error={error}
+          duetScenes={duetScenes}
+          duetScenesLoading={duetScenesLoading}
+          duetScenesError={duetScenesError}
           onOpenModal={openModal}
         />
       )}

@@ -86,7 +86,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
 
   // 화자 구분 로직 - Second Speaker가 내 대사
   const currentScript = captions[currentScriptIndex];
-  const isMyLine = currentScript?.actor?.name === "Second Speaker";
+  const isMyLine = currentScript?.actor?.name === "나";
 
   // zustand 전역 상태 사용
   const setMultiJobIds = useJobIdsStore((state) => state.setMultiJobIds);
@@ -484,7 +484,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
                       // 내 대사 이전에 가장 가까운 상대 배우 대사 찾기
                       let prevActorIdx = currentScriptIndex - 1;
                       while (prevActorIdx >= 0) {
-                        if (captions[prevActorIdx]?.actor?.name !== "Second Speaker") {
+                        if (captions[prevActorIdx]?.actor?.name !== "나") {
                           break;
                         }
                         prevActorIdx--;

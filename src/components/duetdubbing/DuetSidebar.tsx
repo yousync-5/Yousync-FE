@@ -52,11 +52,11 @@ export default function Sidebar({
 
   // 화자 구분 로직 - Second Speaker가 내 대사
   const currentScript = captions[currentScriptIndex];
-  const isMyLine = currentScript?.actor?.name === "Second Speaker";
+  const isMyLine = currentScript?.actor?.name === "나";
 
   // 내 대사만 필터링
   const filteredCaptions = showMyLinesOnly 
-    ? captions.filter(caption => caption.actor?.name === "Second Speaker")
+    ? captions.filter(caption => caption.actor?.name === "나")
     : captions;
 
   useEffect(() => {
@@ -173,7 +173,7 @@ export default function Sidebar({
           const isAnalyzed = !!latestResultByScript[scriptKey];
           const originalIndex = captions.findIndex(c => c === caption);
           const isSelected = currentScriptIndex === originalIndex;
-          const isMyLine = caption.actor?.name === "Second Speaker";
+          const isMyLine = caption.actor?.name === "나";
           
           return (
             <li

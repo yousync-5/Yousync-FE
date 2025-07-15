@@ -1,6 +1,6 @@
 "use client";
 
-import React, { MouseEvent, useRef, useEffect } from "react";
+import React, { MouseEvent, useRef, useEffect, useState } from "react";
 import dynamic from 'next/dynamic';
 import { FaMicrophone, FaUser, FaTag, FaClock } from "react-icons/fa";
 import { useRouter } from "next/navigation";
@@ -13,17 +13,25 @@ interface VideoModalProps {
   isOpen: boolean;
   onClose: () => void;
   tokenData: TokenDetailResponse;
+  duetPair: Array<{ actor_name: string; actor_id: number }>;
 }
 
-export default function MovieDetailModal({
+export default function DuetDetailModal({
   youtubeId,
   isOpen,
   onClose,
   tokenData,
+  duetPair,
 }: VideoModalProps) {
   const router = useRouter();
   const playerRef = useRef<any>(null);
+  const [selectedActorId, setSelectedActorId] = useState<number | null>(null);
 
+  useEffect(() => {
+    setSelectedActorId(null); // 모달 열릴 때마다 초기화
+  }, [isOpen]);
+
+console.log("DuetDetailModal", youtubeId, tokenData, duetPair)
   // tokenData가 있을 때만 접근
   const startTime = Number(tokenData?.start_time) || 0;
   const endTime = Number(tokenData?.end_time) || undefined;
@@ -60,7 +68,9 @@ export default function MovieDetailModal({
   if (!isOpen || !youtubeId || !tokenData) return null;
 
   const handleDubbingClick = () => {
-    router.replace(`/dubbing/${tokenData.id}?modalId=${youtubeId}`);
+    if (selectedActorId) {
+      router.push(`/duetdubbing/${youtubeId}?actor1=${duetPair[0].actor_id}&actor2=${duetPair[1].actor_id}&selected=${selectedActorId}`);
+    }
   };
 
   return (
@@ -116,11 +126,53 @@ export default function MovieDetailModal({
         {/* 정보 카드 */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mt-6 bg-[#20232a] rounded-2xl shadow-lg p-6 border border-[#23272f]">
           <div className="flex-1 flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-lg text-emerald-400 font-bold">
-              <FaUser />
-              {tokenData.actor_name}
+            {/* 안내문구 */}
+            <div className="mb-2 text-base text-emerald-300 font-semibold">배우를 선택하세요</div>
+            <div className="flex items-center gap-4">
+              {duetPair && duetPair.length === 2 ? (
+                <>
+                  <label
+                    key={duetPair[0].actor_id}
+                    className={`flex flex-col items-center px-6 py-4 rounded-2xl cursor-pointer border-2 transition-all duration-200 shadow-md
+                      ${selectedActorId === duetPair[0].actor_id ? 'border-emerald-400 bg-emerald-50/10 shadow-emerald-400/30 scale-105' : 'border-gray-700 bg-[#23272f] hover:border-emerald-300 hover:bg-emerald-900/10'}`}
+                    style={{ minWidth: 120 }}
+                  >
+                    <input
+                      type="radio"
+                      name="duet-actor"
+                      value={duetPair[0].actor_id}
+                      checked={selectedActorId === duetPair[0].actor_id}
+                      onChange={() => setSelectedActorId(duetPair[0].actor_id)}
+                      className="hidden"
+                    />
+                    <FaUser className={`mb-2 text-2xl ${selectedActorId === duetPair[0].actor_id ? 'text-emerald-400' : 'text-gray-400'}`} />
+                    <span className={`font-bold ${selectedActorId === duetPair[0].actor_id ? 'text-emerald-300' : 'text-white'}`}>{duetPair[0].actor_name}</span>
+                  </label>
+                  <span className="mx-2 text-gray-400 font-bold text-lg">VS</span>
+                  <label
+                    key={duetPair[1].actor_id}
+                    className={`flex flex-col items-center px-6 py-4 rounded-2xl cursor-pointer border-2 transition-all duration-200 shadow-md
+                      ${selectedActorId === duetPair[1].actor_id ? 'border-emerald-400 bg-emerald-50/10 shadow-emerald-400/30 scale-105' : 'border-gray-700 bg-[#23272f] hover:border-emerald-300 hover:bg-emerald-900/10'}`}
+                    style={{ minWidth: 120 }}
+                  >
+                    <input
+                      type="radio"
+                      name="duet-actor"
+                      value={duetPair[1].actor_id}
+                      checked={selectedActorId === duetPair[1].actor_id}
+                      onChange={() => setSelectedActorId(duetPair[1].actor_id)}
+                      className="hidden"
+                    />
+                    <FaUser className={`mb-2 text-2xl ${selectedActorId === duetPair[1].actor_id ? 'text-emerald-400' : 'text-gray-400'}`} />
+                    <span className={`font-bold ${selectedActorId === duetPair[1].actor_id ? 'text-emerald-300' : 'text-white'}`}>{duetPair[1].actor_name}</span>
+                  </label>
+                </>
+              ) : (
+                <span className="text-white">{tokenData.actor_name}</span>
+              )}
             </div>
-            <div className="flex items-center gap-2 text-base text-gray-300">
+            {/* 기존 정보 */}
+            <div className="flex items-center gap-2 text-base text-gray-300 mt-4">
               <FaTag />
               {tokenData.category}
             </div>
@@ -131,7 +183,8 @@ export default function MovieDetailModal({
           </div>
           <button
             onClick={handleDubbingClick}
-            className="flex items-center gap-3 px-8 py-3 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white text-lg font-bold shadow-lg transition-all duration-200 focus:outline-none"
+            className={`flex items-center gap-3 px-8 py-3 rounded-full text-white text-lg font-bold shadow-lg transition-all duration-200 focus:outline-none ${selectedActorId ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-gray-500 cursor-not-allowed'}`}
+            disabled={!selectedActorId}
           >
             <FaMicrophone className="text-2xl" />
             더빙하기
