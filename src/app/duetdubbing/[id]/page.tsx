@@ -14,9 +14,18 @@ export default async function Page({
   }){
     const { id } = params;
     const modalId = searchParams.modalId as string | undefined;
-  
-    const { tokenData, front_data } = await getDuetTokenDetail(id);
-    const serverPitchData = await getServerPitchData(id);
+    const actor1 = searchParams.actor1 as string | undefined;
+    const actor2 = searchParams.actor2 as string | undefined;
+    const selected = searchParams.selected as string | undefined;
+
+    if (!actor1 || !actor2 || !selected) {
+      // 에러 처리
+
+      return <div>배우 정보가 없습니다.</div>;
+    }
+    
+    const { tokenData, front_data } = await getDuetTokenDetail(actor1, actor2, selected);//id
+    const serverPitchData = await getServerPitchData(actor1);
   
     return (
       <DuetDubbingContainer

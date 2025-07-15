@@ -70,7 +70,7 @@ export default function MovieList({
             isShorts={isShorts}
             playingVideo={playingVideo}
             onPlay={onPlay}
-            onOpenModal={onOpenModal}
+            onOpenModal={onOpenModal ? () => onOpenModal(video.videoId) : undefined}
             onStop={onStop}
           />
         ))}

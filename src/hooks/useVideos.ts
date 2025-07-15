@@ -140,3 +140,14 @@ export function useRomanticVideos() {
     refetchOnMount: false, // 마운트 시 재요청 비활성화 (캐시 우선)
   });
 }
+export function useDuetScenes() {
+  return useQuery({
+    queryKey: ["duetScenes"],
+    queryFn: async () => {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/duet/scenes`);
+      if (!res.ok) throw new Error("듀엣 더빙 목록을 불러오지 못했습니다.");
+      return res.json();
+    },
+    staleTime: 1000 * 60 * 5, // 5분 캐싱
+  });
+}

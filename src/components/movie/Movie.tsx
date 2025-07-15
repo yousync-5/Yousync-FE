@@ -17,8 +17,10 @@ import {
   TrophyIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  FilmIcon,
 } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
+import DuetDetailModal from "@/components/modal/DuetDetailModal";
 
 interface MovieProps {
   tokens: TokenDetailResponse[];
@@ -28,14 +30,19 @@ interface MovieProps {
   isLoading: boolean;
   error: string | null;
   onOpenModal?: (youtubeId: string) => void;
+  duetScenes?: any[];
+  duetScenesLoading?: boolean;
+  duetScenesError?: any;
 }
 
-export default function Movie({ tokens, popularTokens, latestTokens, romanticTokens, isLoading, error, onOpenModal }: MovieProps) {
+export default function Movie({ tokens, popularTokens, latestTokens, romanticTokens, isLoading, error, onOpenModal, duetScenes = [], duetScenesLoading = false, duetScenesError = null }: MovieProps) {
   
-  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+  const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const [playingVideo, setPlayingVideo] = useState<string | null>(null);
   const router = useRouter();
+  const [selectedDuet, setSelectedDuet] = useState<{ scene: any; pair: any } | null>(null);
+  const closeDuetModal = () => setSelectedDuet(null);
 
   
 
@@ -46,28 +53,28 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
   }));
 
   const selectedTokenData: TokenDetailResponse | undefined =
-    selectedVideoId && tokens.length
-      ? tokens.find((v) => v.youtubeId === selectedVideoId)
+    selectedTokenId && tokens.length
+      ? tokens.find((v) => String(v.id) === selectedTokenId)
       : undefined;
 
-  const openModal = (youtubeId: string) => {
+  const openModal = (tokenId: string) => {
     if (hoverTimeout) clearTimeout(hoverTimeout);
-    setSelectedVideoId(youtubeId);
+    setSelectedTokenId(tokenId);
     if (onOpenModal) {
-      onOpenModal(youtubeId);
+      onOpenModal(tokenId);
     }
   };
 
   const closeModal = () => {
     const timeout = setTimeout(() => {
-      setSelectedVideoId(null);
+      setSelectedTokenId(null);
     }, 200);
     setHoverTimeout(timeout);
   };
 
   const playDubbing = (videoId: string) => {
     setPlayingVideo(videoId);
-    const currentModalId = selectedVideoId;
+    const currentModalId = selectedTokenId;
     const query = currentModalId ? `?modalId=${currentModalId}` : '';
     router.push(`/detail/${videoId}${query}`);
   };
@@ -111,6 +118,14 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
       isPlayable: false,
     },
     {
+      id: "animation-dubbing",
+      title: "애니 더빙",
+      subtitle: "재미있는 애니메이션 더빙",
+      icon: <FilmIcon className="w-6 h-6 text-green-500" />,
+      videos: romanticTokens.map(({ id, youtubeId, actor_name }) => ({ videoId: String(id), youtubeId, actor_name })),
+      isPlayable: false,
+    },
+    {
       id: "trending-collabo",
       title: "로맨틱 더빙",
       subtitle: "설레는 더빙 연기",
@@ -150,9 +165,8 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
 
   // 임시 듀엣 더빙용 데이터 (실제 데이터로 교체 가능)
   const duetTokens = [
-    { videoId: "201", youtubeId: "duet1abc", actor_name: "AI 배우 김연기" },
-    { videoId: "202", youtubeId: "duet2def", actor_name: "AI 배우 이배우" },
-    { videoId: "203", youtubeId: "duet3ghi", actor_name: "AI 배우 박명장면" },
+    { videoId: "201", youtubeId: "S6KnqDc-tis", actor_name: "AI 배우 김연기" },
+    
   ];
 
   return (
@@ -203,7 +217,8 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                   </p>
                   <div className="flex items-center gap-4">
                     <button
-                      onClick={() => openModal(heroVideos[currentIndex].youtubeId)}
+                      onClick={() => {
+                        openModal(String(heroVideos[currentIndex].id))}}
                       className="flex items-center gap-2 px-8 py-4 bg-white text-black rounded-full font-bold hover:bg-green-100 transition-all duration-200 transform hover:scale-105 shadow-lg"
                     >
                       <PlayIcon className="w-6 h-6" />
@@ -211,7 +226,7 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                     </button>
                     <button
                       className="flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-full font-bold hover:bg-white/20 transition-all duration-200 transform hover:scale-105 border border-white/20"
-                      onClick={() => router.push(`/actor/${encodeURIComponent(heroVideos[currentIndex].actor_name)}`)}
+                      onClick={() => {router.push(`/actor/${encodeURIComponent(heroVideos[currentIndex].actor_name)}`)}}
                     >
                       <InformationCircleIcon className="w-6 h-6" />
                       더 자세히
@@ -293,56 +308,62 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                         </div>
                         <p className="text-gray-500 ml-9 font-medium">실제 배우와 함께 명장면을 연기해보세요!</p>
                       </div>
-                      <div className="flex gap-6 overflow-x-auto pb-4">
-                        {duetTokens.map((video) => (
-                          <div
-                            key={video.videoId}
-                            className="relative bg-gray-900 border-2 border-gray-800 rounded-3xl overflow-hidden hover:border-blue-400 hover:shadow-2xl transition-all duration-300 cursor-pointer flex-shrink-0 transform hover:scale-105 aspect-video"
-                            style={{ minWidth: "280px", maxWidth: "280px" }}
-                            onClick={() => playDubbing(video.videoId)}
-                          >
-                            {/* 듀엣 전용 오버레이 */}
-                            <div className="absolute inset-0 z-10 flex flex-col justify-between pointer-events-none">
-                              <div className="flex justify-between p-3">
-                                {/* 배우 아이콘 */}
-                                <div className="flex items-center gap-1 bg-blue-500/80 text-white px-2 py-1 rounded-full text-xs font-bold shadow">
-                                  <span className="inline-block w-5 h-5 bg-white/30 rounded-full mr-1" style={{backgroundImage:'url(https://img.icons8.com/ios-filled/50/ffffff/user-male-circle.png)',backgroundSize:'cover'}}></span>
-                                  배우
+                      {duetScenesLoading ? (
+                        <div className="text-gray-400 text-lg py-8">듀엣 더빙 목록을 불러오는 중...</div>
+                      ) : duetScenesError ? (
+                        <div className="text-red-400 text-lg py-8">듀엣 더빙 목록을 불러오지 못했습니다.</div>
+                      ) : (
+                        <div className="flex gap-6 overflow-x-auto pb-4">
+                          {duetScenes.map((scene: any) => (
+                            <div
+                              key={scene.youtube_url}
+                              className="relative bg-gray-900 border-2 border-gray-800 rounded-3xl overflow-hidden hover:border-blue-400 hover:shadow-2xl transition-all duration-300 cursor-pointer flex-shrink-0 transform hover:scale-105 aspect-video"
+                              style={{ minWidth: "280px", maxWidth: "280px" }}
+                              onClick={() => {
+                                setSelectedDuet({ scene, pair: scene.duet_pair[0] });
+                              }}
+                            >
+                              {/* 듀엣 전용 오버레이 */}
+                              <div className="absolute inset-0 z-10 flex flex-col justify-between pointer-events-none">
+                                <div className="flex justify-between p-3">
+                                  <div className="flex items-center gap-1 bg-blue-500/80 text-white px-2 py-1 rounded-full text-xs font-bold shadow">
+                                    {scene.duet_pair[0].actor_name}
+                                  </div>
+                                  <div className="flex items-center gap-1 bg-green-500/80 text-white px-2 py-1 rounded-full text-xs font-bold shadow">
+                                    {scene.duet_pair[1].actor_name}
+                                  </div>
                                 </div>
-                                {/* 내 실루엣/마이크 */}
-                                <div className="flex items-center gap-1 bg-green-500/80 text-white px-2 py-1 rounded-full text-xs font-bold shadow">
-                                  <span className="inline-block w-5 h-5 bg-white/30 rounded-full mr-1" style={{backgroundImage:'url(https://img.icons8.com/ios-filled/50/ffffff/microphone.png)',backgroundSize:'cover'}}></span>
-                                  나
+                                <div className="flex justify-center mb-3">
+                                  <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">듀엣 더빙</span>
                                 </div>
                               </div>
-                              <div className="flex justify-center mb-3">
-                                <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">듀엣 더빙</span>
+                              {/* 유튜브 썸네일 */}
+                              <img
+                                src={`https://img.youtube.com/vi/${scene.duet_pair[0].youtube_url.split('v=')[1]}/mqdefault.jpg`}
+                                alt={scene.scene_title}
+                                className="w-full h-full object-cover"
+                                draggable={false}
+                              />
+                              {/* 카드 설명 영역 */}
+                              <div className="p-6 relative z-20 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
+                                <h3 className="font-bold mb-2 text-white text-lg">
+                                  {scene.scene_title}
+                                </h3>
+                                <p className="text-sm text-gray-300 font-medium mb-3">
+                                  {scene.duet_pair[0].actor_name} & {scene.duet_pair[1].actor_name}
+                                </p>
+                                <button
+                                  className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-colors shadow-lg bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 text-white hover:brightness-110"
+                                  style={{ pointerEvents: 'auto' }}
+                                >
+                                  <PlayIcon className="w-4 h-4" />
+                                  듀엣 시작
+                                </button>
                               </div>
                             </div>
-                            {/* 유튜브 썸네일 */}
-                            <img
-                              src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`}
-                              alt={video.actor_name}
-                              className="w-full h-full object-cover"
-                              draggable={false}
-                            />
-                            {/* 카드 설명 영역 */}
-                            <div className="p-6 relative z-20 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
-                              <h3 className="font-bold mb-2 text-white text-lg">
-                                {video.actor_name}와 듀엣
-                              </h3>
-                              <p className="text-sm text-gray-300 font-medium mb-3">AI 배우와 함께 명장면을 연기해보세요!</p>
-                              <button
-                                className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-colors shadow-lg bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 text-white hover:brightness-110"
-                                style={{ pointerEvents: 'auto' }}
-                              >
-                                <PlayIcon className="w-4 h-4" />
-                                듀엣 시작
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -353,12 +374,21 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
           )}
         </div>
       </div>
-      {selectedVideoId && selectedTokenData && (
-        <MovieDetailModal
-          youtubeId={selectedVideoId}
-          isOpen={!!selectedVideoId}
-          onClose={closeModal}
-          tokenData={selectedTokenData}
+      {/* 모달 렌더링 */}
+      <MovieDetailModal
+        youtubeId={selectedTokenData?.youtubeId || ''}
+        isOpen={!!selectedTokenId}
+        onClose={closeModal}
+        tokenData={selectedTokenData as any}
+      />
+      {/* 듀엣 디테일 모달 */}
+      {selectedDuet && (
+        <DuetDetailModal
+          youtubeId={selectedDuet.pair.youtube_url.split("v=")[1]}
+          isOpen={!!selectedDuet}
+          onClose={closeDuetModal}
+          tokenData={selectedDuet.pair}
+          duetPair={selectedDuet.scene.duet_pair.map((a: any) => ({ actor_name: a.actor_name, actor_id: a.id }))}
         />
       )}
     </div>

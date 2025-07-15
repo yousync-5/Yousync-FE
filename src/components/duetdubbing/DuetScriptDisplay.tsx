@@ -58,9 +58,16 @@ export default function ScriptDisplay({
   analysisResult = null,
 }: ScriptDisplayProps) {
 
+  // 디버깅 로그: captions 배열 순서, currentScriptIndex, currentScript
+  if (typeof window !== 'undefined') {
+    console.log('[DuetScriptDisplay] captions 순서:', captions.map(c => ({ id: c.id, start_time: c.start_time, script: c.script })));
+    console.log('[DuetScriptDisplay] currentScriptIndex:', currentScriptIndex);
+    console.log('[DuetScriptDisplay] currentScript:', captions[currentScriptIndex]);
+  }
+
   // 화자 구분 로직 - Second Speaker가 내 대사
   const currentScript = captions[currentScriptIndex];
-  const isMyLine = currentScript?.actor?.name === "Second Speaker";
+  const isMyLine = currentScript?.actor?.name === "나";
 
   const [animatedProgress, setAnimatedProgress] = useState(0);
   const [sentenceProgress, setSentenceProgress] = useState(0);

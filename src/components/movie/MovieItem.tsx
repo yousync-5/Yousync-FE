@@ -45,7 +45,7 @@ export default function MovieItem({
         if (isPlayable) {
           if (onPlay) onPlay(video.videoId);
         } else {
-          if (onOpenModal) onOpenModal(video.youtubeId);
+          if (onOpenModal) onOpenModal(video.videoId);
         }
       }}
     >
