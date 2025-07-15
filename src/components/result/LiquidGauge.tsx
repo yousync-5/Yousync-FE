@@ -32,7 +32,6 @@ const LiquidGauge: React.FC<LiquidGaugeProps> = ({ value = 33, size = 80 }) => {
     }
     frame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frame);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetWaveHeight]);
 
   // 물결 애니메이션 효과 (좌우 움직임)

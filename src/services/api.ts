@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_ENDPOINTS } from '@/lib/constants';
+import { PaginationParams, Token, TokenDetail, UserAudiosResponse, ViewIncrementResponse } from '@/types/api';
 
 // 타입 정의 (순환 참조 방지를 위해 여기서 직접 정의)
 interface RefreshTokenResponse {
@@ -146,49 +147,49 @@ export const backendApi = {
 // 토큰 관련 API 함수들
 export const tokenApi = {
   // 모든 토큰 목록 조회
-  getTokens: async (params?: PaginationParams): Promise<TokensResponse> => {
+  getTokens: async (params?: PaginationParams): Promise<Token[]> => {
     const queryParams = new URLSearchParams();
     if (params?.skip !== undefined) queryParams.append('skip', params.skip.toString());
     if (params?.limit !== undefined) queryParams.append('limit', params.limit.toString());
     
     const url = `${API_ENDPOINTS.TOKENS}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    return backendApi.get<TokensResponse>(url);
+    return backendApi.get<Token[]>(url);
   },
 
   // 최신순으로 정렬된 토큰 목록 조회
-  getLatestTokens: async (params?: PaginationParams): Promise<TokensResponse> => {
+  getLatestTokens: async (params?: PaginationParams): Promise<Token[]> => {
     const queryParams = new URLSearchParams();
     if (params?.skip !== undefined) queryParams.append('skip', params.skip.toString());
     if (params?.limit !== undefined) queryParams.append('limit', params.limit.toString());
     
     const url = `${API_ENDPOINTS.TOKENS}/latest${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    return backendApi.get<TokensResponse>(url);
+    return backendApi.get<Token[]>(url);
   },
 
   // 인기순으로 정렬된 토큰 목록 조회
-  getPopularTokens: async (params?: PaginationParams): Promise<TokensResponse> => {
+  getPopularTokens: async (params?: PaginationParams): Promise<Token[]> => {
     const queryParams = new URLSearchParams();
     if (params?.skip !== undefined) queryParams.append('skip', params.skip.toString());
     if (params?.limit !== undefined) queryParams.append('limit', params.limit.toString());
     
     const url = `${API_ENDPOINTS.TOKENS}/popular${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    return backendApi.get<TokensResponse>(url);
+    return backendApi.get<Token[]>(url);
   },
 
   // 특정 카테고리의 토큰들 조회
-  getTokensByCategory: async (category: string, params?: PaginationParams): Promise<TokensResponse> => {
+  getTokensByCategory: async (category: string, params?: PaginationParams): Promise<Token[]> => {
     const queryParams = new URLSearchParams();
     if (params?.skip !== undefined) queryParams.append('skip', params.skip.toString());
     if (params?.limit !== undefined) queryParams.append('limit', params.limit.toString());
     
     const url = `${API_ENDPOINTS.TOKENS}/category/${category}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    return backendApi.get<TokensResponse>(url);
+    return backendApi.get<Token[]>(url);
   },
 
   // 특정 토큰 상세 정보 조회
-  getTokenDetail: async (tokenId: number): Promise<TokenDetailResponse> => {
+  getTokenDetail: async (tokenId: number): Promise<TokenDetail> => {
     const url = `${API_ENDPOINTS.TOKENS}/${tokenId}`;
-    return backendApi.get<TokenDetailResponse>(url);
+    return backendApi.get<TokenDetail>(url);
   },
 
   // 토큰 생성
@@ -210,13 +211,13 @@ export const tokenApi = {
   },
 
   // 관련 토큰 조회 (같은 배우의 다른 토큰들)
-  getRelatedTokens: async (tokenId: number, params?: PaginationParams): Promise<TokensResponse> => {
+  getRelatedTokens: async (tokenId: number, params?: PaginationParams): Promise<Token[]> => {
     const queryParams = new URLSearchParams();
     if (params?.skip !== undefined) queryParams.append('skip', params.skip.toString());
     if (params?.limit !== undefined) queryParams.append('limit', params.limit.toString());
     
     const url = `${API_ENDPOINTS.TOKENS}/${tokenId}/related${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    return backendApi.get<TokensResponse>(url);
+    return backendApi.get<Token[]>(url);
   },
 
   // 조회수 증가

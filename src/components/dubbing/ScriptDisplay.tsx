@@ -267,7 +267,6 @@ export default function ScriptDisplay({
         }, 50);
       }
     }, 50); // 200ms → 50ms로 단축
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentScriptIndex]);
 
   // RGB 그라데이션 색상 계산 (PronunciationTimingGuide에서 복사)

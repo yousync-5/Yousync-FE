@@ -122,16 +122,5 @@ export const mypageService = {
       console.error('분석 결과 삭제 실패:', error);
       throw error;
     }
-  },
-
-  // 마이페이지 개요 정보 (추후 백엔드에서 구현 예정)
-  async getMyPageOverview(): Promise<any> {
-    try {
-      const response = await backendApi.get('/mypage/overview');
-      return response;
-    } catch (error) {
-      console.error('마이페이지 개요 조회 실패:', error);
-      throw error;
-    }
   }
-};
+}
