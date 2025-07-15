@@ -20,6 +20,75 @@ interface TokenDetailResponse {
   }[];
 }
 
+// 401 발생 시 /auth/refresh/로 토큰 갱신 후 재시도하는 fetch 래퍼
+async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+  let accessToken = localStorage.getItem('access_token');
+  const headers: Record<string, string> = {
+    ...(options.headers || {}),
+    'Content-Type': 'application/json',
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+  };
+  let res = await fetch(url, { ...options, headers });
+  if (res.status === 401) {
+    // 토큰 갱신 시도
+    const refreshRes = await fetch(`${API_ENDPOINTS.BASE_URL}/auth/refresh/`, {
+      method: 'POST',
+      headers,
+    });
+    if (refreshRes.ok) {
+      const data = await refreshRes.json();
+      const newToken = data.access_token || data.token;
+      if (newToken) {
+        localStorage.setItem('access_token', newToken);
+        headers.Authorization = `Bearer ${newToken}`;
+        res = await fetch(url, { ...options, headers });
+      }
+    } else {
+      localStorage.removeItem('access_token');
+      window.location.href = '/login';
+      throw new Error('토큰 갱신 실패, 다시 로그인 필요');
+    }
+  }
+  return res;
+}
+
+// ✔️ 스크립트별 시간 정보로 배경음+사용자음 믹스 (배경음 전체 길이 유지, 구간별 overlay)
+async function mixBackgroundAndUserAudiosByScript(
+  bgUrl: string,
+  userAudios: AudioURL[],
+  scripts: ScriptInfo[]
+): Promise<Blob> {
+  const ctx = new AudioContext();
+  const bgAudio = await fetchAndDecodeAudio(bgUrl, ctx);
+
+  // 1. output 버퍼를 배경음 전체 길이로 생성
+  const outBuf = ctx.createBuffer(1, bgAudio.length, ctx.sampleRate);
+  const out = outBuf.getChannelData(0);
+  const bgData = bgAudio.getChannelData(0);
+
+  // 2. 일단 배경음을 복사
+  out.set(bgData);
+
+  // 3. 각 스크립트 구간에 유저 오디오 overlay
+  for (const script of scripts) {
+    const userAudio = userAudios.find(a => a.script_id === script.script_id);
+    if (!userAudio) continue;
+    const userBuf = await fetchAndDecodeAudio(userAudio.url, ctx);
+    const duration = script.end_time - script.start_time;
+    const length = Math.floor(ctx.sampleRate * duration);
+    const userData = userBuf.getChannelData(0).slice(0, length);
+
+    const startIdx = Math.floor(script.start_time * ctx.sampleRate);
+    for (let i = 0; i < length; ++i) {
+      // 배경음 + 유저음성 overlay (볼륨 가중치 조정 가능)
+      out[startIdx + i] = (out[startIdx + i] || 0) * 0.5 + (userData[i] || 0) * 1.0;
+    }
+  }
+
+  const wav = audioBufferToWav(outBuf);
+  return new Blob([wav], { type: "audio/wav" });
+}
+
 async function getTokenBackgroundAudioAndScripts(tokenId: number): Promise<{
   bgvoice_url: string | null;
   scripts: ScriptInfo[];
@@ -28,7 +97,7 @@ async function getTokenBackgroundAudioAndScripts(tokenId: number): Promise<{
     const accessToken = localStorage.getItem('access_token');
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-    const res = await fetch(`${API_ENDPOINTS.BASE_URL}/tokens/${tokenId}`, { method: 'GET', headers });
+    const res = await fetchWithAuth(`${API_ENDPOINTS.BASE_URL}/tokens/${tokenId}`, { method: 'GET', headers });
     if (!res.ok) return { bgvoice_url: null, scripts: [] };
     const data: TokenDetailResponse = await res.json();
     const scripts = Array.isArray(data.scripts)
@@ -50,7 +119,7 @@ async function getUserAudioUrls(tokenId: number): Promise<AudioURL[]> {
     const accessToken = localStorage.getItem('access_token');
     const headers: Record<string, string> = {};
     if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-    const res = await fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json', ...headers } });
+    const res = await fetchWithAuth(url, { method: 'GET', headers: { 'Content-Type': 'application/json', ...headers } });
     if (!res.ok) return [];
     const data: UserAudioResponse = await res.json();
     return data.audios || [];
@@ -74,37 +143,6 @@ async function fetchAndDecodeAudio(url: string, ctx: AudioContext) {
   return await ctx.decodeAudioData(arrayBuffer);
 }
 
-// ✔️ "전체 사용자 오디오 이어붙이고, 배경음과 합성"으로 변경
-async function mixBackgroundAndUserAudios(
-  bgUrl: string, userAudios: AudioURL[]
-): Promise<Blob> {
-  const ctx = new AudioContext();
-  const bgAudio = await fetchAndDecodeAudio(bgUrl, ctx);
-  const userBuffers: AudioBuffer[] = [];
-  for (const userAudio of userAudios) {
-    const buf = await fetchAndDecodeAudio(userAudio.url, ctx);
-    userBuffers.push(buf);
-  }
-  // 사용자 전체 이어붙이기
-  const totalLength = userBuffers.reduce((sum, buf) => sum + buf.length, 0);
-  const userMerged = ctx.createBuffer(1, totalLength, ctx.sampleRate);
-  let offset = 0;
-  for (const buf of userBuffers) {
-    userMerged.getChannelData(0).set(buf.getChannelData(0), offset);
-    offset += buf.length;
-  }
-  // 배경음/사용자 중 더 짧은 길이에 맞춰 믹스
-  const outLength = Math.min(bgAudio.length, userMerged.length);
-  const outBuf = ctx.createBuffer(1, outLength, ctx.sampleRate);
-  const bgData = bgAudio.getChannelData(0);
-  const userData = userMerged.getChannelData(0);
-  const out = outBuf.getChannelData(0);
-  for (let i = 0; i < outLength; ++i)
-    out[i] = (bgData[i] || 0) * 0.5 + (userData[i] || 0) * 1.0;
-  const wav = audioBufferToWav(outBuf);
-  return new Blob([wav], { type: "audio/wav" });
-}
-
 interface ScriptInfo {
   script_id: number;
   start_time: number;
@@ -120,6 +158,7 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [mergedUrl, setMergedUrl] = useState<string | null>(null);
   const [merging, setMerging] = useState(false);
+  const [scriptInfos, setScriptInfos] = useState<ScriptInfo[]>([]);
 
   useEffect(() => {
     if (open && tokenId) {
@@ -127,28 +166,31 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
       Promise.all([
         waitForUserAudio(tokenId, 10, 1000),
         getTokenBackgroundAudioAndScripts(tokenId)
-      ]).then(([audios, { bgvoice_url }]) => {
+      ]).then(([audios, { bgvoice_url, scripts }]) => {
         setScriptAudios(audios);
         setBackgroundAudio(bgvoice_url);
+        setScriptInfos(scripts);
         setMergedUrl(null);
         console.log("backgroundAudio:", bgvoice_url);
         console.log("scriptAudios:", audios);
+        console.log("scriptInfos:", scripts);
       }).catch(() => {
         setError('오디오를 불러오는데 실패했습니다.');
       }).finally(() => setLoading(false));
     } else if (!open) {
       setScriptAudios([]); setBackgroundAudio(null);
+      setScriptInfos([]);
       setError(null); setLoading(false); setMergedUrl(null);
     }
   }, [open, tokenId]);
 
   const handleMergeAll = async () => {
-    if (!backgroundAudio || !scriptAudios.length) {
+    if (!backgroundAudio || !scriptAudios.length || !scriptInfos.length) {
       alert("병합할 데이터가 부족합니다."); return;
     }
     setMerging(true);
     try {
-      const blob = await mixBackgroundAndUserAudios(backgroundAudio, scriptAudios);
+      const blob = await mixBackgroundAndUserAudiosByScript(backgroundAudio, scriptAudios, scriptInfos);
       const url = URL.createObjectURL(blob);
       setMergedUrl(url);
     } catch (e) {
