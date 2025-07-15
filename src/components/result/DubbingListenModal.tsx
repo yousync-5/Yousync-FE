@@ -149,6 +149,23 @@ interface ScriptInfo {
   end_time: number;
 }
 
+// 분석 결과 polling 함수 (job_id로 S3 URL 받아오기)
+async function pollAnalysisResult(jobId: string, maxTries = 10, interval = 1500): Promise<string | null> {
+  for (let i = 0; i < maxTries; i++) {
+    try {
+      const res = await fetch(`/api/proxy-audio?url=${encodeURIComponent(`${API_ENDPOINTS.BASE_URL}/tokens/analysis-result/${jobId}`)}`);
+      if (res.ok) {
+        const data = await res.json();
+        // presigned URL 필드명에 맞게 수정
+        const url = data.user_audio_url || data.s3_user_audio_url || data.audio_url || null;
+        if (url) return url;
+      }
+    } catch {}
+    await new Promise(res => setTimeout(res, interval));
+  }
+  return null;
+}
+
 const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
   open, onClose, tokenId, modalId
 }) => {
@@ -160,47 +177,13 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
   const [merging, setMerging] = useState(false);
   const [scriptInfos, setScriptInfos] = useState<ScriptInfo[]>([]);
   const [pendingJobId, setPendingJobId] = useState<string | null>(null);
-  const [lastAudioUrls, setLastAudioUrls] = useState<{[scriptId: number]: string}>({});
 
-  // 항상 고유한 값으로 pendingJobId를 변경
-  async function handleNewRecording(jobId: string, scriptId: number) {
+  // 외부에서 호출 (예: 부모에서 ref로)
+  function handleNewRecording(jobId: string, scriptId: number) {
     setPendingJobId(`${jobId}:${scriptId}`);
-    // user-audios를 polling해서 최신 URL이 나올 때까지 대기
-    let tries = 0;
-    let found = false;
-    while (tries < 10 && !found) {
-      const audios = await getUserAudioUrls(tokenId);
-      const audio = audios.find(a => a.script_id === scriptId);
-      if (audio) {
-        setScriptAudios(audios);
-        setMergedUrl(null);
-        found = true;
-      } else {
-        await new Promise(res => setTimeout(res, 1500));
-        tries++;
-      }
-    }
   }
 
-  // useEffect에서 jobId, scriptId, timestamp 분리
-  useEffect(() => {
-    if (!pendingJobId) return;
-    const [jobId, scriptIdStr] = pendingJobId.split(':');
-    const scriptId = Number(scriptIdStr);
-    let cancelled = false;
-    (async () => {
-      const url = await pollAnalysisResult(jobId);
-      if (url && !cancelled) {
-        setScriptAudios(prev => prev.map(a =>
-          a.script_id === scriptId ? { ...a, url } : a
-        ));
-        setMergedUrl(null);
-      }
-      setPendingJobId(null);
-    })();
-    return () => { cancelled = true; };
-  }, [pendingJobId]);
-
+  // 모달 오픈 시 항상 최신 fetch
   useEffect(() => {
     if (open && tokenId) {
       setLoading(true); setError(null);
@@ -212,6 +195,7 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
         setBackgroundAudio(bgvoice_url);
         setScriptInfos(scripts);
         setMergedUrl(null);
+        // 디버깅용
         console.log("backgroundAudio:", bgvoice_url);
         console.log("scriptAudios:", audios);
         console.log("scriptInfos:", scripts);
@@ -225,12 +209,28 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
     }
   }, [open, tokenId]);
 
-  // 유저 오디오가 바뀔 때마다 병합 URL 초기화
+  // handleNewRecording이 호출되면 분석 polling 후 전체 오디오 목록 최신화!
+  useEffect(() => {
+    if (!pendingJobId) return;
+    const [jobId] = pendingJobId.split(":");
+    let cancelled = false;
+    (async () => {
+      const url = await pollAnalysisResult(jobId);
+      if (!cancelled) {
+        const audios = await getUserAudioUrls(tokenId);
+        setScriptAudios(audios); // 항상 전체 fetch로 최신화
+        setMergedUrl(null); // 병합 음성 초기화
+        setPendingJobId(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [pendingJobId, tokenId]);
+
+  // 유저 오디오 바뀌면 병합 오디오 초기화
   useEffect(() => {
     setMergedUrl(null);
   }, [scriptAudios]);
 
-  // 병합 URL이 바뀔 때마다 이전 Blob URL 해제
   useEffect(() => {
     return () => {
       if (mergedUrl) URL.revokeObjectURL(mergedUrl);
@@ -290,7 +290,7 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
               {scriptAudios.map((audio, idx) => (
                 <li key={audio.script_id} className="flex items-center gap-3">
                   <span className="text-sm text-gray-400 font-bold w-8">{idx + 1}.</span>
-                  <audio controls src={audio.url + `&cachebust=${Date.now()}`} className="flex-1" />
+                  <audio controls src={audio.url} className="flex-1" />
                 </li>
               ))}
             </ul>
