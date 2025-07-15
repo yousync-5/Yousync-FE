@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import audioBufferToWav from 'audiobuffer-to-wav';
 import { API_ENDPOINTS } from '@/lib/constants';
 
 interface DubbingListenModalProps {
@@ -7,43 +8,39 @@ interface DubbingListenModalProps {
   tokenId: number;
   modalId?: string;
 }
-
-interface AudioURL {
-  script_id: number;
-  url: string;
-}
-
-interface UserAudioResponse {
-  audios: AudioURL[];
-}
+interface AudioURL { script_id: number; url: string; }
+interface UserAudioResponse { audios: AudioURL[]; }
 
 interface TokenDetailResponse {
   bgvoice_url: string;
+  scripts: {
+    id: number;
+    start_time: number;
+    end_time: number;
+  }[];
 }
 
-// 배경음 가져오기 함수 (그대로)
-async function getTokenBackgroundAudio(tokenId: number): Promise<string | null> {
+async function getTokenBackgroundAudioAndScripts(tokenId: number): Promise<{
+  bgvoice_url: string | null;
+  scripts: ScriptInfo[];
+}> {
   try {
     const accessToken = localStorage.getItem('access_token');
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json'
-    };
-    if (accessToken) {
-      headers.Authorization = `Bearer ${accessToken}`;
-    }
-    const res = await fetch(`${API_ENDPOINTS.BASE_URL}/tokens/${tokenId}`, {
-      method: 'GET',
-      headers
-    });
-    if (!res.ok) {
-      console.error('배경음 API 호출 실패:', res.status, res.statusText);
-      return null;
-    }
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+    const res = await fetch(`${API_ENDPOINTS.BASE_URL}/tokens/${tokenId}`, { method: 'GET', headers });
+    if (!res.ok) return { bgvoice_url: null, scripts: [] };
     const data: TokenDetailResponse = await res.json();
-    return data.bgvoice_url || null;
-  } catch (error) {
-    console.error('배경음 가져오기 실패:', error);
-    return null;
+    const scripts = Array.isArray(data.scripts)
+      ? data.scripts.map(s => ({
+          script_id: s.id,
+          start_time: s.start_time,
+          end_time: s.end_time,
+        }))
+      : [];
+    return { bgvoice_url: data.bgvoice_url ?? null, scripts };
+  } catch {
+    return { bgvoice_url: null, scripts: [] };
   }
 }
 
@@ -52,76 +49,114 @@ async function getUserAudioUrls(tokenId: number): Promise<AudioURL[]> {
     const url = `${API_ENDPOINTS.BASE_URL}/tokens/${tokenId}/user-audios`;
     const accessToken = localStorage.getItem('access_token');
     const headers: Record<string, string> = {};
-    if (accessToken) {
-      headers.Authorization = `Bearer ${accessToken}`;
-    }
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers
-      }
-    });
-    if (!res.ok) {
-      console.error('API 호출 실패:', res.status, res.statusText);
-      return [];
-    }
+    if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+    const res = await fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json', ...headers } });
+    if (!res.ok) return [];
     const data: UserAudioResponse = await res.json();
     return data.audios || [];
-  } catch (error) {
-    console.error('API 호출 에러:', error);
-    return [];
-  }
+  } catch { return []; }
 }
 
 async function waitForUserAudio(tokenId: number, maxTries = 10, interval = 1000): Promise<AudioURL[]> {
   for (let i = 0; i < maxTries; i++) {
     const audios = await getUserAudioUrls(tokenId);
-    if (audios.length > 0) {
-      return audios;
-    }
+    if (audios.length > 0) return audios;
     await new Promise(res => setTimeout(res, interval));
   }
   return [];
 }
 
+async function fetchAndDecodeAudio(url: string, ctx: AudioContext) {
+  const proxyUrl = `/api/proxy-audio?url=${encodeURIComponent(url)}`;
+  const res = await fetch(proxyUrl);
+  if (!res.ok) throw new Error("오디오 로딩 실패");
+  const arrayBuffer = await res.arrayBuffer();
+  return await ctx.decodeAudioData(arrayBuffer);
+}
+
+// ✔️ "전체 사용자 오디오 이어붙이고, 배경음과 합성"으로 변경
+async function mixBackgroundAndUserAudios(
+  bgUrl: string, userAudios: AudioURL[]
+): Promise<Blob> {
+  const ctx = new AudioContext();
+  const bgAudio = await fetchAndDecodeAudio(bgUrl, ctx);
+  const userBuffers: AudioBuffer[] = [];
+  for (const userAudio of userAudios) {
+    const buf = await fetchAndDecodeAudio(userAudio.url, ctx);
+    userBuffers.push(buf);
+  }
+  // 사용자 전체 이어붙이기
+  const totalLength = userBuffers.reduce((sum, buf) => sum + buf.length, 0);
+  const userMerged = ctx.createBuffer(1, totalLength, ctx.sampleRate);
+  let offset = 0;
+  for (const buf of userBuffers) {
+    userMerged.getChannelData(0).set(buf.getChannelData(0), offset);
+    offset += buf.length;
+  }
+  // 배경음/사용자 중 더 짧은 길이에 맞춰 믹스
+  const outLength = Math.min(bgAudio.length, userMerged.length);
+  const outBuf = ctx.createBuffer(1, outLength, ctx.sampleRate);
+  const bgData = bgAudio.getChannelData(0);
+  const userData = userMerged.getChannelData(0);
+  const out = outBuf.getChannelData(0);
+  for (let i = 0; i < outLength; ++i)
+    out[i] = (bgData[i] || 0) * 0.5 + (userData[i] || 0) * 1.0;
+  const wav = audioBufferToWav(outBuf);
+  return new Blob([wav], { type: "audio/wav" });
+}
+
+interface ScriptInfo {
+  script_id: number;
+  start_time: number;
+  end_time: number;
+}
+
 const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
-  open,
-  onClose,
-  tokenId,
-  modalId
+  open, onClose, tokenId, modalId
 }) => {
   const [scriptAudios, setScriptAudios] = useState<AudioURL[]>([]);
   const [backgroundAudio, setBackgroundAudio] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mergedUrl, setMergedUrl] = useState<string | null>(null);
+  const [merging, setMerging] = useState(false);
 
   useEffect(() => {
     if (open && tokenId) {
-      setLoading(true);
-      setError(null);
-
-      // (1) 더빙본, (2) 배경음 동시에 fetch
+      setLoading(true); setError(null);
       Promise.all([
         waitForUserAudio(tokenId, 10, 1000),
-        getTokenBackgroundAudio(tokenId)
-      ])
-        .then(([audios, bgUrl]) => {
-          setScriptAudios(audios);
-          setBackgroundAudio(bgUrl);
-        })
-        .catch(() => {
-          setError('오디오를 불러오는데 실패했습니다.');
-        })
-        .finally(() => setLoading(false));
+        getTokenBackgroundAudioAndScripts(tokenId)
+      ]).then(([audios, { bgvoice_url }]) => {
+        setScriptAudios(audios);
+        setBackgroundAudio(bgvoice_url);
+        setMergedUrl(null);
+        console.log("backgroundAudio:", bgvoice_url);
+        console.log("scriptAudios:", audios);
+      }).catch(() => {
+        setError('오디오를 불러오는데 실패했습니다.');
+      }).finally(() => setLoading(false));
     } else if (!open) {
-      // 모달 닫힐 때 클린업 (옵션)
-      setScriptAudios([]);
-      setBackgroundAudio(null);
-      setError(null);
-      setLoading(false);
+      setScriptAudios([]); setBackgroundAudio(null);
+      setError(null); setLoading(false); setMergedUrl(null);
     }
   }, [open, tokenId]);
+
+  const handleMergeAll = async () => {
+    if (!backgroundAudio || !scriptAudios.length) {
+      alert("병합할 데이터가 부족합니다."); return;
+    }
+    setMerging(true);
+    try {
+      const blob = await mixBackgroundAndUserAudios(backgroundAudio, scriptAudios);
+      const url = URL.createObjectURL(blob);
+      setMergedUrl(url);
+    } catch (e) {
+      alert("병합 실패: " + (e as any).message);
+    } finally {
+      setMerging(false);
+    }
+  };
 
   if (!open) return null;
 
@@ -166,6 +201,20 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
             </ul>
           ) : (
             <div className="text-gray-400 text-center py-4">사용자 더빙 음성 없음</div>
+          )}
+        </div>
+
+        {/* 병합 오디오 플레이어 */}
+        <div className="mt-8 w-full flex flex-col items-center">
+          <button
+            onClick={handleMergeAll}
+            disabled={merging || loading || !scriptAudios.length}
+            className="bg-green-600 px-4 py-2 rounded-lg font-bold"
+          >
+            {merging ? "병합 중..." : "전체 병합 음성 듣기"}
+          </button>
+          {mergedUrl && (
+            <audio controls src={mergedUrl} className="w-full mt-4" />
           )}
         </div>
       </div>
