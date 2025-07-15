@@ -1,27 +1,80 @@
 import React, { useEffect, useState } from 'react';
+import { API_ENDPOINTS } from '@/lib/constants';
 
 interface DubbingListenModalProps {
   open: boolean;
   onClose: () => void;
   tokenId: number;        // 토큰 ID (숫자)
-  modalId?: string;       // 모달 ID (문자열) - YouTube ID
-  fullAudio?: string;     // 전체 더빙본 S3 URL
+  modalId?: string;       // 모달 ID (문자열) - YouTube ID (현재 미사용)
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://3.37.123.51";
+// 백엔드 응답 구조에 맞는 타입 정의
+interface AudioURL {
+  script_id: number;
+  url: string;
+}
 
-// API 호출 함수
-async function getUserAudioUrls(tokenId: number, modalId?: string): Promise<string[]> {
+interface UserAudioResponse {
+  audios: AudioURL[];
+}
+
+interface TokenDetailResponse {
+  bgvoice_url: string;
+  // 다른 필드들...
+}
+
+// 배경음 가져오기 함수
+async function getTokenBackgroundAudio(tokenId: number): Promise<string | null> {
   try {
-    // modalId가 있으면 쿼리 파라미터로 추가
-    const url = modalId 
-      ? `${API_BASE_URL}/tokens/${tokenId}/user-audios?modalId=${modalId}`
-      : `${API_BASE_URL}/tokens/${tokenId}/user-audios`;
+    const accessToken = localStorage.getItem('access_token');
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+    
+    const res = await fetch(`${API_ENDPOINTS.BASE_URL}/tokens/${tokenId}`, {
+      method: 'GET',
+      headers
+    });
+    
+    if (!res.ok) {
+      console.error('배경음 API 호출 실패:', res.status, res.statusText);
+      return null;
+    }
+    
+    const data: TokenDetailResponse = await res.json();
+    return data.bgvoice_url || null;
+  } catch (error) {
+    console.error('배경음 가져오기 실패:', error);
+    return null;
+  }
+}
+
+// 사용자 오디오 URL 가져오기 함수
+async function getUserAudioUrls(tokenId: number): Promise<AudioURL[]> {
+  try {
+    // modalId는 현재 백엔드에서 처리하지 않으므로 제거
+    const url = `${API_ENDPOINTS.BASE_URL}/tokens/${tokenId}/user-audios`;
     
     console.log('API 호출 URL:', url);
     
+    // JWT Bearer 토큰 방식으로 수정
+    const accessToken = localStorage.getItem('access_token');
+    const headers: Record<string, string> = {};
+    
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+    
     const res = await fetch(url, {
-      credentials: "include",
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers
+      }
     });
     
     if (!res.ok) {
@@ -29,29 +82,39 @@ async function getUserAudioUrls(tokenId: number, modalId?: string): Promise<stri
       return [];
     }
     
-    const data = await res.json();
+    const data: UserAudioResponse = await res.json();
     console.log('API 응답:', data);
     
-    // 응답 데이터 처리
-    if (Array.isArray(data)) return data;
-    if (Array.isArray(data.user_audios)) return data.user_audios;
-    if (data.audios && Array.isArray(data.audios)) return data.audios;
-    
-    return [];
+    // 백엔드 응답 구조에 맞게 처리
+    return data.audios || [];
   } catch (error) {
     console.error('API 호출 에러:', error);
     return [];
   }
 }
 
+// S3에 파일이 저장될 때까지 user-audios를 polling
+async function waitForUserAudio(tokenId: number, maxTries = 10, interval = 1000): Promise<AudioURL[]> {
+  for (let i = 0; i < maxTries; i++) {
+    const audios = await getUserAudioUrls(tokenId);
+    if (audios.length > 0) {
+      return audios;
+    }
+    // 아직 없으면 대기 후 재시도
+    await new Promise(res => setTimeout(res, interval));
+  }
+  // 끝까지 못 찾으면 빈 배열 반환
+  return [];
+}
+
 const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
   open, 
   onClose, 
   tokenId, 
-  modalId, 
-  fullAudio
+  modalId  // 현재 미사용이지만 호환성을 위해 유지
 }) => {
-  const [scriptAudios, setScriptAudios] = useState<string[]>([]);
+  const [scriptAudios, setScriptAudios] = useState<AudioURL[]>([]);
+  const [backgroundAudio, setBackgroundAudio] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,21 +122,17 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
     if (open && tokenId) {
       setLoading(true);
       setError(null);
-      
-      getUserAudioUrls(tokenId, modalId)
-        .then((urls) => {
-          console.log('받은 오디오 URL들:', urls);
-          setScriptAudios(urls);
+
+      waitForUserAudio(tokenId, 10, 1000)
+        .then((audios) => {
+          setScriptAudios(audios);
         })
         .catch((err) => {
-          console.error('오디오 로딩 실패:', err);
           setError('오디오를 불러오는데 실패했습니다.');
         })
-        .finally(() => {
-          setLoading(false);
-        });
+        .finally(() => setLoading(false));
     }
-  }, [open, tokenId, modalId]);
+  }, [open, tokenId]);
 
   if (!open) return null;
   
@@ -91,11 +150,11 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
         
         <h2 className="text-2xl font-bold mb-6 text-white">더빙본 들어보기</h2>
         
-        {/* 전체 더빙본 */}
-        {fullAudio && (
+        {/* 배경음 */}
+        {backgroundAudio && (
           <div className="mb-8 w-full flex flex-col items-center">
-            <span className="text-lg text-green-400 font-semibold mb-2">전체 더빙본</span>
-            <audio controls src={fullAudio} className="w-full" />
+            <span className="text-lg text-green-400 font-semibold mb-2">배경음</span>
+            <audio controls src={backgroundAudio} className="w-full" />
           </div>
         )}
         
@@ -116,9 +175,9 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
           ) : scriptAudios.length > 0 ? (
             <ul className="space-y-4">
               {scriptAudios.map((audio, idx) => (
-                <li key={idx} className="flex items-center gap-3">
+                <li key={audio.script_id} className="flex items-center gap-3">
                   <span className="text-sm text-gray-400 font-bold w-8">{idx + 1}.</span>
-                  <audio controls src={audio} className="flex-1" />
+                  <audio controls src={audio.url} className="flex-1" />
                 </li>
               ))}
             </ul>

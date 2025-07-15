@@ -705,8 +705,8 @@ useEffect(() => {
       <DubbingListenModal
         open={isDubbingListenModalOpen}
         onClose={() => setIsDubbingListenModalOpen(false)}
-        scriptAudios={[]} // 여기에 실제 S3 배경음 URL 배열을 전달
-        fullAudio="" // 여기에 전체 S3 배경음 URL을 전달
+        tokenId={parseInt(id)}
+        modalId={modalId}
       />
     </div>
   );
