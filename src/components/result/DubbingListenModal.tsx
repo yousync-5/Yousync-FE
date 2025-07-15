@@ -159,6 +159,47 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
   const [mergedUrl, setMergedUrl] = useState<string | null>(null);
   const [merging, setMerging] = useState(false);
   const [scriptInfos, setScriptInfos] = useState<ScriptInfo[]>([]);
+  const [pendingJobId, setPendingJobId] = useState<string | null>(null);
+  const [lastAudioUrls, setLastAudioUrls] = useState<{[scriptId: number]: string}>({});
+
+  // 항상 고유한 값으로 pendingJobId를 변경
+  async function handleNewRecording(jobId: string, scriptId: number) {
+    setPendingJobId(`${jobId}:${scriptId}`);
+    // user-audios를 polling해서 최신 URL이 나올 때까지 대기
+    let tries = 0;
+    let found = false;
+    while (tries < 10 && !found) {
+      const audios = await getUserAudioUrls(tokenId);
+      const audio = audios.find(a => a.script_id === scriptId);
+      if (audio) {
+        setScriptAudios(audios);
+        setMergedUrl(null);
+        found = true;
+      } else {
+        await new Promise(res => setTimeout(res, 1500));
+        tries++;
+      }
+    }
+  }
+
+  // useEffect에서 jobId, scriptId, timestamp 분리
+  useEffect(() => {
+    if (!pendingJobId) return;
+    const [jobId, scriptIdStr] = pendingJobId.split(':');
+    const scriptId = Number(scriptIdStr);
+    let cancelled = false;
+    (async () => {
+      const url = await pollAnalysisResult(jobId);
+      if (url && !cancelled) {
+        setScriptAudios(prev => prev.map(a =>
+          a.script_id === scriptId ? { ...a, url } : a
+        ));
+        setMergedUrl(null);
+      }
+      setPendingJobId(null);
+    })();
+    return () => { cancelled = true; };
+  }, [pendingJobId]);
 
   useEffect(() => {
     if (open && tokenId) {
@@ -183,6 +224,18 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
       setError(null); setLoading(false); setMergedUrl(null);
     }
   }, [open, tokenId]);
+
+  // 유저 오디오가 바뀔 때마다 병합 URL 초기화
+  useEffect(() => {
+    setMergedUrl(null);
+  }, [scriptAudios]);
+
+  // 병합 URL이 바뀔 때마다 이전 Blob URL 해제
+  useEffect(() => {
+    return () => {
+      if (mergedUrl) URL.revokeObjectURL(mergedUrl);
+    };
+  }, [mergedUrl]);
 
   const handleMergeAll = async () => {
     if (!backgroundAudio || !scriptAudios.length || !scriptInfos.length) {
@@ -237,7 +290,7 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
               {scriptAudios.map((audio, idx) => (
                 <li key={audio.script_id} className="flex items-center gap-3">
                   <span className="text-sm text-gray-400 font-bold w-8">{idx + 1}.</span>
-                  <audio controls src={audio.url} className="flex-1" />
+                  <audio controls src={audio.url + `&cachebust=${Date.now()}`} className="flex-1" />
                 </li>
               ))}
             </ul>
