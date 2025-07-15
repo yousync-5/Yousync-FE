@@ -6,10 +6,7 @@ export interface BookmarkCreate {
 }
 
 export interface BookmarkOut {
-  id: number;
-  user_id: number;
   token_id: number;
-  created_at: string;
 }
 
 export interface BookmarkListOut {
@@ -58,7 +55,7 @@ export const mypageService = {
   // 북마크 생성
   async createBookmark(tokenId: number): Promise<BookmarkOut> {
     try {
-      const response = await backendApi.post<BookmarkOut>('/mypage/bookmarks/', {
+      const response = await backendApi.post<BookmarkOut>('/mypage/bookmarks', {
         token_id: tokenId
       });
       return response;
