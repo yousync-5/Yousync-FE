@@ -2,7 +2,6 @@
 import { GoogleLoginButton } from "react-social-login-buttons";
 import { GoogleAuthProvider, getIdToken } from "firebase/auth";
 // import { auth } from "../../Firebase/firebase-config";
-import { useNavigate } from "react-router-dom"; 
 import axios from "axios";
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
@@ -46,7 +45,6 @@ const StyledGoogleLoginButton = styled(GoogleLoginButton)`
 
 const Login2 = () => {
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
   const router = useRouter();
 
   async function handleGoogleLogin() {
@@ -66,10 +64,10 @@ const Login2 = () => {
       });
 
       if (response.data === "처음 회원 가입한 사용자") {
-        navigate('/login3');
+        router.push('/login3');
       } 
       else if (response.data === "이미 회원 가입된 사용자") {
-        navigate('/home');
+        router.push('/home');
       }
 
     } catch (error) { 

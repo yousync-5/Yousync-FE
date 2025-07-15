@@ -71,5 +71,5 @@ export interface PaginationParams {
   limit?: number;
 }
 
-export interface TokensResponse extends Array<Token> {}
-export interface TokenDetailResponse extends TokenDetail {} 
+// export interface TokensResponse extends Array<Token> {}
+// export interface TokenDetailResponse extends TokenDetail {} 

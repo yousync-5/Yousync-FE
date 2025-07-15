@@ -63,7 +63,6 @@ export default function ServerPitchGraph({
       }
     };
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token_id_str, token_id, serverPitchData]);
 
   const filteredData = useMemo(() => {
