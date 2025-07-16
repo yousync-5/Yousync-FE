@@ -1,8 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import audioBufferToWav from 'audiobuffer-to-wav';
 import { API_ENDPOINTS } from '@/lib/constants';
-import ScriptDisplay from "@/components/dubbing/ScriptDisplay";
-import { PlayIcon, PauseIcon } from '@heroicons/react/24/solid';
 
 interface DubbingListenModalProps {
   open: boolean;
@@ -14,11 +12,20 @@ interface DubbingListenModalProps {
 }
 interface AudioURL { script_id: number; url: string; }
 interface UserAudioResponse { audios: AudioURL[]; }
-interface TokenDetailResponse { bgvoice_url: string; scripts: { id: number; start_time: number; end_time: number; }[]; }
-interface ScriptInfo { script_id: number; start_time: number; end_time: number; script?: string; }
 
+interface TokenDetailResponse {
+  bgvoice_url: string;
+  scripts: {
+    id: number;
+    start_time: number;
+    end_time: number;
+  }[];
+}
+
+// 401 발생 시 /auth/refresh/로 토큰 갱신 후 재시도하는 fetch 래퍼
 async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
-  const accessToken = localStorage.getItem('access_token');
+  let accessToken = localStorage.getItem('access_token');
+  // options.headers가 Record<string, string>이 아닐 수 있으므로, string만 병합
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
   if (options.headers) {
@@ -29,7 +36,11 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Re
   }
   let res = await fetch(url, { ...options, headers });
   if (res.status === 401) {
-    const refreshRes = await fetch(`${API_ENDPOINTS.BASE_URL}/auth/refresh/`, { method: 'POST', headers });
+    // 토큰 갱신 시도
+    const refreshRes = await fetch(`${API_ENDPOINTS.BASE_URL}/auth/refresh/`, {
+      method: 'POST',
+      headers,
+    });
     if (refreshRes.ok) {
       const data = await refreshRes.json();
       const newToken = data.access_token || data.token;
@@ -47,6 +58,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Re
   return res;
 }
 
+// ✔️ 스크립트별 시간 정보로 배경음+사용자음 믹스 (배경음 전체 길이 유지, 구간별 overlay)
 async function mixBackgroundAndUserAudiosByScript(
   bgUrl: string,
   userAudios: AudioURL[],
@@ -54,10 +66,16 @@ async function mixBackgroundAndUserAudiosByScript(
 ): Promise<Blob> {
   const ctx = new AudioContext();
   const bgAudio = await fetchAndDecodeAudio(bgUrl, ctx);
+
+  // 1. output 버퍼를 배경음 전체 길이로 생성
   const outBuf = ctx.createBuffer(1, bgAudio.length, ctx.sampleRate);
   const out = outBuf.getChannelData(0);
   const bgData = bgAudio.getChannelData(0);
+
+  // 2. 일단 배경음을 복사
   out.set(bgData);
+
+  // 3. 각 스크립트 구간에 유저 오디오 overlay
   for (const script of scripts) {
     const userAudio = userAudios.find(a => a.script_id === script.script_id);
     if (!userAudio) continue;
@@ -65,17 +83,21 @@ async function mixBackgroundAndUserAudiosByScript(
     const duration = script.end_time - script.start_time;
     const length = Math.floor(ctx.sampleRate * duration);
     const userData = userBuf.getChannelData(0).slice(0, length);
+
     const startIdx = Math.floor(script.start_time * ctx.sampleRate);
     for (let i = 0; i < length; ++i) {
+      // 배경음 + 유저음성 overlay (볼륨 가중치 조정 가능)
       out[startIdx + i] = (out[startIdx + i] || 0) * 0.5 + (userData[i] || 0) * 1.0;
     }
   }
+
   const wav = audioBufferToWav(outBuf);
   return new Blob([wav], { type: "audio/wav" });
 }
 
 async function getTokenBackgroundAudioAndScripts(tokenId: number): Promise<{
-  bgvoice_url: string | null; scripts: ScriptInfo[];
+  bgvoice_url: string | null;
+  scripts: ScriptInfo[];
 }> {
   try {
     const accessToken = localStorage.getItem('access_token');
@@ -83,13 +105,12 @@ async function getTokenBackgroundAudioAndScripts(tokenId: number): Promise<{
     if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
     const res = await fetchWithAuth(`${API_ENDPOINTS.BASE_URL}/tokens/${tokenId}`, { method: 'GET', headers });
     if (!res.ok) return { bgvoice_url: null, scripts: [] };
-    const data: any = await res.json();
+    const data: TokenDetailResponse = await res.json();
     const scripts = Array.isArray(data.scripts)
-      ? data.scripts.map((s: any) => ({
+      ? data.scripts.map(s => ({
           script_id: s.id,
           start_time: s.start_time,
           end_time: s.end_time,
-          script: s.script || '',
         }))
       : [];
     return { bgvoice_url: data.bgvoice_url ?? null, scripts };
@@ -128,12 +149,20 @@ async function fetchAndDecodeAudio(url: string, ctx: AudioContext) {
   return await ctx.decodeAudioData(arrayBuffer);
 }
 
+interface ScriptInfo {
+  script_id: number;
+  start_time: number;
+  end_time: number;
+}
+
+// 분석 결과 polling 함수 (job_id로 S3 URL 받아오기)
 async function pollAnalysisResult(jobId: string, maxTries = 10, interval = 1500): Promise<string | null> {
   for (let i = 0; i < maxTries; i++) {
     try {
       const res = await fetch(`/api/proxy-audio?url=${encodeURIComponent(`${API_ENDPOINTS.BASE_URL}/tokens/analysis-result/${jobId}`)}`);
       if (res.ok) {
         const data = await res.json();
+        // presigned URL 필드명에 맞게 수정
         const url = data.user_audio_url || data.s3_user_audio_url || data.audio_url || null;
         if (url) return url;
       }
@@ -154,15 +183,15 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
   const [scriptInfos, setScriptInfos] = useState<ScriptInfo[]>([]);
   const [pendingJobId, setPendingJobId] = useState<string | null>(null);
   const [localMergedUrl, setLocalMergedUrl] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const [currentScriptIndex, setCurrentScriptIndex] = useState(0);
-  const [currentVideoTime, setCurrentVideoTime] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [player, setPlayer] = useState<any>(null); // YouTube Player 인스턴스
+  const audioRef = React.useRef<HTMLAudioElement>(null); // 오디오 요소 참조
 
+  // 외부에서 호출 (예: 부모에서 ref로)
   function handleNewRecording(jobId: string, scriptId: number) {
     setPendingJobId(`${jobId}:${scriptId}`);
   }
 
+  // 모달 오픈 시 항상 최신 fetch
   useEffect(() => {
     if (open && tokenId) {
       setLoading(true); setError(null);
@@ -174,6 +203,10 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
         setBackgroundAudio(bgvoice_url);
         setScriptInfos(scripts);
         setLocalMergedUrl(null);
+        // 디버깅용
+        console.log("backgroundAudio:", bgvoice_url);
+        console.log("scriptAudios:", audios);
+        console.log("scriptInfos:", scripts);
       }).catch(() => {
         setError('오디오를 불러오는데 실패했습니다.');
       }).finally(() => setLoading(false));
@@ -184,6 +217,7 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
     }
   }, [open, tokenId]);
 
+  // handleNewRecording이 호출되면 분석 polling 후 전체 오디오 목록 최신화!
   useEffect(() => {
     if (!pendingJobId) return;
     const [jobId] = pendingJobId.split(":");
@@ -192,14 +226,15 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
       const url = await pollAnalysisResult(jobId);
       if (!cancelled) {
         const audios = await getUserAudioUrls(tokenId);
-        setScriptAudios(audios);
-        setLocalMergedUrl(null);
+        setScriptAudios(audios); // 항상 전체 fetch로 최신화
+        setLocalMergedUrl(null); // 병합 음성 초기화
         setPendingJobId(null);
       }
     })();
     return () => { cancelled = true; };
   }, [pendingJobId, tokenId]);
 
+  // 유저 오디오 바뀌면 병합 오디오 초기화
   useEffect(() => {
     setLocalMergedUrl(null);
   }, [scriptAudios]);
@@ -210,49 +245,23 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
     };
   }, [localMergedUrl]);
 
-  useEffect(() => {
-    setCurrentScriptIndex(0);
-    setCurrentVideoTime(0);
-  }, [scriptInfos]);
-
-  // 오디오 위치 조정
-  const handleSeek = () => {
-    if (audioRef.current && onAudioSeek) {
-      const time = audioRef.current.currentTime;
-      onAudioSeek(time);
-      setCurrentVideoTime(time);
-      const idx = scriptInfos.findIndex(s => time >= s.start_time && time <= s.end_time);
-      if (idx !== -1) setCurrentScriptIndex(idx);
+  const handleMergeAll = async () => {
+    if (!backgroundAudio || !scriptAudios.length || !scriptInfos.length) {
+      alert("병합할 데이터가 부족합니다."); return;
+    }
+    setMerging(true);
+    try {
+      const blob = await mixBackgroundAndUserAudiosByScript(backgroundAudio, scriptAudios, scriptInfos);
+      const url = URL.createObjectURL(blob);
+      setLocalMergedUrl(url);
+    } catch (e) {
+      alert("병합 실패: " + (e as any).message);
+    } finally {
+      setMerging(false);
     }
   };
 
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const onTimeUpdate = () => setCurrentVideoTime(audio.currentTime);
-    const onPlay = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
-    audio.addEventListener('timeupdate', onTimeUpdate);
-    audio.addEventListener('play', onPlay);
-    audio.addEventListener('pause', onPause);
-    return () => {
-      audio.removeEventListener('timeupdate', onTimeUpdate);
-      audio.removeEventListener('play', onPlay);
-      audio.removeEventListener('pause', onPause);
-    };
-  }, [audioRef.current]);
-
-  // 커스텀 버튼 핸들러
-  const handlePlay = () => audioRef.current?.play();
-  const handlePause = () => audioRef.current?.pause();
-  const handleRewind = () => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play();
-    }
-  };
-
-  // 자동 병합
+  // 병합 오디오 자동 생성
   useEffect(() => {
     if (open && backgroundAudio && scriptAudios.length && scriptInfos.length) {
       mixBackgroundAndUserAudiosByScript(backgroundAudio, scriptAudios, scriptInfos)
@@ -265,18 +274,22 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
     }
   }, [open, backgroundAudio, scriptAudios, scriptInfos]);
 
+  // 오디오 시크바 이동 시 부모 콜백 호출
+  const handleSeek = () => {
+    if (audioRef.current && onAudioSeek) {
+      onAudioSeek(audioRef.current.currentTime);
+    }
+  };
+
+  // 렌더링
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* 배경: 완전 투명 or 흐림효과 없이 */}
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-[2px]" onClick={onClose} />
+  
       <div
-        className="fixed inset-0 bg-transparent"
-        onClick={onClose}
-      />
-      {/* 모달 컨텐츠 */}
-      <div
-        className="bg-gray-900 rounded-3xl shadow-2xl flex flex-col items-center px-12 py-10"
+        className="relative bg-gray-900 rounded-3xl shadow-2xl z-10 flex flex-col items-center px-12 py-10"
         style={{
           maxWidth: '1100px',
           width: '92vw',
@@ -286,6 +299,25 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
           border: '2.5px solid #23272a',
         }}
       >
+        {/* X 버튼 개선: 최상단, 충분한 간격 */}
+        <button
+          className="absolute z-20"
+          style={{
+            top: 32,      // top-8 (px단위로 2rem=32px)
+            right: 36,    // right-9 (36px, 여백 큼)
+            fontSize: 38, // 더 큼직하게
+            color: "#c0c0c0",
+            transition: "color 0.15s",
+          }}
+          onClick={onClose}
+          tabIndex={0}
+          aria-label="닫기"
+          onMouseOver={e => (e.currentTarget.style.color = "#fff")}
+          onMouseOut={e => (e.currentTarget.style.color = "#c0c0c0")}
+        >
+          &times;
+        </button>
+  
         {modalId && (
           <iframe
             width={880}
@@ -304,24 +336,8 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
             }}
           />
         )}
-        {/* 스크립트(자막) - 위 */}
-        <div className="w-full flex flex-col items-center">
-          <ScriptDisplay
-            captions={scriptInfos.map(s => ({
-              id: s.script_id,
-              script: s.script || '',
-              translation: '',
-              start_time: s.start_time,
-              end_time: s.end_time,
-            }))}
-            currentScriptIndex={currentScriptIndex}
-            onScriptChange={setCurrentScriptIndex}
-            currentVideoTime={currentVideoTime}
-          />
-        </div>
-
-        {/* 오디오 재생바 - 중간 */}
-        {(propMergedUrl ?? localMergedUrl) && (
+  
+        {propMergedUrl ?? localMergedUrl && (
           <audio
             ref={audioRef}
             autoPlay
@@ -329,46 +345,11 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
             src={(propMergedUrl ?? localMergedUrl) || undefined}
             className="w-full mt-6"
             onSeeked={handleSeek}
-            style={{ maxWidth: 700 }}
           />
         )}
-
-        {/* 버튼 컨테이너 - 아래 */}
-        <div className="flex flex-row justify-center items-center gap-8 mt-8">
-          {/* 처음으로 */}
-          <button
-            className="w-14 h-14 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg border-2 border-white/20 hover:scale-110 transition"
-            onClick={() => { if (audioRef.current) audioRef.current.currentTime = 0; }}
-            title="처음으로"
-          >
-            <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M10 5l-7 5 7 5V5zM17 5h-2v10h2V5z" />
-            </svg>
-          </button>
-          {/* 재생 */}
-          <button
-            className="w-14 h-14 rounded-full bg-gradient-to-r from-green-500 to-lime-500 flex items-center justify-center shadow-lg border-2 border-white/20 hover:scale-110 transition"
-            onClick={() => { if (audioRef.current) audioRef.current.play(); }}
-            title="재생"
-          >
-            <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <polygon points="6,4 16,10 6,16" />
-            </svg>
-          </button>
-          {/* 일시정지 */}
-          <button
-            className="w-14 h-14 rounded-full bg-gradient-to-r from-gray-500 to-gray-700 flex items-center justify-center shadow-lg border-2 border-white/20 hover:scale-110 transition"
-            onClick={() => { if (audioRef.current) audioRef.current.pause(); }}
-            title="일시정지"
-          >
-            <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 20 20">
-              <rect x="5" y="5" width="10" height="10" rx="2" />
-            </svg>
-          </button>
-        </div>
       </div>
     </div>
   );
-};
-
+  
+}
 export default DubbingListenModal;
