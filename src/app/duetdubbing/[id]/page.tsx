@@ -8,10 +8,7 @@ import DuetDubbingContainer from "@/components/duetdubbing/DuetDubbingContainer"
 export default async function Page({ 
     params, 
     searchParams 
-  }: { 
-    params: { id: string }; 
-    searchParams: { [key: string]: string | string[] | undefined }; 
-  }){
+  }: any){
     const { id } = params;
     const modalId = searchParams.modalId as string | undefined;
     const actor1 = searchParams.actor1 as string | undefined;

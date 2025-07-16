@@ -133,32 +133,38 @@ export const MyPitchGraph = ({currentIdx}: MyPitchGraphProps) => {
     );
   }
 
+  // 피치 그래프 SVG 렌더링 부분 주석 처리
+  // return (
+  //   <div className="w-full h-full relative">
+  //     <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 40" preserveAspectRatio="none">
+  //       <defs>
+  //         <linearGradient id="myPitchGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+  //           <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.8" />
+  //           <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.2" />
+  //         </linearGradient>
+  //       </defs>
+  //       <path
+  //         d={`M 0,${getY(validPitchData[0].y)} ${validPitchData.map((point, index) => 
+  //           `L ${(index / (validPitchData.length - 1)) * 100},${getY(point.y)}`
+  //         ).join(' ')}`}
+  //         stroke="#3B82F6"
+  //         strokeWidth="2"
+  //         fill="none"
+  //         strokeLinecap="round"
+  //         strokeLinejoin="round"
+  //       />
+  //       <path
+  //         d={`M 0,${getY(validPitchData[0].y)} ${validPitchData.map((point, index) => 
+  //           `L ${(index / (validPitchData.length - 1)) * 100},${getY(point.y)}`
+  //         ).join(' ')} L 100,40 L 0,40 Z`}
+  //         fill="url(#myPitchGradient)"
+  //       />
+  //     </svg>
+  //   </div>
+  // );
   return (
-    <div className="w-full h-full relative">
-      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 40" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="myPitchGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.2" />
-          </linearGradient>
-        </defs>
-        <path
-          d={`M 0,${getY(validPitchData[0].y)} ${validPitchData.map((point, index) => 
-            `L ${(index / (validPitchData.length - 1)) * 100},${getY(point.y)}`
-          ).join(' ')}`}
-          stroke="#3B82F6"
-          strokeWidth="2"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d={`M 0,${getY(validPitchData[0].y)} ${validPitchData.map((point, index) => 
-            `L ${(index / (validPitchData.length - 1)) * 100},${getY(point.y)}`
-          ).join(' ')} L 100,40 L 0,40 Z`}
-          fill="url(#myPitchGradient)"
-        />
-      </svg>
+    <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
+      그래프 렌더링 중...
     </div>
   );
 }

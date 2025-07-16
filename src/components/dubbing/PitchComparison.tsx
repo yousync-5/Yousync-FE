@@ -67,13 +67,9 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
     tokenId,
     scripts,
     onUploadComplete: (success: boolean, jobIds: string[]) => {
-      console.log(`[🔄 PitchComparison] onUploadComplete 콜백 호출됨`);
-      console.log(`[📊 결과] success: ${success}, jobIds: ${JSON.stringify(jobIds)}`);
-      
       if (success) {
         if (Array.isArray(jobIds)) {
           jobIds.forEach((jobId) => {
-            console.log(`[✅ 업로드 성공] 문장 ${currentScriptIndex + 1}번 jobId: ${jobId}`);
           });
         } else {
           console.warn(`[⚠️ 경고] jobIds가 배열이 아님: ${typeof jobIds}`);
@@ -196,7 +192,6 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
     if (videoPlayerRef?.current && captions[currentScriptIndex]) {
       const currentScript = captions[currentScriptIndex];
       
-      console.log('[TIMING] 마이크 버튼 클릭 - 영상 재생 시작');
       videoPlayerRef.current.seekTo(currentScript.start_time);
       videoPlayerRef.current.playVideo();
       
@@ -209,7 +204,6 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
         
         // 영상이 목표 시간에 도달했는지 확인 (0.1초 허용 오차)
         if (Math.abs(currentTime - targetTime) < 0.1) {
-          console.log('[TIMING] 영상 재생 확인됨 - 녹음 시작');
           startScriptRecording(currentScriptIndex);
           
           if (typeof onNextScript === 'function') {
@@ -287,7 +281,6 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   const prevRecordingRef = useRef(recording);
   useEffect(() => {
     if (prevRecordingRef.current !== recording) {
-      console.log('[DEBUG][mic button render] recording:', recording);
       prevRecordingRef.current = recording;
     }
   }, [recording]);
@@ -388,15 +381,8 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   const analyzedCount = analyzedScores.length;
   const avgScore = analyzedCount > 0 ? analyzedScores.reduce((a, b) => a + b, 0) / analyzedCount : 0;
   const percent = total > 0 ? Math.round((analyzedCount / total) * avgScore * 100) : 0;
-  // 로그 출력
-  console.log('[LiquidGauge] latestResultByScript:', latestResultByScript);
-  Object.entries(latestResultByScript ?? {}).forEach(([k, v]) => {
-    console.log('[LiquidGauge] key:', k, 'value:', v, 'overall_score:', v?.overall_score);
-  });
-  console.log('[LiquidGauge] 전체 문장 수:', total);
-  console.log('[LiquidGauge] 분석된 문장 수:', analyzedCount);
-  console.log('[LiquidGauge] 평균 점수:', avgScore);
-  console.log('[LiquidGauge] 계산된 percent:', percent);
+  
+
 
   return (
     <div className="bg-gray-900 rounded-xl p-6 h-auto min-h-[28em] relative max-w-xl ml-0 mr-auto">

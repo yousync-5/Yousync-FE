@@ -60,26 +60,6 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
       }
     }));
 
-
-
-    // disableAutoPause prop 변경 시 처리
-    // useEffect(() => {
-    //   console.log('VideoPlayer disableAutoPause 변경:', disableAutoPause);
-      
-    //   // disableAutoPause가 false로 변경되고, 현재 시간이 endTime을 초과했다면 비디오 정지
-    //   if (!disableAutoPause && playerRef.current && endTime) {
-    //     const currentTime = playerRef.current.getCurrentTime();
-    //     if (currentTime >= endTime) {
-    //       playerRef.current.pauseVideo();
-    //       console.log('disableAutoPause 변경으로 인한 비디오 정지:', {
-    //         currentTime,
-    //         endTime,
-    //         disableAutoPause
-    //       });
-    //     }
-    //   }
-    // }, [disableAutoPause, endTime]);
-
     // 컴포넌트 언마운트 시 인터벌 정리
     useEffect(() => {
       return () => {
@@ -136,7 +116,6 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
             if (endTime !== undefined && currentTime >= endTime) {
               playerRef.current.pauseVideo();
               if (onEndTimeReached) onEndTimeReached();
-              console.log('endTime 도달 - 영상 자동 정지', { currentTime, endTime });
             }
           }
         }, 100); // 100ms마다 시간 체크

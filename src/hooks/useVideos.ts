@@ -19,7 +19,6 @@ const fetchVideos = async () => {
   return res.data
     .map((item) => {
       const youtubeId = extractYoutubeVideoId(item.youtube_url);
-      console.log(`URL: ${item.youtube_url}, 추출된 ID: ${youtubeId}`);
       return youtubeId ? { ...item, youtubeId } : null;
     })
     .filter(Boolean) as (TokenDetailResponse & { youtubeId: string })[];
@@ -52,7 +51,6 @@ const fetchPopularVideos = async () => {
   return res.data
     .map((item) => {
       const youtubeId = extractYoutubeVideoId(item.youtube_url);
-      console.log(`URL: ${item.youtube_url}, 추출된 ID: ${youtubeId}`);
       return youtubeId ? { ...item, youtubeId } : null;
     })
     .filter(Boolean) as (TokenDetailResponse & { youtubeId: string })[];
@@ -86,7 +84,6 @@ const fetchLatestVideos = async () => {
   return res.data
     .map((item) => {
       const youtubeId = extractYoutubeVideoId(item.youtube_url);
-      console.log(`URL: ${item.youtube_url}, 추출된 ID: ${youtubeId}`);
       return youtubeId ? { ...item, youtubeId } : null;
     })
     .filter(Boolean) as (TokenDetailResponse & { youtubeId: string })[];
@@ -120,7 +117,6 @@ const fetchRomanticVideos = async () => {
   return res.data
     .map((item) => {
       const youtubeId = extractYoutubeVideoId(item.youtube_url);
-      console.log(`URL: ${item.youtube_url}, 추출된 ID: ${youtubeId}`);
       return youtubeId ? { ...item, youtubeId } : null;
     })
     .filter(Boolean) as (TokenDetailResponse & { youtubeId: string })[];
