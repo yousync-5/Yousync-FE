@@ -24,7 +24,7 @@ interface TokenDetailResponse {
 
 // 401 발생 시 /auth/refresh/로 토큰 갱신 후 재시도하는 fetch 래퍼
 async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
-  let accessToken = localStorage.getItem('access_token');
+  const accessToken = localStorage.getItem('access_token');
   // options.headers가 Record<string, string>이 아닐 수 있으므로, string만 병합
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
@@ -284,6 +284,8 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
   // 렌더링
   if (!open) return null;
 
+  const mergedAudioUrl = propMergedUrl ?? localMergedUrl;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/70 backdrop-blur-[2px]" onClick={onClose} />
@@ -337,14 +339,15 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
           />
         )}
   
-        {propMergedUrl ?? localMergedUrl && (
+        {mergedAudioUrl && (
           <audio
             ref={audioRef}
             autoPlay
             controls
-            src={(propMergedUrl ?? localMergedUrl) || undefined}
+            src={mergedAudioUrl}
             className="w-full mt-6"
             onSeeked={handleSeek}
+            style={{ maxWidth: 700 }}
           />
         )}
       </div>
