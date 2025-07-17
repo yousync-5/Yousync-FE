@@ -474,7 +474,7 @@ export default function ScriptDisplay({
             </button>
           </div>
           {/* 🎯 직관적 타이밍 가이드 */}
-          {showAnalysisResult ? (
+          {/* {showAnalysisResult ? (
             <PronunciationTimingGuide
               captions={captions}
               currentScriptIndex={currentScriptIndex}
@@ -494,7 +494,7 @@ export default function ScriptDisplay({
                 recording={recording}
               />
             )
-          )}
+          )} */}
         </div>
       </div>
     </div>
