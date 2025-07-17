@@ -26,6 +26,15 @@ const backendClient = axios.create({
   },
 });
 
+// ✅ 토큰 갱신 전용 클라이언트
+const refreshClient = axios.create({
+  baseURL: API_ENDPOINTS.BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 // ✅ 요청 인터셉터 - 토큰 자동 추가
 const attachAuthToken = (config: any) => {
   if (typeof window !== 'undefined') {
@@ -39,6 +48,7 @@ const attachAuthToken = (config: any) => {
 
 apiClient.interceptors.request.use(attachAuthToken, Promise.reject);
 backendClient.interceptors.request.use(attachAuthToken, Promise.reject);
+refreshClient.interceptors.request.use(attachAuthToken, Promise.reject);
 
 // ✅ 응답 인터셉터 - 에러 로깅 및 401 처리
 const handleResponseError = async (error: any) => {
@@ -53,7 +63,7 @@ const handleResponseError = async (error: any) => {
       
       if (accessToken) {
         // 백엔드의 refresh 엔드포인트 호출
-        const refreshResponse = await backendClient.post<RefreshTokenResponse>('/auth/refresh');
+        const refreshResponse = await refreshClient.post<RefreshTokenResponse>('/auth/refresh');
         
         // 새로운 토큰으로 업데이트
         if (typeof window !== 'undefined') {
@@ -69,13 +79,12 @@ const handleResponseError = async (error: any) => {
     } catch (refreshError) {
       console.error('토큰 갱신 실패:', refreshError);
       
-      // 토큰 갱신 실패 시 모든 토큰 제거
+      // 토큰 갱신 실패 시 모든 토큰 제거 및 로그아웃 처리
       if (typeof window !== 'undefined') {
         localStorage.removeItem('access_token');
         localStorage.removeItem('google_user');
-        
-        // 로그인 페이지로 리다이렉트 (선택사항)
-        // window.location.href = '/login';
+        window.dispatchEvent(new Event('auth-change'));
+        window.location.href = '/';
       }
     }
   }
@@ -96,7 +105,7 @@ const handleApiClientResponseError = async (error: any) => {
       
       if (accessToken) {
         // 백엔드에서 토큰 갱신
-        const refreshResponse = await backendClient.post<RefreshTokenResponse>('/auth/refresh');
+        const refreshResponse = await refreshClient.post<RefreshTokenResponse>('/auth/refresh');
         
         // 새로운 토큰으로 업데이트
         if (typeof window !== 'undefined') {
@@ -112,10 +121,12 @@ const handleApiClientResponseError = async (error: any) => {
     } catch (refreshError) {
       console.error('토큰 갱신 실패:', refreshError);
       
-      // 토큰 갱신 실패 시 모든 토큰 제거
+      // 토큰 갱신 실패 시 모든 토큰 제거 및 로그아웃 처리
       if (typeof window !== 'undefined') {
         localStorage.removeItem('access_token');
         localStorage.removeItem('google_user');
+        window.dispatchEvent(new Event('auth-change'));
+        window.location.href = '/';
       }
     }
   }
