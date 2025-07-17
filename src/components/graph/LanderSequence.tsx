@@ -28,7 +28,7 @@ export default function LanderSequence({ onEnd }: LanderSequenceProps) {
 
   const playBtnRef = useRef(null);
   const playIconRef = useRef(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // 재생 버튼 클릭 핸들러
   const handlePlayClick = () => {

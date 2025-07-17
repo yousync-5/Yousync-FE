@@ -1,7 +1,12 @@
 // API 관련 상수
 export const API_ENDPOINTS = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://3.37.123.51",
   TOKENS: '/tokens',
+} as const;
+
+// 구글 OAuth 관련 상수
+export const GOOGLE_CONFIG = {
+  CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
 } as const;
 
 // 애플리케이션 상수

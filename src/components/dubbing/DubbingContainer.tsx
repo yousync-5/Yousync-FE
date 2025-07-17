@@ -6,13 +6,14 @@ import VideoPlayer, { VideoPlayerRef } from "@/components/dubbing/VideoPlayer";
 import ScriptDisplay from "@/components/dubbing/ScriptDisplay";
 import PitchComparison from "@/components/dubbing/PitchComparison";
 import ResultContainer from "@/components/result/ResultComponent";
-import ResultViewBtn from "@/components/result/ResultViewBtn";
 
 import { Toaster } from "react-hot-toast";
 import toast from "react-hot-toast";
 import { useAudioStream } from "@/hooks/useAudioStream";
 import { useJobIdsStore } from '@/store/useJobIdsStore';
 import { useDubbingState } from "@/hooks/useDubbingState";
+import { useBackgroundAudio } from "@/hooks/useBackgroundAudio";
+import DubbingListenModal from "@/components/result/DubbingListenModal";
 import Sidebar from "@/components/ui/Sidebar";
 
 
@@ -82,8 +83,7 @@ const DubbingContainer = ({
 
   const videoPlayerRef = useRef<VideoPlayerRef | null>(null);
   const pitchRef = useRef<{ handleExternalStop: () => void, stopLooping?: () => void } | null>(null);
-  const resultsRef = useRef<HTMLDivElement>(null);
-
+  const resultsRef = useRef<HTMLDivElement | null>(null);
   const { cleanupMic } = useAudioStream();
 
   // zustand에서 multiJobIds 읽기
@@ -92,6 +92,9 @@ const DubbingContainer = ({
 
   // 🆕 분석 결과 수신 상태 추가
   const [hasAnalysisResults, setHasAnalysisResults] = useState(false);
+
+  // 🆕 더빙본 들어보기 모달 상태
+  const [isDubbingListenModalOpen, setIsDubbingListenModalOpen] = useState(false);
 
   // 🆕 hasAnalysisResults 상태 디버깅
   useEffect(() => {
@@ -651,6 +654,7 @@ useEffect(() => {
               onRecordingPlaybackChange={setIsRecordingPlayback}
               onOpenSidebar={() => setIsSidebarOpen(true)}
               onShowResults={handleViewResults}
+              onOpenDubbingListenModal={() => setIsDubbingListenModalOpen(true)}
               latestResultByScript={latestResultByScript || {}}
             />
           </div>
@@ -693,6 +697,14 @@ useEffect(() => {
         recordedScripts={recordingCompleted ? Array(front_data.captions.length).fill(false).map((_, i) => i === currentScriptIndex) : []}
         latestResultByScript={latestResultByScript}
         recordingCompleted={recordingCompleted}
+      />
+
+      {/* 더빙본 들어보기 모달 */}
+      <DubbingListenModal
+        open={isDubbingListenModalOpen}
+        onClose={() => setIsDubbingListenModalOpen(false)}
+        tokenId={parseInt(id)}
+        modalId={modalId}
       />
     </div>
   );

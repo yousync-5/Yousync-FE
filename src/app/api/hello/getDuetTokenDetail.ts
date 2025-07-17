@@ -22,42 +22,45 @@ export async function getDuetTokenDetail(tokenId1: string, tokenId2: string, sel
   const isToken1Me = String(token1.id) === String(selected);
 
   // token1 captions
-  const captions1 = token1.scripts?.map((script) => ({
-    id: script.id,
-    movie_name: token1.token_name,
-    movie_id: token1.id,
-    actor_id: isToken1Me ? 1 : 2,
-    script: script.script,
-    translation: script.translation || "",
-    start_time: script.start_time,
-    end_time: script.end_time,
-    url: null,
-    actor_pitch_values: [],
-    background_audio_url: token1.bgvoice_url || "",
-    actor: {
-      name: isToken1Me ? "나" : token1.actor_name,
-      id: isToken1Me ? 1 : 2,
-    },
-  })) || [];
+const captions1 = token1.scripts?.map((script) => ({
+  id: script.id,
+  movie_name: token1.token_name,
+  movie_id: token1.id,
+  actor_id: isToken1Me ? 1 : 2,
+  script: script.script,
+  translation: script.translation || "",
+  start_time: script.start_time,
+  end_time: script.end_time,
+  url: null,
+  actor_pitch_values: [],
+  background_audio_url: token1.bgvoice_url || "",
+  actor: {
+    name: isToken1Me ? "나" : token1.actor_name,
+    id: isToken1Me ? 1 : 2,
+  },
+  words: script.words || [],      
+})) || [];
 
-  // token2 captions
-  const captions2 = token2.scripts?.map((script) => ({
-    id: script.id,
-    movie_name: token2.token_name,
-    movie_id: token2.id,
-    actor_id: !isToken1Me ? 1 : 2,
-    script: script.script,
-    translation: script.translation || "",
-    start_time: script.start_time,
-    end_time: script.end_time,
-    url: null,
-    actor_pitch_values: [],
-    background_audio_url: token2.bgvoice_url || "",
-    actor: {
-      name: !isToken1Me ? "나" : token2.actor_name,
-      id: !isToken1Me ? 1 : 2,
-    },
-  })) || [];
+// token2 captions
+const captions2 = token2.scripts?.map((script) => ({
+  id: script.id,
+  movie_name: token2.token_name,
+  movie_id: token2.id,
+  actor_id: !isToken1Me ? 1 : 2,
+  script: script.script,
+  translation: script.translation || "",
+  start_time: script.start_time,
+  end_time: script.end_time,
+  url: null,
+  actor_pitch_values: [],
+  background_audio_url: token2.bgvoice_url || "",
+  actor: {
+    name: !isToken1Me ? "나" : token2.actor_name,
+    id: !isToken1Me ? 1 : 2,
+  },
+  words: script.words || [],     
+})) || [];
+
 
   // 두 배우의 대사를 합치고, start_time 기준으로 정렬
   const mergedCaptions = [...captions1, ...captions2].sort(

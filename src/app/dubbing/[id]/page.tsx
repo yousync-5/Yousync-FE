@@ -1,6 +1,5 @@
 // 서버 컴포넌트 (기본 틀)
 // import DubbingContainer from "@/components/dubbing/DubbingContainer";
-import type { TokenDetailResponse, ServerPitch } from "@/types/pitch";
 import { getServerPitchData } from "@/app/api/hello/getServerpitchData";
 import { getTokenDetail } from "@/app/api/hello/getTokenDetail";
 import DubbingContainer from "@/components/dubbing/DubbingContainer";

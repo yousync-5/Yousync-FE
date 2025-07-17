@@ -67,7 +67,7 @@ const ResultComponent: React.FC<TestResultAnalysisSectionProps> = ({
   const [openIdx, setOpenIdx] = useState<number | null>(null);
 
   // 결과 컨테이너 ref
-  const resultRef = useRef<HTMLDivElement>(null);
+  const resultRef = useRef<HTMLDivElement | null>(null);
   const prevShowResults = useRef(showResults);
 
   // showResults가 false -> true로 바뀔 때만 스크롤
