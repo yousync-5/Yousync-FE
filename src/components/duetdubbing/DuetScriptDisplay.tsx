@@ -122,21 +122,34 @@ export default function ScriptDisplay({
     const totalDuration = currentWords.reduce((sum, word) => 
       sum + (word.end_time - word.start_time), 0
     );
-    
-    let accumulatedProgress = 0;
-    for (const word of currentWords) {
-      const wordDuration = word.end_time - word.start_time;
-      const wordWeight = wordDuration / totalDuration;
-      if (currentVideoTime >= word.start_time && currentVideoTime <= word.end_time) {
-        // 현재 단어 내에서의 진행률
-        const wordProgress = (currentVideoTime - word.start_time) / wordDuration;
-        return accumulatedProgress + (wordProgress * wordWeight);
-      }
-      if (currentVideoTime > word.end_time) {
-        accumulatedProgress += wordWeight;
-      }
+
+    // 분/초를 2자리로 분리해서 반환하는 함수
+    function getMinutesAndSeconds(time: number) {
+      const minutes = Math.floor(time / 60);
+      const seconds = Math.floor(time % 60);
+      return {
+        minutes: minutes.toString().padStart(2, '0'),
+        seconds: seconds.toString().padStart(2, '0'),
+      };
     }
-    return accumulatedProgress;
+    // 현재시각과 총 시간
+    const current = getMinutesAndSeconds(currentVideoTime);
+    const total = getMinutesAndSeconds(totalDuration ?? 0);
+    const timeBoxClass = "inline-block font-mono text-lg bg-gray-800 rounded px-1 w-[36px] text-center align-middle";
+    
+    return (
+      <span>
+        🎬 현재시간:
+        <span className={timeBoxClass}>{current.minutes}</span>
+        <span className="mx-1 text-lg font-bold text-gray-400">:</span>
+        <span className={timeBoxClass}>{current.seconds}</span>
+        {"  |  "}
+        🕐 종료시간:
+        <span className={timeBoxClass}>{total.minutes}</span>
+        <span className="mx-1 text-lg font-bold text-gray-400">:</span>
+        <span className={timeBoxClass}>{total.seconds}</span>
+      </span>
+    );
   }, [currentVideoTime, currentWords, currentScriptIndex]);
 
   // 전체 문장 길이 기준 진행률 계산 (word 무시)
@@ -383,14 +396,34 @@ export default function ScriptDisplay({
   }, [currentWords, currentVideoTime, animatedScores, captions, currentScriptIndex]);
 
   // 진행 정보 + 시간 정보 영역에서 totalDuration만 사용
+  function getMinutesAndSeconds(time: number) {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return {
+      minutes: minutes.toString().padStart(2, '0'),
+      seconds: seconds.toString().padStart(2, '0'),
+    };
+  }
+  const timeBoxClass = "inline-block font-mono text-lg bg-gray-800 rounded px-1 w-[36px] text-center align-middle";
+  const current = getMinutesAndSeconds(currentVideoTime);
+  const total = getMinutesAndSeconds(totalDuration ?? 0);
+
   return (
     <div className="bg-gray-900 rounded-xl p-6 w-[77em] flex flex-col relative">
       <div className="bg-gradient-to-br from-[#0f172a] to-[#1e293b] rounded-2xl p-6 shadow-xl text-white mb-6 border border-gray-700 space-y-6">
         <div>
           <div className="flex items-center justify-between mb-2">
-            <div className="text-lg font-semibold text-white">
-              🎬 현재시간: {currentVideoTime.toFixed(2)} / 🕐 종료시간: {totalDuration?.toFixed(2)}
-            </div>
+          <span>
+              🎬 현재시간:
+          <span className={timeBoxClass}>{current.minutes}</span>
+          <span className="mx-1 text-lg font-bold text-gray-400">:</span>
+          <span className={timeBoxClass}>{current.seconds}</span>
+          {"\u00A0\u00A0~\u00A0\u00A0"}
+          🕐 종료시간:
+          <span className={timeBoxClass}>{total.minutes}</span>
+          <span className="mx-1 text-lg font-bold text-gray-400">:</span>
+          <span className={timeBoxClass}>{total.seconds}</span>
+            </span>
           </div>
         </div>
         <div className="relative w-full h-3 bg-gray-800 rounded-full overflow-hidden shadow-inner">

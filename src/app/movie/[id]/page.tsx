@@ -86,7 +86,7 @@ export default function MovieAnalysisPage() {
                     <div
                       key={c.id}
                       className={
-                        `w-full bg-gradient-to-r from-emerald-700/30 to-gray-700/60 border border-emerald-400/30 ${isExpanded ? 'rounded-3xl' : 'rounded-full'} shadow flex flex-col transition-transform duration-200 hover:scale-105 hover:z-20 cursor-pointer mb-2`
+                        `w-full bg-gradient-to-r from-emerald-700/30 to-gray-700/60 border border-emerald-400/30 ${isExpanded ? 'rounded-3xl' : 'rounded-full'} shadow flex flex-col transition-transform duration-200 hover:scale-80 hover:z-20 cursor-pointer mb-2`
                         + (isExpanded ? ' ring-2 ring-emerald-400/60 bg-gray-900/90' : '')
                       }
                       onClick={() => setExpandedCardId(isExpanded ? null : c.id)}

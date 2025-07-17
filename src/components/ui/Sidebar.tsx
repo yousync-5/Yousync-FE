@@ -42,8 +42,8 @@ export default function Sidebar({
   const [detailIndex, setDetailIndex] = useState<number | null>(null); // 클릭 시 세부 정보 표시용
 
   // 자동스크롤을 위한 ref
-  const sidebarRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLUListElement>(null);
+  const sidebarRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<HTMLUListElement | null>(null);
 
   useEffect(() => {
     console.log("[Sidebar] captions:", captions);
