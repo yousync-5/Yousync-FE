@@ -60,7 +60,8 @@ export default function MovieDetailModal({
   if (!isOpen || !youtubeId || !tokenData) return null;
 
   const handleDubbingClick = () => {
-    router.replace(`/dubbing/${tokenData.id}?modalId=${youtubeId}`);
+    console.log(">> ", tokenData.id, youtubeId)
+    router.push(`/dubbing/${tokenData.id}?modalId=${youtubeId}`);
   };
 
   return (
