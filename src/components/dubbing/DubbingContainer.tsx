@@ -83,8 +83,7 @@ const DubbingContainer = ({
 
   const videoPlayerRef = useRef<VideoPlayerRef | null>(null);
   const pitchRef = useRef<{ handleExternalStop: () => void, stopLooping?: () => void } | null>(null);
-  const resultsRef = useRef<HTMLDivElement>(null);
-
+  const resultsRef = useRef<HTMLDivElement | null>(null);
   const { cleanupMic } = useAudioStream();
 
   // zustand에서 multiJobIds 읽기

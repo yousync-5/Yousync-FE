@@ -29,6 +29,7 @@ interface PitchComparisonProps {
   onRecordingPlaybackChange?: (isPlaying: boolean) => void;
   onOpenSidebar?: () => void;
   onShowResults?: () => void;
+  onRecordingStart?: (scriptIndex: number) => void; // 추가: 녹음 시작 시 콜백
 }
 
 const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComparisonProps>(function PitchComparison({ 
@@ -50,6 +51,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   onRecordingPlaybackChange,
   onOpenSidebar,
   onShowResults,
+  onRecordingStart,
 }: PitchComparisonProps, ref) {
 
   const {
@@ -200,6 +202,15 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
       console.log('[TIMING] 마이크 버튼 클릭 - 영상 재생 시작');
       videoPlayerRef.current.seekTo(currentScript.start_time);
       videoPlayerRef.current.playVideo();
+      
+      // 녹음 시작 시 분석 결과 제거 콜백 호출
+      console.log('[DEBUG] 녹음 시작 콜백 호출 시도:', { currentScriptIndex, onRecordingStart: !!onRecordingStart });
+      if (onRecordingStart) {
+        console.log('[DEBUG] onRecordingStart 콜백 호출됨');
+        onRecordingStart(currentScriptIndex);
+      } else {
+        console.log('[DEBUG] onRecordingStart 콜백이 없음');
+      }
       
       // 영상이 실제로 재생되기 시작할 때까지 대기
       const checkVideoPlaying = () => {

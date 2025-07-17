@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Loader from "../ui/Loader";
 
 interface SidebarProps {
@@ -33,7 +33,10 @@ function normalizeScript(str: string) {
   if (!str || typeof str !== 'string') return '';
   return str.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
-
+// 문장이 넘어갈 때 마다 칸에 맞게 자동스크롤이 되는 형태. 해당 자동스크롤은 버튼을 통한 문장이동에도 반응해야한다.
+// => 지금 화면을 차지한 문장이 스크롤을 통해 언제나 특정위치에 존재해야한다.
+// 6번째 문장이 까지는 그냥 내려가다가, 7번째문장이 되면 그게 6번째 위치가 되게 자동스크롤 되게 하고싶다. 
+// 2. 분석 완료된 문장에 표시하기. 결과가 존재하면 반드시 -> 녹음 완료된 문장들(recordedScripts)을 위에서 받는구나
 export default function Sidebar({
   isOpen,
   onClose,
@@ -50,6 +53,10 @@ export default function Sidebar({
   const [detailIndex, setDetailIndex] = useState<number | null>(null); // 클릭 시 세부 정보 표시용
   const [showMyLinesOnly, setShowMyLinesOnly] = useState(false);
 
+  // 자동스크롤을 위한 ref
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+
   // 화자 구분 로직 - Second Speaker가 내 대사
   const currentScript = captions[currentScriptIndex];
   const isMyLine = currentScript?.actor?.name === "나";
@@ -62,6 +69,11 @@ export default function Sidebar({
   useEffect(() => {
     console.log("[Sidebar] captions:", captions);
   }, [captions]);
+
+  useEffect(() => {
+    // currentScriptIndex가 변경될 때마다 자동스크롤 실행
+    scrollToSelectedItem();
+  }, [currentScriptIndex, filteredCaptions])
 
   // captions에서 정보 추출 (존재하지 않으면 '-')
   const actorName = (captions[0] && (captions[0] as any).actor && (captions[0] as any).actor.name) ? (captions[0] as any).actor.name : '-';
@@ -80,8 +92,44 @@ export default function Sidebar({
     return `${String(m).padStart(2, '0')}:${s.toFixed(2).padStart(5, '0')}`;
   }
 
+  const scrollToSelectedItem = () => {
+    if(!listRef.current || !sidebarRef.current) return;
+
+    // 현재 선택된 문장의 DOM요소 찾기
+    const selectedElement = listRef.current.querySelector(`[data-index="${currentScriptIndex}"]`) as HTMLElement;
+    if(!selectedElement) return;
+
+    // 사이드바의 높이와 스크롤 위치 계산
+    const sidebarHeight = sidebarRef.current.clientHeight;
+    const listTop = listRef.current.offsetTop;
+    const itemTop = selectedElement.offsetTop;
+    const itemHeight = selectedElement.clientHeight;
+
+    // 현재 스크롤 위치
+    const currentScrollTop = sidebarRef.current.scrollTop;
+   
+    // 아이템이 보이는 영역 계산
+    const itemVisibleTop = itemTop - currentScrollTop;
+    const itemVisibleBottom = itemVisibleTop + itemHeight;
+
+    // 목표 위치 (6번째 위치)
+    const targetVisibleTop =5 * itemHeight;
+
+    // 아이템이 목표 위치보다 아래에 있으면 스크롤 조정
+    if(itemVisibleTop > targetVisibleTop) {
+      const scrollOffset = itemVisibleTop - targetVisibleTop;
+      
+      // 부드러운 스크롤 애니메이션
+      sidebarRef.current.scrollTo({
+        top: currentScrollTop + scrollOffset,
+        behavior: 'smooth'
+      });
+    }
+  }
+
   return (
     <motion.div
+      ref={sidebarRef}
       initial={{ x: 320 }}
       animate={{ x: isOpen ? 0 : 320 }}
       transition={{ type: "tween", duration: 0.3 }}
@@ -167,7 +215,7 @@ export default function Sidebar({
         </div>
       </div>
 
-      <ul className="px-4 py-6 pb-32">
+      <ul ref={listRef} className="px-4 py-6 pb-32">
         {filteredCaptions.map((caption, index) => {
           const scriptKey = normalizeScript(caption.script);
           const isAnalyzed = !!latestResultByScript[scriptKey];
@@ -178,6 +226,7 @@ export default function Sidebar({
           return (
             <li
               key={index}
+              data-index={originalIndex}
               onClick={() => {
                 if (recording) return;
                 if (onStopLooping) onStopLooping();
@@ -208,41 +257,44 @@ export default function Sidebar({
                   <Loader />
                 </div>
               )}
-              <div className="flex items-start">
-                {/* 아이콘 + 번호 */}
-                <span className="flex items-center mr-3 mt-1 select-none" style={{ zIndex: 2 }}>
-                  {isSelected ? (
-                    isMyLine ? (
-                      // 내 대사 - 빙글빙글 없이 초록색 강조
-                      <svg className="w-4 h-4 mr-1 text-emerald-400" viewBox="0 0 20 20" fill="currentColor" aria-label="선택됨">
-                        <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" />
-                      </svg>
+              <div className="flex items-start justify-between">
+                <div className="flex items-start flex-1">
+                  {/* 아이콘 + 번호 */}
+                  <span className="flex items-center mr-3 mt-1 select-none" style={{ zIndex: 2 }}>
+                    {isSelected ? (
+                      isMyLine ? (
+                        // 내 대사 - 빙글빙글 없이 초록색 강조
+                        <svg className="w-4 h-4 mr-1 text-emerald-400" viewBox="0 0 20 20" fill="currentColor" aria-label="선택됨">
+                          <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" />
+                        </svg>
+                      ) : (
+                        // 상대 대사 - 빙글빙글 없음, 강조만 파란색
+                        <svg className="w-4 h-4 mr-1 text-blue-400" viewBox="0 0 20 20" fill="currentColor" aria-label="선택됨">
+                          <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" />
+                        </svg>
+                      )
+                    ) : isMyLine ? (
+                      // 내 대사 - 사용자 아이콘
+                      <div className="px-2 py-1 text-xs font-medium text-green-300 bg-green-900/50 border border-green-400 rounded-full">
+                        나
+                      </div>
                     ) : (
-                      // 상대 대사 - 빙글빙글 없음, 강조만 파란색
-                      <svg className="w-4 h-4 mr-1 text-blue-400" viewBox="0 0 20 20" fill="currentColor" aria-label="선택됨">
-                        <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" />
-                      </svg>
-                    )
-                  ) : isAnalyzed ? (
-                    // 체크 아이콘 (SVG) - 분석 완료
-                    <svg className="w-4 h-4 mr-1 text-emerald-400" viewBox="0 0 20 20" fill="currentColor" aria-label="분석 완료">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  ) : isMyLine ? (
-                    // 내 대사 - 사용자 아이콘
-                    <div className="px-2 py-1 text-xs font-medium text-green-300 bg-green-900/50 border border-green-400 rounded-full">
-                      나
-                    </div>
-                  ) : (
-                    // 상대 대사 - "상대" 텍스트
-                    <div className="px-2 py-1 text-xs font-medium text-blue-300 bg-blue-900/50 border border-blue-400 rounded-full">
-                      상대
-                    </div>
-                  )}
-                </span>
-                <span className="flex-1 leading-relaxed">
-                  {caption.script}
-                </span>
+                      // 상대 대사 - "상대" 텍스트
+                      <div className="px-2 py-1 text-xs font-medium text-blue-300 bg-blue-900/50 border border-blue-400 rounded-full">
+                        상대
+                      </div>
+                    )}
+                  </span>
+                  <span className="flex-1 leading-relaxed">
+                    {caption.script}
+                  </span>
+                </div>
+                {/* 분석완료 표시 - 대사 우측에 빨간글씨 */}
+                {isAnalyzed && (
+                  <span className="text-red-500 text-xs font-semibold ml-2 mt-1 select-none">
+                    분석완료
+                  </span>
+                )}
               </div>
               {/* 타임라인 */}
               {typeof (caption as any).start_time === 'number' && typeof (caption as any).end_time === 'number' && (
@@ -252,7 +304,7 @@ export default function Sidebar({
               )}
               {index < captions.length - 1 && (
                 <div className="absolute bottom-0 left-4 right-4 h-px"
-                  style={{ background: isSelected ? '#34d399' : '#a3a3a3', opacity: isSelected ? 0.7 : 0.4, zIndex: 0 }}
+                  style={{ background: isSelected ? '#34d399' : '#a3a3a3', opacity: isSelected ? 0.7 : 0.4}}
                 />
               )}
             </li>
@@ -261,14 +313,13 @@ export default function Sidebar({
       </ul>
       {/* 세부 정보 모달/패널 (분석 완료 문장 클릭 시) */}
       {detailIndex !== null && latestResultByScript[normalizeScript(captions[detailIndex].script)] && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40" onClick={() => setDetailIndex(null)}>
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40" onClick={() => setDetailIndex(null)}>
           <div className="bg-gray-900 rounded-lg p-6 min-w-[320px] max-w-[90vw] shadow-2xl relative" onClick={e => e.stopPropagation()}>
             <button className="absolute top-2 right-2 text-gray-400 hover:text-white" onClick={() => setDetailIndex(null)}>×</button>
-            <div className="font-bold text-lg mb-2 text-emerald-300">문장 {detailIndex + 1} 분석 세부 정보</div>
+            <div className="font-bold text-lg mb-2 text-emerald-300">문장 {detailIndex + 1}</div>
             <div className="mb-2 text-gray-200">{captions[detailIndex].script}</div>
-            <div className="space-y-1 text-sm">
-              {Object.entries(latestResultByScript[normalizeScript(captions[detailIndex].script)]).map(([k, v]) => (
-                <div key={k}><span className="text-emerald-300">{k}</span>: {typeof v === 'object' ? JSON.stringify(v, null, 2) : String(v)}</div>
+            <div className="space-y-1 text-sm">           {Object.entries(latestResultByScript[normalizeScript(captions[detailIndex].script)]).map(([k, v]) => (
+                <div key={k}><span className="text-emerald-300">{k}</span>: {typeof v === 'object' ? JSON.stringify(v, null,2) : String(v)}</div>
               ))}
             </div>
           </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Loader from './Loader';
 
 interface SidebarProps {
@@ -41,9 +41,53 @@ export default function Sidebar({
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [detailIndex, setDetailIndex] = useState<number | null>(null); // 클릭 시 세부 정보 표시용
 
+  // 자동스크롤을 위한 ref
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+
   useEffect(() => {
     console.log("[Sidebar] captions:", captions);
   }, [captions]);
+
+  useEffect(() => {
+    // currentScriptIndex가 변경될 때마다 자동스크롤 실행
+    scrollToSelectedItem();
+  }, [currentScriptIndex, captions])
+
+  const scrollToSelectedItem = () => {
+    if(!listRef.current || !sidebarRef.current) return;
+
+    // 현재 선택된 문장의 DOM요소 찾기
+    const selectedElement = listRef.current.querySelector(`[data-index="${currentScriptIndex}"]`) as HTMLElement;
+    if(!selectedElement) return;
+
+    // 사이드바의 높이와 스크롤 위치 계산
+    const sidebarHeight = sidebarRef.current.clientHeight;
+    const listTop = listRef.current.offsetTop;
+    const itemTop = selectedElement.offsetTop;
+    const itemHeight = selectedElement.clientHeight;
+
+    // 현재 스크롤 위치
+    const currentScrollTop = sidebarRef.current.scrollTop;
+   
+    // 아이템이 보이는 영역 계산
+    const itemVisibleTop = itemTop - currentScrollTop;
+    const itemVisibleBottom = itemVisibleTop + itemHeight;
+
+    // 목표 위치 (6번째 위치)
+    const targetVisibleTop = 5 * itemHeight;
+
+    // 아이템이 목표 위치보다 아래에 있으면 스크롤 조정
+    if(itemVisibleTop > targetVisibleTop) {
+      const scrollOffset = itemVisibleTop - targetVisibleTop;
+      
+      // 부드러운 스크롤 애니메이션
+      sidebarRef.current.scrollTo({
+        top: currentScrollTop + scrollOffset,
+        behavior: 'smooth'
+      });
+    }
+  }
 
   // captions에서 정보 추출 (존재하지 않으면 '-')
   const actorName = (captions[0] && (captions[0] as any).actor && (captions[0] as any).actor.name) ? (captions[0] as any).actor.name : '-';
@@ -64,6 +108,7 @@ export default function Sidebar({
 
   return (
     <motion.div
+      ref={sidebarRef}
       initial={{ x: 320 }}
       animate={{ x: isOpen ? 0 : 320 }}
       transition={{ type: "tween", duration: 0.3 }}
@@ -134,7 +179,7 @@ export default function Sidebar({
         </div>
       </div>
 
-      <ul className="px-4 py-6 pb-32">
+      <ul ref={listRef} className="px-4 py-6 pb-32">
         {captions.map((caption, index) => {
           const scriptKey = normalizeScript(caption.script);
           const isAnalyzed = !!latestResultByScript[scriptKey];
@@ -142,6 +187,7 @@ export default function Sidebar({
           return (
             <li
               key={index}
+              data-index={index}
               onClick={() => {
                 if (recording) return;
                 if (onStopLooping) onStopLooping();

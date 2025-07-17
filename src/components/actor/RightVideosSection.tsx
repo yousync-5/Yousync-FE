@@ -16,7 +16,7 @@ export const RightVideosSection: React.FC<RightVideosSectionProps> = ({
   onMovieClick 
 }) => {
     const [selectedId, setSelectedId] = useState<number | null>(null);
-    const detailRef = useRef<HTMLDivElement>(null);
+    const detailRef = useRef<HTMLDivElement | null>(null)
 
     const onClickVideo = (id: number) => {
         setSelectedId(selectedId === id ? null : id);

@@ -24,9 +24,9 @@ export default function VideoAutoPlayer({ onComplete }: VideoAutoPlayerProps) {
   const [showPlayBtn, setShowPlayBtn] = useState(true);   // 버튼 보여줄지 여부
   const [videoReady, setVideoReady] = useState(false);    // 영상 시작여부
 
-  const playBtnRef = useRef<HTMLButtonElement>(null);
-  const playIconRef = useRef<SVGPolylineElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const playBtnRef = useRef<HTMLButtonElement | null>(null);
+  const playIconRef = useRef<SVGPolylineElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // GSAP: SVG 그려지는 애니메이션
   useEffect(() => {

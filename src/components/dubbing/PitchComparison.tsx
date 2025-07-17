@@ -1,7 +1,7 @@
 "use client";
 
-import ServerPitchGraph from "@/components/graph/ServerPitchGraph";
-import { MyPitchGraph } from '@/components/graph/MyPitchGraph';
+// import ServerPitchGraph from "@/components/graph/ServerPitchGraph";
+// import { MyPitchGraph } from '@/components/graph/MyPitchGraph';
 import type { Caption } from "@/types/caption";
 import { VideoPlayerRef } from "./VideoPlayer";
 import { useDubbingRecorder } from '@/hooks/useDubbingRecorder';

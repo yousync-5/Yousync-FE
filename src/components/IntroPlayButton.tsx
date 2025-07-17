@@ -6,8 +6,8 @@ interface IntroPlayButtonProps {
 }
 
 export default function IntroPlayButton({ onPlay }: IntroPlayButtonProps) {
-  const playBtnRef = useRef<HTMLDivElement>(null);
-  const playIconRef = useRef<SVGPolygonElement>(null);
+  const playBtnRef = useRef<HTMLDivElement | null>(null);
+  const playIconRef = useRef<SVGPolygonElement | null>(null);
 
   useEffect(() => {
     if (playIconRef.current) {

@@ -77,8 +77,7 @@ export default function DubbingContainer({
 
   const videoPlayerRef = useRef<VideoPlayerRef | null>(null);
   const pitchRef = useRef<{ handleExternalStop: () => void, stopLooping?: () => void } | null>(null);
-  const resultsRef = useRef<HTMLDivElement>(null);
-
+  const resultsRef = useRef<HTMLDivElement | null>(null);
   const { cleanupMic } = useAudioStream();
 
   // zustand에서 multiJobIds 읽기
@@ -515,6 +514,41 @@ useEffect(() => {
     return str.toLowerCase().replace(/[^a-z0-9]/g, '');
   }
 
+  // 녹음 시작 시 해당 문장의 분석 결과 제거
+  const handleRecordingStart = useCallback((scriptIndex: number) => {
+    console.log('[DEBUG] handleRecordingStart 호출됨:', scriptIndex);
+    
+    const currentScript = front_data.captions[scriptIndex];
+    if (!currentScript) {
+      console.log('[DEBUG] currentScript가 없음');
+      return;
+    }
+    
+    const scriptKey = normalizeScript(currentScript.script);
+    console.log('[DEBUG] scriptKey:', scriptKey);
+    console.log('[DEBUG] 현재 latestResultByScript 키들:', Object.keys(latestResultByScript));
+    console.log('[DEBUG] latestResultByScript 전체 내용:', latestResultByScript);
+    
+    // 해당 키가 실제로 존재하는지 확인
+    if (!latestResultByScript[scriptKey]) {
+      console.log('[DEBUG] 해당 키가 존재하지 않음 - 제거할 것이 없음');
+      return;
+    }
+    
+    setLatestResultByScript((prev: Record<string, any>) => {
+      console.log('[DEBUG] setLatestResultByScript 실행됨');
+      console.log('[DEBUG] 이전 상태 키들:', Object.keys(prev));
+      
+      const newState = { ...prev };
+      delete newState[scriptKey];
+      
+      console.log('[DEBUG] 제거 후 남은 키들:', Object.keys(newState));
+      console.log('[DEBUG] 제거된 키:', scriptKey);
+      
+      return newState;
+    });
+  }, [front_data?.captions, latestResultByScript]);
+
   const [showAnalysisResult, setShowAnalysisResult] = useState(false);
   const [isRecordingPlayback, setIsRecordingPlayback] = useState(false);
 
@@ -702,6 +736,7 @@ useEffect(() => {
               onRecordingPlaybackChange={setIsRecordingPlayback}
               onOpenSidebar={() => setIsSidebarOpen(true)}
               onShowResults={handleViewResults}
+              onRecordingStart={handleRecordingStart}
             />
           </div>
         </div>
