@@ -184,7 +184,7 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
   const [pendingJobId, setPendingJobId] = useState<string | null>(null);
   const [localMergedUrl, setLocalMergedUrl] = useState<string | null>(null);
   const [player, setPlayer] = useState<any>(null); // YouTube Player 인스턴스
-  const audioRef = React.useRef<HTMLAudioElement>(null); // 오디오 요소 참조
+  const audioRef = React.useRef<HTMLAudioElement | null>(null); // 오디오 요소 참조
 
   // 외부에서 호출 (예: 부모에서 ref로)
   function handleNewRecording(jobId: string, scriptId: number) {
@@ -284,8 +284,6 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
   // 렌더링
   if (!open) return null;
 
-  const mergedAudioUrl = propMergedUrl ?? localMergedUrl;
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/70 backdrop-blur-[2px]" onClick={onClose} />
@@ -339,15 +337,14 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({
           />
         )}
   
-        {mergedAudioUrl && (
+        {(propMergedUrl ?? localMergedUrl) && (
           <audio
             ref={audioRef}
             autoPlay
             controls
-            src={mergedAudioUrl}
+            src={(propMergedUrl ?? localMergedUrl) || undefined}
             className="w-full mt-6"
             onSeeked={handleSeek}
-            style={{ maxWidth: 700 }}
           />
         )}
       </div>
