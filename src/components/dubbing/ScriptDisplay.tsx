@@ -329,18 +329,12 @@ export default function ScriptDisplay({
         &quot;{currentWords.map((word, index) => {
           const isCurrent = currentVideoTime >= word.start_time && currentVideoTime <= word.end_time;
           const animatedScore = animatedScores[word.word] || 0;
-          
-          // 색상 결정 로직
           let textColor = 'text-white'; // 기본 색상
-          
           if (isCurrent) {
-            // 현재 단어는 노란색 강조 (우선순위 높음)
             textColor = 'text-yellow-400';
           } else if (animatedScore > 0) {
-            // 분석 결과가 있으면 정확도에 따른 색상 적용
-            textColor = ''; // 인라인 스타일로 처리
+            textColor = '';
           }
-          
           return (
             <span 
               key={word.id}

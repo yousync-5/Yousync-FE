@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { backendApi } from '@/services/api';
 
 interface UseBookmarkResult {
   isLoading: boolean;
@@ -17,16 +18,11 @@ export function useBookmark(): UseBookmarkResult {
     setIsSuccess(false);
     setIsError(false);
     try {
-      const res = await fetch('/mypage/bookmarks/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token_id }),
-      });
-      if (!res.ok) throw new Error('북마크 추가 실패');
+      // 백엔드 API 직접 호출 (API 문서에 맞게 엔드포인트 수정)
+      await backendApi.post('/mypage/bookmarks', { token_id });
       setIsSuccess(true);
     } catch (e) {
+      console.error('북마크 추가 실패:', e);
       setIsError(true);
     } finally {
       setIsLoading(false);

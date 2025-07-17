@@ -31,7 +31,6 @@ export default function DuetDetailModal({
     setSelectedActorId(null); // 모달 열릴 때마다 초기화
   }, [isOpen]);
 
-console.log("DuetDetailModal", youtubeId, tokenData, duetPair)
   // tokenData가 있을 때만 접근
   const startTime = Number(tokenData?.start_time) || 0;
   const endTime = Number(tokenData?.end_time) || undefined;
@@ -80,13 +79,15 @@ console.log("DuetDetailModal", youtubeId, tokenData, duetPair)
         className="relative z-50 w-full max-w-[90vw] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[90vh] overflow-y-auto rounded-lg bg-[#181818] p-4 sm:p-6 shadow-2xl"
         onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
       >
-        {/* 닫기 버튼은 주석 처리됨. 바깥(배경) 클릭 시 모달이 닫힙니다. */}
-        {/* <button
-          className="absolute top-4 right-4 text-2xl text-white hover:text-gray-300"
+        {/* 닫기(X) 버튼 */}
+        <button
+          className="absolute top-4 right-4 text-2xl text-white font-bold rounded-full w-11 h-11 flex items-center justify-center bg-black/40 hover:bg-gray-700 hover:text-emerald-400 transition-all"
           onClick={onClose}
+          aria-label="닫기"
+          type="button"
         >
           &times;
-        </button> */}
+        </button>
         {/* 메인 영상 */}
         <div className="mx-auto aspect-video w-full overflow-hidden rounded-xl relative shadow-lg">
           <YouTube
@@ -116,12 +117,6 @@ console.log("DuetDetailModal", youtubeId, tokenData, duetPair)
             className="absolute top-0 left-0 w-full z-20 pointer-events-none"
             style={{ height: 64, background: '#000', opacity: 1 }}
           />
-          {/* 하단 오버레이 */}
-          <div
-            className="absolute bottom-0 z-20 pointer-events-none"
-            style={{ right: 15, width: 400, height: 48, background: '#000', opacity: 1 }}
-          />
-          {/* 기존 상/하단 완전 불투명 오버레이는 제거 */}
         </div>
         {/* 정보 카드 */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mt-6 bg-[#20232a] rounded-2xl shadow-lg p-6 border border-[#23272f]">

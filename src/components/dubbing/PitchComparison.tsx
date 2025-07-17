@@ -30,6 +30,7 @@ interface PitchComparisonProps {
   onRecordingPlaybackChange?: (isPlaying: boolean) => void;
   onOpenSidebar?: () => void;
   onShowResults?: () => void;
+  onOpenDubbingListenModal?: () => void;
   latestResultByScript?: { [key: string]: { overall_score: number } };
 }
 
@@ -52,6 +53,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   onRecordingPlaybackChange,
   onOpenSidebar,
   onShowResults,
+  onOpenDubbingListenModal,
   latestResultByScript,
 }: PitchComparisonProps, ref) {
 
@@ -424,7 +426,12 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
               if (analyzed === total && total > 0) {
                 return (
                   <div className="w-full flex flex-row justify-center gap-4 my-4 z-10 mt-6">
-                    <button className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow transition">더빙본 들어보기</button>
+                    <button 
+                      className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow transition"
+                      onClick={onOpenDubbingListenModal}
+                    >
+                      더빙본 들어보기
+                    </button>
                     <button
                       className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow transition"
                       onClick={onShowResults}

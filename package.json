@@ -8,6 +8,7 @@
     "start": "NODE_ENV=production node server.js",
     "lint": "next lint"
   },
+  
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
@@ -15,6 +16,7 @@
     "@react-oauth/google": "^0.12.2",
     "@tanstack/react-query": "^5.81.5",
     "apexcharts": "^4.7.0",
+    "audiobuffer-to-wav": "^1.0.0",
     "axios": "^1.10.0",
     "chart.js": "^4.5.0",
     "clsx": "^2.1.1",

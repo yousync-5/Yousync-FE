@@ -7,14 +7,12 @@ import type { TokenDetailResponse } from "@/types/pitch";
 import {motion, AnimatePresence} from "framer-motion";
 import {
   PlayIcon,
-  FireIcon,
   StarIcon,
   HeartIcon,
   SparklesIcon,
   UserGroupIcon,
   InformationCircleIcon,
   VideoCameraIcon,
-  TrophyIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   FilmIcon,

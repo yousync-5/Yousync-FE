@@ -82,8 +82,8 @@ export function useDubbingRecorder({
       console.log(`[✅ 변환 완료] 문장 ${idx + 1}번 WAV 변환 완료, 크기: ${wavBlob.size} bytes`);
 
       const formData = new FormData();
-      formData.append('file', wavBlob, `dub_${idx + 1}.wav`);
-
+      // 백엔드 파일명 형식에 맞게 수정 (확장자 포함)
+      formData.append('file', wavBlob, `script_${scriptId}.wav`);
 
       console.log(`[DEBUG][uploadScript] axios.post 시작 idx=${idx}, scriptId=${scriptId}`);
       

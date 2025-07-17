@@ -3,16 +3,12 @@
 import React, { useRef, useCallback, useEffect, useState } from "react";
 import DubbingHeader from "@/components/dubbing/DubbingHeader";
 import VideoPlayer, { VideoPlayerRef } from "@/components/dubbing/VideoPlayer";
-import ScriptDisplay from "@/components/dubbing/ScriptDisplay";
-import PitchComparison from "@/components/dubbing/PitchComparison";
 import ResultContainer from "@/components/result/ResultComponent";
-import ResultViewBtn from "@/components/result/ResultViewBtn";
 import { Toaster } from "react-hot-toast";
 import toast from "react-hot-toast";
 import { useAudioStream } from "@/hooks/useAudioStream";
 import { useJobIdsStore } from '@/store/useJobIdsStore';
 import { useDubbingState } from "@/hooks/useDubbingState";
-import Sidebar from "@/components/ui/Sidebar";
 import DuetSidebar from "./DuetSidebar";
 import DuetPitchComparison from "./DuetPitchComparison";
 import DuetScriptDisplay from "./DuetScriptDisplay";
@@ -411,9 +407,11 @@ useEffect(() => {
   const handleTimeUpdate = useCallback((currentTime: number) => {
     if (!isReady) return;
     setCurrentVideoTime(currentTime);
-    const currentScript = front_data.captions[currentScriptIndex];
-    if (currentScript && currentTime >= currentScript.end_time) return;
+    
+    // 현재 시간에 해당하는 문장 인덱스 찾기
     const newScriptIndex = findScriptIndexByTime(currentTime);
+    
+    // 새로운 문장으로 변경되었을 때만 업데이트
     if (newScriptIndex !== -1 && newScriptIndex !== currentScriptIndex) {
       setCurrentScriptIndex(newScriptIndex);
     }
@@ -426,6 +424,29 @@ useEffect(() => {
     }
     const currentScript = front_data.captions[currentScriptIndex];
     if (!currentScript) return { startTime: 0, endTime: undefined };
+
+    // 현재 문장이 상대 대사인지 확인
+    const isCurrentMyLine = currentScript.actor?.name === "나";
+
+    // 상대 대사인 경우, 연속된 상대 대사들의 마지막 endTime을 찾기
+    if (!isCurrentMyLine) {
+      let lastOpponentEndTime = currentScript.end_time;
+      let nextIndex = currentScriptIndex + 1;
+      // 다음 문장들도 상대 대사인지 확인하고, 연속된 상대 대사의 마지막 endTime 찾기
+      while (nextIndex < front_data.captions.length) {
+        const nextScript = front_data.captions[nextIndex];
+        if (nextScript.actor?.name === "나") break; // 내 대사를 만나면 중단
+        lastOpponentEndTime = nextScript.end_time;
+        nextIndex++;
+      }
+      
+      return {
+        startTime: currentScript.start_time,
+        endTime: lastOpponentEndTime,
+      };
+    }
+
+    // 내 대사인 경우 기존과 동일
     return {
       startTime: currentScript.start_time,
       endTime: currentScript.end_time,
@@ -634,6 +655,7 @@ useEffect(() => {
               onStopLooping={() => pitchRef.current?.stopLooping?.()}
               showAnalysisResult={showAnalysisResult}
               analysisResult={analysisResult}
+              totalDuration={tokenData.end_time}
             />
           </div>
   

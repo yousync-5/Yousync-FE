@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import IntroPlayButton from "@/components/lending/IntroPlayButton";
 import LanderSequence from "@/components/graph/LanderSequence"; // 영상/스크립트 재생
 import MainStartButton from "@/components/lending/MainStartButton"; // "재생" 버튼
@@ -11,8 +11,9 @@ export default function HomePage() {
 
   return (
     <>
-    
-      <HomeClient />
+      <Suspense fallback={<div>Loading...</div>}>
+        <HomeClient />
+      </Suspense>
     </>
   );
 }

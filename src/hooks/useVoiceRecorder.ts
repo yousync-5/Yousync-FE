@@ -195,7 +195,7 @@ export function useVoiceRecorder() {
         console.log('[DEBUG] stopRecording resolve(null) - mediaRecorderRef.current is null');
         return resolve(null);
       }
-      mediaRecorderRef.current.onstop = () => {
+      mediaRecorderRef.current.onstop = async () => {
         console.log('[DEBUG] mediaRecorderRef.current.onstop fired');
         try {
           const blob = new Blob(chunksRef.current, { type: 'audio/wav' });
@@ -207,9 +207,16 @@ export function useVoiceRecorder() {
           const stopDelay = recordingStopTimeRef.current - recordingStartTimeRef.current!;
           
           // 녹음 타이밍 분석 실행
-          analyzeRecordingTiming(blob, idx, stopDelay);
+          await analyzeRecordingTiming(blob, idx, stopDelay);
+
+          // 🔽 실제 서버로 보낼 Blob의 길이(초) 콘솔 출력
+          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const arrayBuffer = await allBlobsRef.current[idx].arrayBuffer();
+          const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+          console.log(`🚀 [업로드 전] 최종 Blob 길이: ${audioBuffer.duration.toFixed(3)}s (문장 ${idx})`);
+          audioContext.close();
           
-          resolve(blob);
+          resolve(allBlobsRef.current[idx]);
           setRecording(false);
           // 여기서 wav파일로 변환해야
           console.log('[DEBUG] setRecording(false) called in onstop');

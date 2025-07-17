@@ -83,20 +83,17 @@ export const NavBar: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchQuery, fetchActorsData]);
 
+  const clickActor = (actor: string) => router.push(`/actor/${actor}`);
+
   const handleSearchClick = async () => {
     if (searchQuery.startsWith('http')) {
-      try {
-        const res = await axios.post<{ exists: boolean }>(`${process.env.NEXT_PUBLIC_API_BASE_URL}/urls/check`, { youtube_url: searchQuery });
-        if (res.data.exists === true) {
-          const videoId = extractYoutubeVideoId(searchQuery);
-          router.push(`/urlsearch?videoId=${videoId}`);
-          setSearchQuery("");
-        } else {
-          console.log("DB에 존재하지 않는 URL입니다.");
-        }
-      } catch (error) {
-        console.log("URL 검색 중 오류 발생");
+      const videoId = extractYoutubeVideoId(searchQuery);
+      if (videoId) {
+        router.push(`/movie/${videoId}`);
+      } else {
+        alert('유효한 유튜브 URL이 아닙니다.');
       }
+      setSearchQuery("");
     } else if (searchQuery.trim()) {
       clickActor(searchQuery);
       setSearchQuery("");
@@ -142,7 +139,6 @@ export const NavBar: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const clickActor = (actor: string) => router.push(`/actor/${actor}`);
   const handleToMain = () => router.push('/');
 
   return (
