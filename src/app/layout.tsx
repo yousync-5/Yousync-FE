@@ -6,10 +6,6 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import React, { ReactNode } from 'react'
 import ConditionalNavBar from '@/components/ui/ConditionalNavBar'
 const inter = Inter({ subsets: ['latin'] });
-export const metadata: Metadata = {
-  title: 'YouSync - AI 더빙 연습',
-  description: 'AI와 함께 더빙의 재미를 발견하세요! 실시간 피치 분석으로 완벽한 연기를 만들어보세요.',
-};
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ko">

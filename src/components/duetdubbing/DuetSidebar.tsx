@@ -54,8 +54,8 @@ export default function Sidebar({
   const [showMyLinesOnly, setShowMyLinesOnly] = useState(false);
 
   // 자동스크롤을 위한 ref
-  const sidebarRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLUListElement>(null);
+  const sidebarRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<HTMLUListElement | null>(null);
 
   // 화자 구분 로직 - Second Speaker가 내 대사
   const currentScript = captions[currentScriptIndex];
@@ -325,6 +325,43 @@ export default function Sidebar({
           </div>
         </div>
       )}
+
+      {/* 토스트 스타일 전체 녹음 들어보기 버튼 */}
+      <div
+        className={`
+          fixed bottom-8 z-[9999]
+          w-[220px] max-w-[90vw]
+          bg-gradient-to-r from-emerald-400 via-blue-400 to-pink-400
+          text-white font-bold rounded-2xl shadow-2xl
+          flex items-center gap-3 px-4 py-3 animate-pulse
+          transition-all duration-500
+          ${isOpen ? 'right-4 translate-x-0' : 'right-[-240px] translate-x-full'}
+        `}
+        style={{ boxShadow: "0 8px 32px rgba(34,197,94,0.25)" }}
+      >
+        <button
+          className="flex-1 flex items-center gap-2 focus:outline-none"
+          onClick={() => onStopLooping && onStopLooping()}
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
+            <polygon points="10,8 16,12 10,16" fill="white" />
+          </svg>
+          전체 녹음 들어보기
+        </button>
+        <button
+          className="ml-2 text-white/80 hover:text-white transition"
+          onClick={() => {}}
+          aria-label="닫기"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 20 20">
+            <line x1="4" y1="4" x2="16" y2="16" stroke="white" strokeWidth="2"/>
+            <line x1="16" y1="4" x2="4" y2="16" stroke="white" strokeWidth="2"/>
+          </svg>
+        </button>
+      </div>
+      {/* 토스트 스타일 전체 녹음 들어보기 버튼 */}
+
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 7px;
