@@ -311,7 +311,7 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                       ) : duetScenesError ? (
                         <div className="text-red-400 text-lg py-8">듀엣 더빙 목록을 불러오지 못했습니다.</div>
                       ) : (
-                        <div className="flex gap-6 overflow-x-auto pb-4">
+                        <div className="flex gap-6 overflow-x-auto pb-4 pt-4 pl-4">
                           {duetScenes.map((scene: any) => (
                             <div
                               key={scene.youtube_url}
