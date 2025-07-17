@@ -59,7 +59,7 @@ export default function MovieList({
       {/* Videos Row */}
       <div
         id={sectionId}
-        className="flex gap-4 overflow-x-auto scrollbar-hide pb-4"
+        className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 pt-4 pl-4"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {videos.map((video) => (
