@@ -630,6 +630,7 @@ useEffect(() => {
               onStopLooping={() => pitchRef.current?.stopLooping?.()}
               showAnalysisResult={showAnalysisResult}
               analysisResult={analysisResult}
+              totalDuration={tokenData.end_time}
             />
           </div>
   

@@ -181,11 +181,6 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
             className="absolute top-0 left-0 w-full z-20 pointer-events-none"
             style={{ height: 80, background: '#000' }}
           />
-          {/* 하단 오버레이 (유튜브 로고 가림, 더 넓게/왼쪽으로 이동) */}
-          <div
-            className="absolute bottom-0 z-20 pointer-events-none"
-            style={{ right: 15, width: 400, height: 48, background: '#000' }}
-          />
         </div>
       </div>
     );
