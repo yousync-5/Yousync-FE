@@ -82,7 +82,7 @@ export default function DoubleGridBlurSlider({ onPlay }: MainStartButtonProps) {
           reenact them yourself.
         </h1>
         <p>
-          YouSyck is a place where anyone,<br />
+          YouSync is a place where anyone,<br />
           can easily and enjoyably recreate iconic scenes!
         </p>
         <button onClick={handlePlay}>Let&apos;s Run!</button>
