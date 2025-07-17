@@ -17,7 +17,7 @@ export const MovieDetail: React.FC<VideoDetailProps> = ({movie}) => {
     // tokenData.id, actor_id
   return (
     <div
-    className="text-white bg-gray-900 border-2 border-gray-800 rounded-xl overflow-hidden shadow-lg hover:border-green-500 transition-all duration-300 flex flex-col justify-between p-4"
+    className="text-white bg-gray-900 border-2 border-gray-800 rounded-xl shadow-lg hover:border-green-500 transition-all duration-300 flex flex-col justify-between p-4"
     >
         <div className="flex-1">
             <div className="text-lg font-bold mb-2">{movie.token_name}</div>

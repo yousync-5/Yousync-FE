@@ -34,7 +34,7 @@ export default function MovieItem({
 
   return (
     <div
-      className={`relative group/video bg-gray-900 border-2 border-gray-800 rounded-3xl overflow-hidden hover:border-green-500 hover:shadow-2xl transition-all duration-300 cursor-pointer flex-shrink-0 transform hover:scale-105 ${
+      className={`relative group/video bg-gray-900 border-2 border-gray-800 rounded-3xl overflow-hidden cursor-pointer flex-shrink-0 transition-all duration-300 scale-85 hover:scale-90 hover:border-green-500 hover:shadow-2xl ${
         isShorts ? "aspect-[9/16]" : "aspect-video"
       }`}
       style={{
