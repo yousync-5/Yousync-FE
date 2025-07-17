@@ -402,19 +402,24 @@ useEffect(() => {
     );
     return foundIndex !== -1 ? foundIndex : 0;
   }, [isReady, front_data?.captions]);
-
+  const [showAnalysisResult, setShowAnalysisResult] = useState(false);
+  const [isRecordingPlayback, setIsRecordingPlayback] = useState(false);
   const handleTimeUpdate = useCallback((currentTime: number) => {
     if (!isReady) return;
     setCurrentVideoTime(currentTime);
-    
+
+    // 현재 문장이 내 대사일 때만 busy 상태로 인덱스 변경 막기
+    const isMyLine = front_data.captions[currentScriptIndex]?.actor?.name === "나";
+    if (isMyLine && (recording || isAnalyzing || showAnalysisResult)) {
+      return;
+    }
     // 현재 시간에 해당하는 문장 인덱스 찾기
     const newScriptIndex = findScriptIndexByTime(currentTime);
-    
     // 새로운 문장으로 변경되었을 때만 업데이트
     if (newScriptIndex !== -1 && newScriptIndex !== currentScriptIndex) {
       setCurrentScriptIndex(newScriptIndex);
     }
-  }, [isReady, currentScriptIndex, findScriptIndexByTime, front_data?.captions]);
+  }, [isReady, currentScriptIndex, findScriptIndexByTime, front_data?.captions, recording, isAnalyzing, showAnalysisResult]);
 
   const getCurrentScriptPlaybackRange = useCallback(() => {
     if (!isReady) return { startTime: 0, endTime: undefined };
@@ -549,8 +554,8 @@ useEffect(() => {
     });
   }, [front_data?.captions, latestResultByScript]);
 
-  const [showAnalysisResult, setShowAnalysisResult] = useState(false);
-  const [isRecordingPlayback, setIsRecordingPlayback] = useState(false);
+  // const [showAnalysisResult, setShowAnalysisResult] = useState(false);
+  // const [isRecordingPlayback, setIsRecordingPlayback] = useState(false);
 
   // 현재 문장의 분석 결과 가져오기
   const currentScript = front_data.captions[currentScriptIndex];
@@ -651,27 +656,59 @@ useEffect(() => {
                 const nextScript = front_data.captions[nextIndex];
                 const isCurrentMyLine = front_data.captions[currentScriptIndex]?.actor?.name === "나";
                 const isNextMyLine = nextScript?.actor?.name === "나";
-
-                // 내 대사가 끝났을 때 녹음 정지
-                if (isCurrentMyLine && pitchRef.current) {
-                  pitchRef.current.handleExternalStop();
+              
+                console.log("🔚 EndTime Reached");
+                console.log("현재 인덱스:", currentScriptIndex);
+                console.log("다음 인덱스:", nextIndex);
+                console.log("현재 대사: ", front_data.captions[currentScriptIndex]);
+                console.log("다음 대사: ", nextScript);
+                console.log("현재 내 대사인가?", isCurrentMyLine);
+                console.log("다음이 내 대사인가?", isNextMyLine);
+                console.log("녹음 중?", recording);
+                console.log("분석 중?", isAnalyzing);
+                console.log("분석 결과 표시 중?", showAnalysisResult);
+              
+                // 1. 녹음 중이거나, 분석 중/분석 결과 표시 중이면 자동 이동 금지
+                if (
+                  recording ||           // 녹음 중
+                  isAnalyzing ||         // 분석 중
+                  showAnalysisResult ||  // 분석 결과 표시 중
+                  recordingCompleted     // 녹음이 막 끝난 상태
+                ) {
+                  console.log("⛔ 자동 이동 차단 (녹음 또는 분석 중)");
+                  
+                  // 내 대사라면 녹음 정지만
+                  if (isCurrentMyLine && pitchRef.current) {
+                    console.log("🛑 내 대사 → 녹음 강제 정지");
+                    pitchRef.current.handleExternalStop();
+                  }
+                  return; // 자동 이동/재생 금지
                 }
-
-                // 상대 → 내 대사로 넘어갈 때 자동 이동/재생
+              
+                // 2. 상대 → 내 대사로 넘어갈 때 자동 이동/재생
                 if (!isCurrentMyLine && isNextMyLine) {
+                  console.log("➡️ 상대 → 내 대사, 자동 이동 및 재생");
                   setCurrentScriptIndex(nextIndex);
                   videoPlayerRef.current?.seekTo(nextScript.start_time);
                   videoPlayerRef.current?.playVideo();
                   return;
                 }
-                // 상대 → 상대 대사인 경우 자동 이동/재생
-                if(!isCurrentMyLine && !isNextMyLine && nextScript){
+              
+                // 3. 상대 → 상대 대사인 경우 자동 이동/재생
+                if (!isCurrentMyLine && !isNextMyLine && nextScript) {
+                  console.log("➡️ 상대 → 상대 대사, 자동 이동 및 재생");
                   setCurrentScriptIndex(nextIndex);
                   videoPlayerRef.current?.seekTo(nextScript.start_time);
                   videoPlayerRef.current?.playVideo();
                   return;
+                }
+              
+                // 추가 예외 처리 로그
+                if (!nextScript) {
+                  console.log("📄 더 이상 다음 대사가 없습니다.");
                 }
               }}
+
               onPlay={customHandlePlay}
               onPause={customHandlePause}
             />
