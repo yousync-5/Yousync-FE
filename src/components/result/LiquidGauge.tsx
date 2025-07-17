@@ -6,7 +6,7 @@ interface LiquidGaugeProps {
 }
 
 const LiquidGauge: React.FC<LiquidGaugeProps> = ({ value = 33, size = 80 }) => {
-  const waveRef = useRef<SVGPathElement>(null);
+  const waveRef = useRef<SVGPathElement | null>(null);
 
   // value(0~100)에 따라 물 높이 계산
   const percent = Math.max(0, Math.min(100, Number(value) || 0));

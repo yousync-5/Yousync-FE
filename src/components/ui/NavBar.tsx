@@ -25,8 +25,8 @@ export const NavBar: React.FC = () => {
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);

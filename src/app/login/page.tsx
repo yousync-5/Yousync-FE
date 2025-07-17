@@ -56,7 +56,7 @@ export default function LoginPage() {
               </p>
             </div>
             {/* 로그인 안내 */}
-            <div className="mb-7 w-full">
+            <div className="mb-7 w-full flex justify-center">
               {!isLoading ? (
                 <GoogleLogin
                   onSuccess={handleGoogleSuccess}
