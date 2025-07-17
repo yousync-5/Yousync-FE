@@ -118,11 +118,9 @@ export default function ScriptDisplay({
     if (!currentWords || currentWords.length === 0) {
       return getSentenceProgress(); // 기존 방식
     }
-    
     const totalDuration = currentWords.reduce((sum, word) => 
       sum + (word.end_time - word.start_time), 0
     );
-    
     let accumulatedProgress = 0;
     for (const word of currentWords) {
       const wordDuration = word.end_time - word.start_time;
@@ -394,12 +392,12 @@ export default function ScriptDisplay({
   const current = getMinutesAndSeconds(currentVideoTime);
   const total = getMinutesAndSeconds(totalDuration ?? 0);
 
-  // 진행 정보 + 시간 정보 영역에서 totalDuration만 사용
+
+
   return (
     <div className="bg-gray-900 rounded-xl p-6 w-[77em] flex flex-col relative">
       <div className="bg-gradient-to-br from-[#0f172a] to-[#1e293b] rounded-2xl p-6 shadow-xl text-white mb-6 border border-gray-700 space-y-6">
         <div>
-          <div className="flex items-center justify-between mb-2">
           <div className="flex items-center justify-between mb-2">
           <span>
               🎬 현재시간:
@@ -412,8 +410,6 @@ export default function ScriptDisplay({
           <span className="mx-1 text-lg font-bold text-gray-400">:</span>
           <span className={timeBoxClass}>{total.seconds}</span>
             </span>
-            
-          </div>
           </div>
         </div>
         <div className="relative w-full h-3 bg-gray-800 rounded-full overflow-hidden shadow-inner">

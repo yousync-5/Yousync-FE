@@ -107,12 +107,7 @@ export default function MovieDetailModal({
             className="absolute top-0 left-0 w-full z-20 pointer-events-none"
             style={{ height: 64, background: '#000', opacity: 1 }}
           />
-          {/* 하단 오버레이 */}
-          <div
-            className="absolute bottom-0 z-20 pointer-events-none"
-            style={{ right: 15, width: 400, height: 48, background: '#000', opacity: 1 }}
-          />
-          {/* 기존 상/하단 완전 불투명 오버레이는 제거 */}
+          
         </div>
         {/* 정보 카드 */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mt-6 bg-[#20232a] rounded-2xl shadow-lg p-6 border border-[#23272f]">

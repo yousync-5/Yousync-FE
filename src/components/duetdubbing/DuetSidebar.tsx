@@ -54,8 +54,8 @@ export default function Sidebar({
   const [showMyLinesOnly, setShowMyLinesOnly] = useState(false);
 
   // 자동스크롤을 위한 ref
-  const sidebarRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLUListElement>(null);
+  const sidebarRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<HTMLUListElement | null>(null);
 
   // 화자 구분 로직 - Second Speaker가 내 대사
   const currentScript = captions[currentScriptIndex];
