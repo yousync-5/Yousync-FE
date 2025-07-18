@@ -169,8 +169,6 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
 
   return (
     <div className="bg-black min-h-screen text-white font-sans overflow-x-hidden flex flex-col">
-      {/* NavBar */}
-      <NavBar />
       
       {/* Main Content */}
       <div className="pt-24">
