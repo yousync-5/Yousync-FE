@@ -10,7 +10,7 @@ interface LeftSectionProps {
 
 export const LeftSection: React.FC<LeftSectionProps> = ({ movies, actorName }) => {
   return (
-    <div className="lg:w-1/2 flex flex-col h-screen">
+    <div className="lg:w-1/2 flex flex-col">
          
         {/* 상단 배너 섹션 */}
         {movies.length > 0 && (
