@@ -5,6 +5,7 @@ import { useMyPageOverview } from '@/hooks/useMyPageOverview';
 import { API_ENDPOINTS } from '@/lib/constants';
 import UserProfile from './UserProfile';
 import PageHeader from './PageHeader';
+import { extractYoutubeVideoId, getYoutubeThumbnail } from '@/utils/extractYoutubeVideoId';
 
 
 const MypageContainer: React.FC = () => {
@@ -167,8 +168,10 @@ const MypageContainer: React.FC = () => {
                       <div className="relative aspect-[16/9] w-full overflow-hidden">
                         <img
                           src={
-                            bookmark.token.thumbnail_url ||
-                            'https://images.unsplash.com/photo-1519125323398-675f0ddb6308'
+                            bookmark.token.youtube_url 
+                              ? getYoutubeThumbnail(bookmark.token.youtube_url)
+                              : bookmark.token.thumbnail_url ||
+                                'https://images.unsplash.com/photo-1519125323398-675f0ddb6308'
                           }
                           alt={bookmark.token.token_name}
                           className="absolute inset-0 w-full h-full object-cover"
@@ -252,9 +255,13 @@ const MypageContainer: React.FC = () => {
                     >
                       <div className="relative aspect-[16/9] w-full overflow-hidden">
                         <img
-                          src="https://images.unsplash.com/photo-1519125323398-675f0ddb6308"
+                          src={token.youtube_url ? getYoutubeThumbnail(token.youtube_url) : "https://images.unsplash.com/photo-1519125323398-675f0ddb6308"}
                           alt={token.token_name}
                           className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = "https://images.unsplash.com/photo-1519125323398-675f0ddb6308";
+                          }}
                         />
                       </div>
                       <div className="p-4">
