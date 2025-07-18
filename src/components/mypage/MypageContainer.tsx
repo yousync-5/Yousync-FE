@@ -9,7 +9,45 @@ import PageHeader from './PageHeader';
 
 const MypageContainer: React.FC = () => {
   const { data, loading, error, refetch } = useMyPageOverview();
+  const [bookmarkPage, setBookmarkPage] = useState(1);
+  const [dubbedPage, setDubbedPage] = useState(1);
   const [isRemovingBookmark, setIsRemovingBookmark] = useState(false);
+  const itemsPerPage = 6; // 페이지당 표시할 항목 수
+
+  // 북마크 페이지네이션 계산
+  const totalBookmarkPages = data ? Math.ceil(data.recent_bookmarks.length / itemsPerPage) : 0;
+  const currentBookmarks = data ? data.recent_bookmarks.slice(
+    (bookmarkPage - 1) * itemsPerPage,
+    bookmarkPage * itemsPerPage
+  ) : [];
+
+  // 더빙 토큰 페이지네이션 계산
+  const totalDubbedPages = data ? Math.ceil(data.recent_dubbed_tokens.length / itemsPerPage) : 0;
+  const currentDubbedTokens = data ? data.recent_dubbed_tokens.slice(
+    (dubbedPage - 1) * itemsPerPage,
+    dubbedPage * itemsPerPage
+  ) : [];
+
+  // 페이지 번호 버튼 생성 함수
+  const renderPaginationButtons = (totalPages: number, currentPage: number, setPage: (page: number) => void) => {
+    const buttons = [];
+    for (let i = 1; i <= totalPages; i++) {
+      buttons.push(
+        <button
+          key={i}
+          onClick={() => setPage(i)}
+          className={`w-8 h-8 rounded-full flex items-center justify-center ${
+            currentPage === i
+              ? 'bg-blue-600 text-white'
+              : 'bg-neutral-800 text-gray-300 hover:bg-neutral-700'
+          }`}
+        >
+          {i}
+        </button>
+      );
+    }
+    return buttons;
+  };
 
   const handleRemoveBookmark = async (tokenId: number) => {
     setIsRemovingBookmark(true);
@@ -118,62 +156,71 @@ const MypageContainer: React.FC = () => {
                 <p className="text-sm mt-2">관심있는 토큰을 북마크해보세요!</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {data.recent_bookmarks.map((bookmark) => (
-                  <div
-                    key={bookmark.id}
-                    className="group bg-neutral-800 rounded-xl overflow-hidden border border-neutral-700 hover:border-neutral-600 transition-all duration-300 cursor-pointer"
-                  >
-                    {/* 썸네일 */}
-                    <div className="relative aspect-[16/9] w-full overflow-hidden">
-                      <img
-                        src={
-                          bookmark.token.thumbnail_url ||
-                          'https://images.unsplash.com/photo-1519125323398-675f0ddb6308'
-                        }
-                        alt={bookmark.token.token_name}
-                        className="absolute inset-0 w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src =
-                            'https://images.unsplash.com/photo-1519125323398-675f0ddb6308';
-                        }}
-                      />
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveBookmark(bookmark.token.id);
-                        }}
-                        className="absolute top-2 right-2 bg-black/70 hover:bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        disabled={isRemovingBookmark}
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
+                  {currentBookmarks.map((bookmark) => (
+                    <div
+                      key={bookmark.id}
+                      className="group bg-neutral-800 rounded-xl overflow-hidden border border-neutral-700 hover:border-neutral-600 transition-all duration-300 cursor-pointer"
+                    >
+                      {/* 썸네일 */}
+                      <div className="relative aspect-[16/9] w-full overflow-hidden">
+                        <img
+                          src={
+                            bookmark.token.thumbnail_url ||
+                            'https://images.unsplash.com/photo-1519125323398-675f0ddb6308'
+                          }
+                          alt={bookmark.token.token_name}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src =
+                              'https://images.unsplash.com/photo-1519125323398-675f0ddb6308';
+                          }}
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveBookmark(bookmark.token.id);
+                          }}
+                          className="absolute top-2 right-2 bg-black/70 hover:bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          disabled={isRemovingBookmark}
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
-                    </div>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </div>
 
-                    {/* 정보 */}
-                    <div className="p-4">
-                      <h3 className="font-medium text-white mb-1 truncate">
-                        {bookmark.token.token_name}
-                      </h3>
-                      <p className="text-gray-400 text-sm truncate">{bookmark.token.actor_name}</p>
+                      {/* 정보 */}
+                      <div className="p-4">
+                        <h3 className="font-medium text-white mb-1 truncate">
+                          {bookmark.token.token_name}
+                        </h3>
+                        <p className="text-gray-400 text-sm truncate">{bookmark.token.actor_name}</p>
+                      </div>
                     </div>
+                  ))}
+                </div>
+                
+                {/* 페이지네이션 버튼 */}
+                {totalBookmarkPages > 1 && (
+                  <div className="flex justify-center mt-8 gap-2">
+                    {renderPaginationButtons(totalBookmarkPages, bookmarkPage, setBookmarkPage)}
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
 
@@ -196,26 +243,35 @@ const MypageContainer: React.FC = () => {
                 <p className="text-sm mt-2">토큰을 더빙해보세요!</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {data.recent_dubbed_tokens.map((token) => (
-                  <div
-                    key={token.token_id}
-                    className="group bg-neutral-800 rounded-xl overflow-hidden border border-neutral-700 hover:border-neutral-600 transition-all duration-300 cursor-pointer"
-                  >
-                    <div className="relative aspect-[16/9] w-full overflow-hidden">
-                      <img
-                        src="https://images.unsplash.com/photo-1519125323398-675f0ddb6308"
-                        alt={token.token_name}
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
+                  {currentDubbedTokens.map((token) => (
+                    <div
+                      key={token.token_id}
+                      className="group bg-neutral-800 rounded-xl overflow-hidden border border-neutral-700 hover:border-neutral-600 transition-all duration-300 cursor-pointer"
+                    >
+                      <div className="relative aspect-[16/9] w-full overflow-hidden">
+                        <img
+                          src="https://images.unsplash.com/photo-1519125323398-675f0ddb6308"
+                          alt={token.token_name}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-medium text-white mb-1 truncate">{token.token_name}</h3>
+                        <p className="text-gray-400 text-sm truncate">{token.actor_name}</p>
+                      </div>
                     </div>
-                    <div className="p-4">
-                      <h3 className="font-medium text-white mb-1 truncate">{token.token_name}</h3>
-                      <p className="text-gray-400 text-sm truncate">{token.actor_name}</p>
-                    </div>
+                  ))}
+                </div>
+                
+                {/* 페이지네이션 버튼 */}
+                {totalDubbedPages > 1 && (
+                  <div className="flex justify-center mt-8 gap-2">
+                    {renderPaginationButtons(totalDubbedPages, dubbedPage, setDubbedPage)}
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
         </div>
