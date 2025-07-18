@@ -227,7 +227,7 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                       onClick={() => {router.push(`/actor/${encodeURIComponent(heroVideos[currentIndex].actor_name)}`)}}
                     >
                       <InformationCircleIcon className="w-6 h-6" />
-                      더 자세히
+                      배우 정보
                     </button>
                   </div>
                 </div>
