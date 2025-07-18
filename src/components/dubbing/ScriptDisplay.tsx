@@ -318,14 +318,14 @@ export default function ScriptDisplay({
     if (!currentWords || currentWords.length === 0) {
       // word 데이터가 없으면 기존 방식으로 렌더링
       return (
-        <div className="text-white text-2xl font-bold text-center leading-tight">
+        <div className="text-white text-base sm:text-xl md:text-2xl font-bold text-center leading-tight">
           &quot;{decodeHtmlEntities(captions[currentScriptIndex]?.script || '')}&quot;
         </div>
       );
     }
 
     return (
-      <div className="text-white text-2xl font-bold text-center leading-tight">
+      <div className="text-white text-base sm:text-xl md:text-2xl font-bold text-center leading-tight">
         &quot;{currentWords.map((word, index) => {
           const isCurrent = currentVideoTime >= word.start_time && currentVideoTime <= word.end_time;
           const animatedScore = animatedScores[word.word] || 0;
@@ -356,49 +356,49 @@ export default function ScriptDisplay({
   };
 
   return (
-    <div className="bg-gray-900 rounded-xl p-6 w-[77em] flex flex-col relative">
-      <div className="bg-gradient-to-br from-[#0f172a] to-[#1e293b] rounded-2xl p-6 shadow-xl text-white mb-6 border border-gray-700 space-y-6">
+    <div className="bg-gray-900 rounded-xl p-3 sm:p-4 md:p-6 w-full flex flex-col relative">
+      <div className="bg-gradient-to-br from-[#0f172a] to-[#1e293b] rounded-2xl p-3 sm:p-4 md:p-6 shadow-xl text-white mb-4 md:mb-6 border border-gray-700 space-y-4 md:space-y-6">
         
         {/* 진행 정보 + 시간 정보 */}
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-lg font-semibold text-white">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-2">
+            <div className="text-base sm:text-lg font-semibold text-white">
               🎬 Script <span className="text-teal-300">{currentScriptIndex + 1}</span> / {captions.length}
             </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-yellow-300 font-semibold">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm">
+              <span className="text-yellow-300 font-semibold">
                 {String(Math.floor(captions[currentScriptIndex]?.start_time / 60)).padStart(2, "0")}:
                 {String(Math.floor(captions[currentScriptIndex]?.start_time % 60)).padStart(2, "0")} -
                 {String(Math.floor(captions[currentScriptIndex]?.end_time / 60)).padStart(2, "0")}:
                 {String(Math.floor(captions[currentScriptIndex]?.end_time % 60)).padStart(2, "0")}
               </span>
-              <span className="text-sm text-blue-300 font-semibold">
+              <span className="text-blue-300 font-semibold">
                 ⏱ {formatTime(currentVideoTime)}
               </span>
               {playbackRange && (
-                <span className="text-sm text-gray-300 font-medium">
+                <span className="text-gray-300 font-medium hidden sm:inline">
                   🎧 {formatTime(playbackRange.startTime)} ~ {playbackRange.endTime ? formatTime(playbackRange.endTime) : '끝'}
                 </span>
               )}
               {recordingCompleted && !analysisResult ? (
-                <div className="flex items-center space-x-2 text-sm font-medium text-blue-400">
-                  <div className="animate-spin w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full"></div>
+                <div className="flex items-center space-x-2 font-medium text-blue-400">
+                  <div className="animate-spin w-3 h-3 sm:w-4 sm:h-4 border-2 border-blue-400 border-t-transparent rounded-full"></div>
                   <span>분석 중</span>
                 </div>
               ) : (
-                <div className="text-sm font-medium text-green-400">
+                <div className="font-medium text-green-400">
                   {Math.round(((currentScriptIndex + 1) / captions.length) * 100)}% 완료
                 </div>
               )}
             </div>
           </div>
 
-          <div className="relative w-full h-3 bg-gray-800 rounded-full overflow-hidden shadow-inner">
+          <div className="relative w-full h-2 sm:h-3 bg-gray-800 rounded-full overflow-hidden shadow-inner">
             <div
               className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-500 ease-out"
               style={{ width: `${((currentScriptIndex + 1) / captions.length) * 100}%` }}
             >
-              <span className="absolute right-2 text-[10px] font-bold text-white drop-shadow-sm">
+              <span className="absolute right-1 sm:right-2 text-[8px] sm:text-[10px] font-bold text-white drop-shadow-sm">
                 {Math.round(((currentScriptIndex + 1) / captions.length) * 100)}%
               </span>
             </div>
@@ -407,24 +407,24 @@ export default function ScriptDisplay({
 
         <div className="flex flex-col items-center space-y-3">
           {/* 스크립트 본문 + 내비게이션 */}
-          <div className="flex items-center space-x-4 w-full">
+          <div className="flex items-center space-x-2 sm:space-x-4 w-full">
             <button
               onClick={() => {
                 if (onStopLooping) onStopLooping();
                 handleScriptChange(Math.max(0, currentScriptIndex - 1));
               }}
               disabled={currentScriptIndex === 0 || recording || recordingCompleted}
-              className={`p-2 rounded-full transition-all duration-200 ${
+              className={`p-1 sm:p-2 rounded-full transition-all duration-200 ${
                 currentScriptIndex === 0 
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
                   : 'bg-gray-700 text-green-400 hover:bg-gray-600 hover:text-green-300'
               }`}
             >
-              <ChevronLeftIcon className="w-5 h-5" />
+              <ChevronLeftIcon className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
             <div 
-              className="bg-gray-800 rounded-lg p-4 flex-1 shadow-inner border border-gray-700 flex items-center justify-center min-h-[100px] relative overflow-hidden"
+              className="bg-gray-800 rounded-lg p-2 sm:p-4 flex-1 shadow-inner border border-gray-700 flex items-center justify-center min-h-[80px] sm:min-h-[100px] relative overflow-hidden"
               style={{
                 background: isAnalyzing 
                   ? 'rgba(31, 41, 55, 1)' // 분석 중일 때는 회색
@@ -439,16 +439,18 @@ export default function ScriptDisplay({
                   <div className="absolute inset-0 bg-gray-900/30 backdrop-blur-[1px] flex items-center justify-center z-20 rounded pointer-events-none">
                     <div className="flex flex-col items-center space-y-3">
                       {/* 빙빙 도는 아이콘 */}
-                      <svg className="w-12 h-12 text-emerald-300 animate-spin" viewBox="0 0 20 20" fill="none" aria-label="분석 중">
+                      <svg className="w-8 h-8 sm:w-12 sm:h-12 text-emerald-300 animate-spin" viewBox="0 0 20 20" fill="none" aria-label="분석 중">
                         <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" strokeDasharray="20 10" />
                       </svg>
                       {/* 분석 중 텍스트 */}
-                      <span className="text-emerald-300 text-sm font-medium">분석 중...</span>
+                      <span className="text-emerald-300 text-xs sm:text-sm font-medium">분석 중...</span>
                     </div>
                   </div>
                 </div>
               ) : (
-                renderScriptWithWords()
+                <div className="text-white text-base sm:text-xl md:text-2xl font-bold text-center leading-tight">
+                  {renderScriptWithWords()}
+                </div>
               )}
             </div>
             
@@ -458,13 +460,13 @@ export default function ScriptDisplay({
                 handleScriptChange(Math.min(captions.length - 1, currentScriptIndex + 1));
               }}
               disabled={currentScriptIndex === captions.length - 1 || recording || recordingCompleted}
-              className={`p-2 rounded-full transition-all duration-200 ${
+              className={`p-1 sm:p-2 rounded-full transition-all duration-200 ${
                 currentScriptIndex === captions.length - 1 
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
                   : 'bg-gray-700 text-green-400 hover:bg-gray-600 hover:text-green-300'
               }`}
             >
-              <ChevronRightIcon className="w-5 h-5" />
+              <ChevronRightIcon className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
           {/* 🎯 직관적 타이밍 가이드 */}

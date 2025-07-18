@@ -33,8 +33,7 @@ export default function ShortsGrid({ bookmarks, loading, onRemoveBookmark }: Sho
   return (
     <div className="lg:col-span-2 bg-neutral-900 rounded-2xl p-8 border border-neutral-800">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">내 북마크</h2>
-        <button className="text-blue-400 hover:text-blue-300 text-sm">전체보기</button>
+        <h2 className="text-2xl font-bold">내 북마크 <span className="text-blue-400 text-lg ml-2">({bookmarks.length}개)</span></h2>
       </div>
       
       {bookmarks.length === 0 ? (
