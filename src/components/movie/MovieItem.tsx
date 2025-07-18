@@ -3,6 +3,7 @@ import type { MovieItemProps } from "@/types/video";
 import { useBookmark } from '@/hooks/useBookmark';
 import { BookmarkIcon } from '@heroicons/react/24/solid';
 import { useState } from 'react';
+import { useUser } from '@/hooks/useUser';
 
 export default function MovieItem({
   video,
@@ -20,6 +21,8 @@ export default function MovieItem({
   const { isLoading, isSuccess, isError, addBookmark } = useBookmark();
   // 북마크 상태를 로컬에서 관리 (true/false)
   const [bookmarked, setBookmarked] = useState(false);
+  // 로그인 상태 확인
+  const { isLoggedIn } = useUser();
 
   const handleBookmarkClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -49,15 +52,16 @@ export default function MovieItem({
         }
       }}
     >
-      {/* 북마크 버튼 - 카드 우상단 */}
-      <button
-        className="absolute top-3 right-3 z-20 bg-white/80 rounded-full p-2 hover:bg-green-200 opacity-0 group-hover/video:opacity-100 transition-all"
-        onClick={handleBookmarkClick}
-        disabled={isLoading}
-        title="북마크 추가"
-      >
-        <BookmarkIcon className={`w-6 h-6`} style={{ color: bookmarked ? '#22ff88' : '#9ca3af', transition: 'color 0.2s' }} />
-      </button>
+      {isLoggedIn && (
+        <button
+          className="absolute top-3 right-3 z-20 bg-white/80 rounded-full p-2 hover:bg-green-200 opacity-0 group-hover/video:opacity-100 transition-all"
+          onClick={handleBookmarkClick}
+          disabled={isLoading}
+          title="북마크 추가"
+        >
+          <BookmarkIcon className={`w-6 h-6`} style={{ color: bookmarked ? '#22ff88' : '#9ca3af', transition: 'color 0.2s' }} />
+        </button>
+      )}
       {/* 유튜브 썸네일만 표시 */}
       {video.youtubeId ? (
         <img

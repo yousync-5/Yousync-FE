@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import WebGLProgressBar from "../graph/WebGLProgressBar";
 
 interface PronunciationTimingGuideProps {
   captions: Array<{
@@ -98,7 +99,7 @@ export default function PronunciationTimingGuide({
   return (
     <div className="w-full bg-gray-800 rounded-lg p-4 border border-gray-700">
       <h4 className="text-sm font-semibold text-cyan-400 mb-3 text-center">
-        📊 발음 정확도 분석
+        📊 Pronunciation Accuracy Analysis
       </h4>
       <div className="flex flex-col items-center justify-center gap-2 mb-4">
         {/* 첫 번째 줄 */}
@@ -116,17 +117,11 @@ export default function PronunciationTimingGuide({
                 >
                   {word.word}
                 </span>
-                <div className="w-20 h-3 bg-gray-700 rounded-full overflow-hidden mb-1">
-                  <div
-                    className="h-full transition-all duration-200"
-                    style={{ 
-                      width: `${Math.round(animatedScore * 100)}%`,
-                      backgroundColor: getGradientColor(animatedScore)
-                    }}
-                  />
+                <div className="w-20 h-3 mb-1">
+                  <WebGLProgressBar value={animatedScore} width={80} height={12} theme="dark" animation={true} showPercentage={false} />
                 </div>
                 <span className="text-sm text-gray-400 mt-1">
-                  정확도 {Math.round(animatedScore * 100)}%
+                  Accuracy {Math.round(animatedScore * 100)}%
                 </span>
               </div>
             );
@@ -148,17 +143,11 @@ export default function PronunciationTimingGuide({
                   >
                     {word.word}
                   </span>
-                  <div className="w-20 h-3 bg-gray-700 rounded-full overflow-hidden mb-1">
-                    <div
-                      className="h-full transition-all duration-200"
-                      style={{ 
-                        width: `${Math.round(animatedScore * 100)}%`,
-                        backgroundColor: getGradientColor(animatedScore)
-                      }}
-                    />
+                  <div className="w-20 h-3 mb-1">
+                    <WebGLProgressBar value={animatedScore} width={80} height={12} theme="dark" animation={true} showPercentage={false} />
                   </div>
                   <span className="text-sm text-gray-400 mt-1">
-                    정확도 {Math.round(animatedScore * 100)}%
+                    Accuracy {Math.round(animatedScore * 100)}%
                   </span>
                 </div>
               );
@@ -181,17 +170,11 @@ export default function PronunciationTimingGuide({
                   >
                     {word.word}
                   </span>
-                  <div className="w-20 h-3 bg-gray-700 rounded-full overflow-hidden mb-1">
-                    <div
-                      className="h-full transition-all duration-200"
-                      style={{ 
-                        width: `${Math.round(animatedScore * 100)}%`,
-                        backgroundColor: getGradientColor(animatedScore)
-                      }}
-                    />
+                  <div className="w-20 h-3 mb-1">
+                    <WebGLProgressBar value={animatedScore} width={80} height={12} theme="dark" animation={true} showPercentage={false} />
                   </div>
                   <span className="text-sm text-gray-400 mt-1">
-                    정확도 {Math.round(animatedScore * 100)}%
+                    Accuracy {Math.round(animatedScore * 100)}%
                   </span>
                 </div>
               );
@@ -201,7 +184,7 @@ export default function PronunciationTimingGuide({
       </div>
       <div className="text-center text-xs text-gray-300">
         {analysisResult?.overall_score !== undefined && (
-          <>전체 정확도: {Math.round(analysisResult.overall_score * 100)}%</>
+          <>Overall Accuracy: {Math.round(analysisResult.overall_score * 100)}%</>
         )}
       </div>
     </div>

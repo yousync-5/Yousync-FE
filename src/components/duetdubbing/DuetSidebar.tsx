@@ -1,8 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import Loader from "../ui/Loader";
+import { checkAllAnalyzedDuetResult } from '@/utils/checkAllAnalyzedDuetResult';
+import isMyLine from '@/utils/isMyLine';
+import DuetResult from '@/utils/DuetResult';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -59,12 +62,17 @@ export default function Sidebar({
 
   // 화자 구분 로직 - Second Speaker가 내 대사
   const currentScript = captions[currentScriptIndex];
-  const isMyLine = currentScript?.actor?.name === "나";
+  const isMineCurrent = isMyLine(currentScript?.actor);
 
   // 내 대사만 필터링
-  const filteredCaptions = showMyLinesOnly 
-    ? captions.filter(caption => caption.actor?.name === "나")
-    : captions;
+  const myCaptions = captions.filter(caption => isMyLine(caption.actor));
+  // 내 대사 중 분석 완료된 개수
+  const myAnalyzedCount = myCaptions.filter(c => {
+    const scriptKey = normalizeScript(c.script);
+    return !!latestResultByScript[scriptKey];
+  }).length;
+  // 내 대사만 모두 분석 완료됐는지 체크
+  const isAllAnalyzed = myCaptions.length > 0 && myAnalyzedCount === myCaptions.length;
 
   useEffect(() => {
     console.log("[Sidebar] captions:", captions);
@@ -73,7 +81,7 @@ export default function Sidebar({
   useEffect(() => {
     // currentScriptIndex가 변경될 때마다 자동스크롤 실행
     scrollToSelectedItem();
-  }, [currentScriptIndex, filteredCaptions])
+  }, [currentScriptIndex, myCaptions])
 
   // captions에서 정보 추출 (존재하지 않으면 '-')
   const actorName = (captions[0] && (captions[0] as any).actor && (captions[0] as any).actor.name) ? (captions[0] as any).actor.name : '-';
@@ -177,12 +185,12 @@ export default function Sidebar({
         <div className="mt-2">
           <div className="flex justify-between text-xs text-gray-400 mb-1">
             <span>문장 진행률</span>
-            <span>{filteredCaptions.length} / {totalCount}</span>
+            <span>{myCaptions.length} / {captions.length}</span>
           </div>
           <div className="w-full h-2 bg-gray-700 rounded">
             <div
               className="h-2 bg-emerald-400 rounded"
-              style={{ width: `${(filteredCaptions.length / totalCount) * 100}%` }}
+              style={{ width: `${(myCaptions.length / captions.length) * 100}%` }}
             />
           </div>
         </div>
@@ -190,12 +198,12 @@ export default function Sidebar({
         <div className="mt-2">
           <div className="flex justify-between text-xs text-gray-400 mb-1">
             <span>문장 분석완료</span>
-            <span>{analyzedCount} / {totalCount}</span>
+            <span>{myAnalyzedCount} / {myCaptions.length}</span>
           </div>
           <div className="w-full h-2 bg-gray-700 rounded">
             <div
               className="h-2 bg-blue-400 rounded"
-              style={{ width: `${(analyzedCount / totalCount) * 100}%` }}
+              style={{ width: `${(myAnalyzedCount / myCaptions.length) * 100}%` }}
             />
           </div>
         </div>
@@ -217,7 +225,7 @@ export default function Sidebar({
       </div>
 
       <ul ref={listRef} className="px-4 py-6 pb-32">
-        {filteredCaptions.map((caption, index) => {
+        {captions.map((caption, index) => {
           const scriptKey = normalizeScript(caption.script);
           const isAnalyzed = !!latestResultByScript[scriptKey];
           const originalIndex = captions.findIndex(c => c === caption);
@@ -328,40 +336,31 @@ export default function Sidebar({
       )}
 
       {/* 토스트 스타일 전체 녹음 들어보기 버튼 */}
-      <div
-        className={`
-          fixed bottom-8 z-[9999]
-          w-[220px] max-w-[90vw]
-          bg-gradient-to-r from-emerald-400 via-blue-400 to-pink-400
-          text-white font-bold rounded-2xl shadow-2xl
-          flex items-center gap-3 px-4 py-3 animate-pulse
-          transition-all duration-500
-          ${isOpen ? 'right-4 translate-x-0' : 'right-[-240px] translate-x-full'}
-        `}
-        style={{ boxShadow: "0 8px 32px rgba(34,197,94,0.25)" }}
-      >
-        <button
-          className="flex-1 flex items-center gap-2 focus:outline-none"
-          onClick={() => onStopLooping && onStopLooping()}
+      {isAllAnalyzed && (
+        <div
+          className={`
+            fixed bottom-8 z-[9999]
+            w-[220px] max-w-[90vw]
+            bg-gradient-to-r from-emerald-400 via-blue-400 to-pink-400
+            text-white font-bold rounded-2xl shadow-2xl
+            flex items-center gap-3 px-4 py-3 animate-pulse
+            transition-all duration-500
+            ${isOpen ? 'right-4 translate-x-0' : 'right-[-240px] translate-x-full'}
+          `}
+          style={{ boxShadow: "0 8px 32px rgba(34,197,94,0.25)" }}
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
-            <polygon points="10,8 16,12 10,16" fill="white" />
-          </svg>
-          전체 녹음 들어보기
-        </button>
-        <button
-          className="ml-2 text-white/80 hover:text-white transition"
-          onClick={() => {}}
-          aria-label="닫기"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 20 20">
-            <line x1="4" y1="4" x2="16" y2="16" stroke="white" strokeWidth="2"/>
-            <line x1="16" y1="4" x2="4" y2="16" stroke="white" strokeWidth="2"/>
-          </svg>
-        </button>
-      </div>
-      {/* 토스트 스타일 전체 녹음 들어보기 버튼 */}
+          <button
+            className="flex-1 flex items-center gap-2 focus:outline-none"
+            onClick={() => onStopLooping && onStopLooping()}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
+              <polygon points="10,8 16,12 10,16" fill="white" />
+            </svg>
+            전체 녹음 들어보기
+          </button>
+        </div>
+      )}
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {

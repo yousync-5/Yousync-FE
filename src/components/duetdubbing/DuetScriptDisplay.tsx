@@ -40,6 +40,8 @@ interface ScriptDisplayProps {
   showAnalysisResult?: boolean;
   analysisResult?: any;
   totalDuration?: number; // 전체 영상 길이 추가
+  isAllAnalyzed?: boolean; // 전체 분석 완료 여부
+  isOpen?: boolean; // 토스트 열림 상태
 }
 
 export default function ScriptDisplay({ 
@@ -56,6 +58,8 @@ export default function ScriptDisplay({
   showAnalysisResult = false,
   analysisResult = null,
   totalDuration,
+  isAllAnalyzed = false,
+  isOpen = false,
 }: ScriptDisplayProps) {
 
   // 디버깅 로그: captions 배열 순서, currentScriptIndex, currentScript
@@ -392,23 +396,21 @@ export default function ScriptDisplay({
   const current = getMinutesAndSeconds(currentVideoTime);
   const total = getMinutesAndSeconds(totalDuration ?? 0);
 
-
-
   return (
     <div className="bg-gray-900 rounded-xl p-6 w-[77em] flex flex-col relative">
       <div className="bg-gradient-to-br from-[#0f172a] to-[#1e293b] rounded-2xl p-6 shadow-xl text-white mb-6 border border-gray-700 space-y-6">
         <div>
           <div className="flex items-center justify-between mb-2">
-          <span>
+            <span>
               🎬 현재시간:
-          <span className={timeBoxClass}>{current.minutes}</span>
-          <span className="mx-1 text-lg font-bold text-gray-400">:</span>
-          <span className={timeBoxClass}>{current.seconds}</span>
-          {"\u00A0\u00A0~\u00A0\u00A0"}
-          🕐 종료시간:
-          <span className={timeBoxClass}>{total.minutes}</span>
-          <span className="mx-1 text-lg font-bold text-gray-400">:</span>
-          <span className={timeBoxClass}>{total.seconds}</span>
+              <span className={timeBoxClass}>{current.minutes}</span>
+              <span className="mx-1 text-lg font-bold text-gray-400">:</span>
+              <span className={timeBoxClass}>{current.seconds}</span>
+              {"\u00A0\u00A0~\u00A0\u00A0"}
+              🕐 종료시간:
+              <span className={timeBoxClass}>{total.minutes}</span>
+              <span className="mx-1 text-lg font-bold text-gray-400">:</span>
+              <span className={timeBoxClass}>{total.seconds}</span>
             </span>
           </div>
         </div>
@@ -521,6 +523,33 @@ export default function ScriptDisplay({
           </div>
         </div>
       </div>
+      
+      {/* 토스트 스타일 전체 녹음 들어보기 버튼 */}
+      {isAllAnalyzed && (
+        <div
+          className={`
+            fixed bottom-8 z-[9999]
+            w-[220px] max-w-[90vw]
+            bg-gradient-to-r from-emerald-400 via-blue-400 to-pink-400
+            text-white font-bold rounded-2xl shadow-2xl
+            flex items-center gap-3 px-4 py-3 animate-pulse
+            transition-all duration-500
+            ${isOpen ? 'right-4 translate-x-0' : 'right-[-240px] translate-x-full'}
+          `}
+          style={{ boxShadow: "0 8px 32px rgba(34,197,94,0.25)" }}
+        >
+          <button
+            className="flex-1 flex items-center gap-2 focus:outline-none"
+            onClick={() => onStopLooping && onStopLooping()}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
+              <polygon points="10,8 16,12 10,16" fill="white" />
+            </svg>
+            전체 녹음 들어보기
+          </button>
+        </div>
+      )}
     </div>
   );
 }
