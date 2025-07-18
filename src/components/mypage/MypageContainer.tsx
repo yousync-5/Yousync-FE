@@ -15,16 +15,18 @@ const MypageContainer: React.FC = () => {
   const [isRemovingBookmark, setIsRemovingBookmark] = useState(false);
   const itemsPerPage = 6; // 페이지당 표시할 항목 수
 
-  // 북마크 페이지네이션 계산
-  const totalBookmarkPages = data ? Math.ceil(data.recent_bookmarks.length / itemsPerPage) : 0;
-  const currentBookmarks = data ? data.recent_bookmarks.slice(
+  // 북마크 정렬 및 페이지네이션 계산
+  const sortedBookmarks = data ? [...data.recent_bookmarks].sort((a, b) => b.token.id - a.token.id) : [];
+  const totalBookmarkPages = data ? Math.ceil(sortedBookmarks.length / itemsPerPage) : 0;
+  const currentBookmarks = data ? sortedBookmarks.slice(
     (bookmarkPage - 1) * itemsPerPage,
     bookmarkPage * itemsPerPage
   ) : [];
 
-  // 더빙 토큰 페이지네이션 계산
-  const totalDubbedPages = data ? Math.ceil(data.recent_dubbed_tokens.length / itemsPerPage) : 0;
-  const currentDubbedTokens = data ? data.recent_dubbed_tokens.slice(
+  // 더빙 토큰 정렬 및 페이지네이션 계산
+  const sortedDubbedTokens = data ? [...data.recent_dubbed_tokens].sort((a, b) => b.token_id - a.token_id) : [];
+  const totalDubbedPages = data ? Math.ceil(sortedDubbedTokens.length / itemsPerPage) : 0;
+  const currentDubbedTokens = data ? sortedDubbedTokens.slice(
     (dubbedPage - 1) * itemsPerPage,
     dubbedPage * itemsPerPage
   ) : [];
@@ -163,6 +165,10 @@ const MypageContainer: React.FC = () => {
                     <div
                       key={bookmark.id}
                       className="group bg-neutral-800 rounded-xl overflow-hidden border border-neutral-700 hover:border-neutral-600 transition-all duration-300 cursor-pointer"
+                      onClick={() => {
+                        // 토큰 클릭 시 결과 페이지로 이동
+                        window.location.href = `/result?token_id=${bookmark.token.id}`;
+                      }}
                     >
                       {/* 썸네일 */}
                       <div className="relative aspect-[16/9] w-full overflow-hidden">
@@ -233,7 +239,7 @@ const MypageContainer: React.FC = () => {
               <h2 className="text-2xl font-bold">
                 최근 더빙한 토큰{' '}
                 <span className="text-green-400 text-lg ml-2">
-                  ({data.recent_dubbed_tokens.length}/{data.total_dubbed_tokens}개)
+                  ({data.recent_dubbed_tokens.length}개)
                 </span>
               </h2>
               <button className="text-green-400 hover:text-green-300 text-sm">전체보기</button>
@@ -252,6 +258,10 @@ const MypageContainer: React.FC = () => {
                     <div
                       key={token.token_id}
                       className="group bg-neutral-800 rounded-xl overflow-hidden border border-neutral-700 hover:border-neutral-600 transition-all duration-300 cursor-pointer"
+                      onClick={() => {
+                        // 토큰 클릭 시 결과 페이지로 이동
+                        window.location.href = `/result?token_id=${token.token_id}`;
+                      }}
                     >
                       <div className="relative aspect-[16/9] w-full overflow-hidden">
                         <img

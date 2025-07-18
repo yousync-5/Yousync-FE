@@ -174,6 +174,37 @@ const ResultComponent: React.FC<TestResultAnalysisSectionProps> = ({
             </div>
           </div>
           <SentenceAnalysis finalResults={finalResults} />
+          
+          {/* 다시 더빙하기 버튼 추가 */}
+          {window.location.pathname === '/result' && (
+            <div className="w-full flex justify-center px-2 md:px-0 mt-8 gap-4">
+              <button
+                onClick={() => {
+                  // URL에서 token_id 파라미터 추출
+                  const urlParams = new URLSearchParams(window.location.search);
+                  const tokenId = urlParams.get('token_id');
+                  if (tokenId) {
+                    // 더빙 페이지로 이동
+                    window.location.href = `/dubbing?token_id=${tokenId}`;
+                  }
+                }}
+                className="w-full max-w-xs px-8 py-4 bg-gradient-to-r from-blue-500 to-green-500 text-white font-semibold rounded-lg shadow-lg hover:from-blue-600 hover:to-green-600 transition-all duration-300 transform hover:scale-105"
+              >
+                🎙️ 다시 더빙하기
+              </button>
+              
+              {/* 뒤로가기 버튼 추가 */}
+              <button
+                onClick={() => {
+                  // 마이페이지로 이동
+                  window.location.href = '/mypage';
+                }}
+                className="w-full max-w-xs px-8 py-4 bg-gradient-to-r from-gray-500 to-gray-700 text-white font-semibold rounded-lg shadow-lg hover:from-gray-600 hover:to-gray-800 transition-all duration-300 transform hover:scale-105"
+              >
+                ↩️ 뒤로가기
+              </button>
+            </div>
+          )}
         </div>
       )}
       <ResultViewBtn
