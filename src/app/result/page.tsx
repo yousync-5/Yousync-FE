@@ -24,6 +24,17 @@ export default function ResultPage() {
         // 토큰 ID에 해당하는 결과 데이터 가져오기
         const response = await backendApi.get(`/mypage/tokens/${tokenId}/analysis-status`);
         console.log('분석 결과 데이터:', response); // 응답 데이터 구조 확인
+        
+        // 데이터 구조 디버깅
+        if (response?.script_results) {
+          console.log('script_results 개수:', response.script_results.length);
+          console.log('첫 번째 script_result:', response.script_results[0]);
+          if (response.script_results[0]?.result) {
+            console.log('첫 번째 result:', response.script_results[0].result);
+            console.log('word_analysis 존재 여부:', !!response.script_results[0].result.word_analysis);
+          }
+        }
+        
         setResultData(response);
         setLoading(false);
       } catch (err) {
@@ -63,9 +74,40 @@ export default function ResultPage() {
     );
   }
 
+  // 분석 결과가 없는 경우
+  if (!resultData?.has_analysis) {
+    return (
+      <div className="min-h-screen bg-neutral-950 text-white flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6 bg-gray-900 rounded-xl border border-gray-800">
+          <div className="text-5xl mb-4">🎬</div>
+          <h2 className="text-2xl font-bold mb-4">분석 결과가 없습니다</h2>
+          <p className="text-gray-400 mb-6">
+            아직 이 토큰에 대한 분석 결과가 없습니다. 먼저 더빙을 진행해주세요.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => window.location.href = `/dubbing?token_id=${tokenId}`}
+              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-green-500 text-white font-semibold rounded-lg shadow-lg hover:from-blue-600 hover:to-green-600 transition-all"
+            >
+              🎙️ 더빙하러 가기
+            </button>
+            <button
+              onClick={() => window.history.back()}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition"
+            >
+              ↩️ 뒤로가기
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <ResultContainer 
-      finalResults={resultData?.script_results || []} 
+      finalResults={resultData?.script_results
+        ?.filter(item => item.has_result && item.result)
+        ?.map(item => item.result) || []} 
       hasAnalysisResults={resultData?.has_analysis || false} 
       showResults={true} 
     />
