@@ -15,29 +15,6 @@ export const RightVideosSection: React.FC<RightVideosSectionProps> = ({
   isLoading, 
   onMovieClick 
 }) => {
-    const [selectedId, setSelectedId] = useState<number | null>(null);
-    const detailRef = useRef<HTMLDivElement | null>(null)
-
-    const onClickVideo = (id: number) => {
-        setSelectedId(selectedId === id ? null : id);
-    }
-
-    // 바깥 클릭 감지
-    useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if(detailRef.current && !detailRef.current.contains(e.target as Node)){
-                setSelectedId(null);
-            }
-        }
-        if(selectedId !== null){
-            document.addEventListener("mousedown", handleClickOutside);
-        }
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        }
-    }, [selectedId])
-
-
   return (
     <div className="lg:w-1/2 lg:h-full overflow-y-auto">
         <div className="p-4 lg:p-8">
@@ -46,8 +23,8 @@ export const RightVideosSection: React.FC<RightVideosSectionProps> = ({
                 {movies.map(movie => (
                     <div key={movie.id} className="flex flex-col gap-2">
                         <div
-                            className="bg-gray-900 border-2 border-gray-800 rounded-xl overflow-hidden shadow-lg hover:border-green-500 transition-all duration-300 flex cursor-pointer"
-                            onClick={() =>  onClickVideo(movie.id)}
+                            className="bg-gray-900 border-2 border-gray-800 rounded-xl overflow-hidden shadow-lg hover:border-green-500 transition-all duration-300 flex cursor-pointer transform hover:scale-105"
+                            onClick={() => onMovieClick(movie)}
                         >
                             <img
                                 src={getYoutubeThumbnail(movie.youtube_url)}
@@ -60,20 +37,6 @@ export const RightVideosSection: React.FC<RightVideosSectionProps> = ({
                                 <div className="text-xs text-gray-500">조회수 {movie.view_count}</div>
                             </div>
                         </div>
-                        <AnimatePresence initial={false}>
-                            {selectedId === movie.id && (
-                                <motion.div
-                                    ref={detailRef}
-                                    key="detail"
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    transition={{ type: 'spring', duration: 0.7 }}
-                                >
-                                    <MovieDetail movie={movie} />
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
                     </div>
                 ))}
             </div>
