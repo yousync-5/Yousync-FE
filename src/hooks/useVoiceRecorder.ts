@@ -116,28 +116,33 @@ export function useVoiceRecorder() {
       // 목표 샘플 수 계산
       const targetSamples = Math.floor(targetDuration * audioBuffer.sampleRate);
       
+      // 앞에서 자를 샘플 수 계산 (초과분 - 0.2초)
+      const actualDuration = audioBuffer.duration;
+      let startOffsetSamples = 0;
+      if (actualDuration > targetDuration) {
+        const excess = actualDuration - targetDuration;
+        startOffsetSamples = Math.max(0, Math.floor((excess - 0.2) * audioBuffer.sampleRate));
+      }
+
       // 새로운 AudioBuffer 생성 (목표 길이만큼)
       const trimmedBuffer = audioContext.createBuffer(
         audioBuffer.numberOfChannels,
         targetSamples,
         audioBuffer.sampleRate
       );
-      
-      // 각 채널의 데이터를 복사 (목표 길이만큼만)
+
+      // 각 채널의 데이터를 복사 (앞에서 자르기)
       for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
         const originalData = audioBuffer.getChannelData(channel);
         const trimmedData = trimmedBuffer.getChannelData(channel);
-        
-        // 목표 길이만큼만 복사
         for (let i = 0; i < targetSamples; i++) {
-          trimmedData[i] = originalData[i] || 0;
+          trimmedData[i] = originalData[startOffsetSamples + i] || 0;
         }
       }
-      
+
       // AudioBuffer를 Blob으로 변환
       const trimmedBlob = await audioBufferToBlob(trimmedBuffer);
       return trimmedBlob;
-      
     } catch (error) {
       console.error('[ERROR] WAV 파일 자르기 실패:', error);
       return blob; // 실패 시 원본 반환
