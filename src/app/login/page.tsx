@@ -56,22 +56,27 @@ export default function LoginPage() {
               </p>
             </div>
             {/* 로그인 안내 */}
-            <div className="mb-7 w-full">
-              {!isLoading ? (
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={handleGoogleError}
-                  useOneTap={false}
-                  size="large"
-                  text="signin_with"
-                  shape="rectangular"
-                  theme="outline"
-                />
-              ) : (
-                <div className="w-full py-3 px-4 rounded-xl bg-gray-300 text-center text-gray-600 font-semibold">
-                  로그인 중...
-                </div>
-              )}
+            <div className="mb-7 w-full flex justify-center">
+              <div className="w-full min-w-[240px] flex justify-center">
+                 {!isLoading ? (
+                   <div className="flex justify-center w-full">
+                     <GoogleLogin
+                       onSuccess={handleGoogleSuccess}
+                       onError={handleGoogleError}
+                       useOneTap={false}
+                       size="large"
+                       text="signin_with"
+                       shape="rectangular"
+                       theme="outline"
+                       width="240px"
+                     />
+                   </div>
+                 ) : (
+                   <div className="w-full py-3 px-4 rounded-xl bg-gray-300 text-center text-gray-600 font-semibold">
+                     로그인 중...
+                   </div>
+                 )}
+               </div>
             </div>
             {/* 안내문구 */}
             <div className="w-full text-center mt-2">
