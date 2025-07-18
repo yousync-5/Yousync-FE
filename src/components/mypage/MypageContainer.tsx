@@ -16,7 +16,7 @@ const MypageContainer: React.FC = () => {
   const itemsPerPage = 6; // 페이지당 표시할 항목 수
 
   // 북마크 정렬 및 페이지네이션 계산
-  const sortedBookmarks = data ? [...data.recent_bookmarks].sort((a, b) => b.token.id - a.token.id) : [];
+  const sortedBookmarks = data ? [...data.recent_bookmarks].sort((a, b) => b.id - a.id) : [];
   const totalBookmarkPages = data ? Math.ceil(sortedBookmarks.length / itemsPerPage) : 0;
   const currentBookmarks = data ? sortedBookmarks.slice(
     (bookmarkPage - 1) * itemsPerPage,
@@ -237,7 +237,7 @@ const MypageContainer: React.FC = () => {
           <div className="bg-neutral-900 rounded-2xl p-8 border border-neutral-800">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold">
-                최근 더빙한 토큰{' '}
+                내가 더빙한 영상{' '}
                 <span className="text-green-400 text-lg ml-2">
                   ({data.recent_dubbed_tokens.length}개)
                 </span>

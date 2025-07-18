@@ -12,7 +12,7 @@ export default function RecentVideos({ dubbedTokens, loading }: RecentVideosProp
     return (
       <section className="mb-12">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">최근 더빙한 토큰</h2>
+          <h2 className="text-2xl font-bold">내가 더빙한 영상</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, index) => (
@@ -33,7 +33,7 @@ export default function RecentVideos({ dubbedTokens, loading }: RecentVideosProp
   return (
     <section className="mb-12">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">최근 더빙한 토큰</h2>
+        <h2 className="text-2xl font-bold">내가 더빙한 영상</h2>
         <button className="text-blue-400 hover:text-blue-300 text-sm">전체보기</button>
       </div>
       
