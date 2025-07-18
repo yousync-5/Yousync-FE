@@ -28,6 +28,5 @@ export function useBookmark(): UseBookmarkResult {
       setIsLoading(false);
     }
   };
-
   return { isLoading, isSuccess, isError, addBookmark };
 } 

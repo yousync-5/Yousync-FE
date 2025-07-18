@@ -21,6 +21,7 @@ export default function MovieItem({
   // 북마크 상태를 로컬에서 관리 (true/false)
   const [bookmarked, setBookmarked] = useState(false);
 
+
   const handleBookmarkClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!bookmarked) {
@@ -29,6 +30,7 @@ export default function MovieItem({
     } else {
       setBookmarked(false);
       // TODO: 북마크 해제 API가 있다면 여기에 추가
+
     }
   };
 
@@ -54,7 +56,7 @@ export default function MovieItem({
         className="absolute top-3 right-3 z-20 bg-white/80 rounded-full p-2 hover:bg-green-200 opacity-0 group-hover/video:opacity-100 transition-all"
         onClick={handleBookmarkClick}
         disabled={isLoading}
-        title="북마크 추가"
+        title={bookmarked ? "북마크 삭제" : "북마크 추가"}
       >
         <BookmarkIcon className={`w-6 h-6`} style={{ color: bookmarked ? '#22ff88' : '#9ca3af', transition: 'color 0.2s' }} />
       </button>
