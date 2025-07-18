@@ -432,7 +432,7 @@ useEffect(() => {
     // 현재 문장이 상대 대사인지 확인
     const isCurrentMyLine = currentScript.actor?.name === "나";
 
-    // 상대 대사인 경우, 연속된 상대 대사들의 마지막 endTime을 찾기
+    // 상대 대사인 경우, 연속된 상대 대사들의 마지막 endTime을 찾기 (연속 재생을 위해)
     if (!isCurrentMyLine) {
       let lastOpponentEndTime = currentScript.end_time;
       let nextIndex = currentScriptIndex + 1;
@@ -446,7 +446,7 @@ useEffect(() => {
       
       return {
         startTime: currentScript.start_time,
-        endTime: lastOpponentEndTime,
+        endTime: lastOpponentEndTime, // 연속된 상대 대사들의 마지막 endTime
       };
     }
 
@@ -458,7 +458,7 @@ useEffect(() => {
   }, [isReady, front_data?.captions, currentScriptIndex]);
 
   const currentWords = isReady ? (tokenData?.scripts?.[currentScriptIndex]?.words || []) : [];
-
+  console.log(">> ")
   useEffect(() => {
     if (!isReady) return;
     if (front_data.captions && front_data.captions[currentScriptIndex]) {
@@ -577,7 +577,7 @@ useEffect(() => {
       setShowAnalysisResult(false);
     }
   }, [recording]);
-
+ 
   // 자동재생 상태에 따라 분석 결과 표시 제어
   useEffect(() => {
     if (isRecordingPlayback) {
@@ -618,8 +618,19 @@ useEffect(() => {
     
     console.log(`[SSE] Job ID ${jobId} 유효성 확인 완료, SSE 연결 시작`);
     return new EventSource(`${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/analysis-progress/${jobId}`);
-  };
-
+  };  
+  // 반복재생 버그 수정
+  // currentScriptIndex가 내 대사로 바뀔 때마다 강제로 영상 이동+재생을 반복 시도
+  useEffect(() => {
+    const currentScript = front_data.captions[currentScriptIndex];
+    if (currentScript?.actor?.name === "나") {
+      if (videoPlayerRef.current) {
+        videoPlayerRef.current.seekTo(currentScript.start_time);
+        videoPlayerRef.current.playVideo();
+      }
+    }
+  }, [currentScriptIndex]);
+  
   // --- 렌더링 ---
   if (!isReady) {
     return (
@@ -684,24 +695,39 @@ useEffect(() => {
                   }
                   return; // 자동 이동/재생 금지
                 }
+                // 1. 내 대사가 끝난경우 : 머무르게 하도록
+                if(isCurrentMyLine){
+                  return;
+                }
               
                 // 2. 상대 → 내 대사로 넘어갈 때 자동 이동/재생
                 if (!isCurrentMyLine && isNextMyLine) {
                   console.log("➡️ 상대 → 내 대사, 자동 이동 및 재생");
-                  setCurrentScriptIndex(nextIndex);
-                  videoPlayerRef.current?.seekTo(nextScript.start_time);
-                  videoPlayerRef.current?.playVideo();
+                  console.log("[DEBUG] nextScript:", nextScript);
+                  console.log("[DEBUG] nextScript.actor:", nextScript?.actor);
+                  console.log("[DEBUG] nextScript.actor.name:", nextScript?.actor?.name);
+                  console.log("[DEBUG] typeof nextScript.actor.name:", typeof nextScript?.actor?.name);
+                  console.log("[DEBUG] nextScript.actor.name === '나':", nextScript?.actor?.name === "나");
+                  // setCurrentScriptIndex(nextIndex);// 이걸 남기라고?
+                  // videoPlayerRef.current?.seekTo(nextScript.start_time);
+                  // videoPlayerRef.current?.playVideo();
                   return;
                 }
               
-                // 3. 상대 → 상대 대사인 경우 자동 이동/재생
+                // 3. 상대 → 상대 대사인 경우 자동 이동하지 않음 (연속 재생을 위해)
                 if (!isCurrentMyLine && !isNextMyLine && nextScript) {
-                  console.log("➡️ 상대 → 상대 대사, 자동 이동 및 재생");
-                  setCurrentScriptIndex(nextIndex);
-                  videoPlayerRef.current?.seekTo(nextScript.start_time);
-                  videoPlayerRef.current?.playVideo();
+                  console.log("➡️ 상대 → 상대 대사, 연속 재생 (자동 이동 안함)");
+                  console.log("[DEBUG] nextScript:", nextScript);
+                  console.log("[DEBUG] nextScript.actor:", nextScript?.actor);
+                  console.log("[DEBUG] nextScript.actor.name:", nextScript?.actor?.name);
+                  console.log("[DEBUG] typeof nextScript.actor.name:", typeof nextScript?.actor?.name);
+                  console.log("[DEBUG] nextScript.actor.name === '나':", nextScript?.actor?.name === "나");
+                  // setCurrentScriptIndex(nextIndex); // 제거
+                  // videoPlayerRef.current?.seekTo(nextScript.start_time); // 제거
+                  // videoPlayerRef.current?.playVideo(); // 제거
                   return;
                 }
+               
               
                 // 추가 예외 처리 로그
                 if (!nextScript) {
@@ -774,6 +800,7 @@ useEffect(() => {
               onOpenSidebar={() => setIsSidebarOpen(true)}
               onShowResults={handleViewResults}
               onRecordingStart={handleRecordingStart}
+              latestResultByScript={latestResultByScript}
             />
           </div>
         </div>
@@ -819,3 +846,4 @@ useEffect(() => {
     </div>
   );
 }
+

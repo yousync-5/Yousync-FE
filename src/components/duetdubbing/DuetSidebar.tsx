@@ -115,13 +115,14 @@ export default function Sidebar({
     // 목표 위치 (6번째 위치)
     const targetVisibleTop =5 * itemHeight;
 
-    // 아이템이 목표 위치보다 아래에 있으면 스크롤 조정
-    if(itemVisibleTop > targetVisibleTop) {
-      const scrollOffset = itemVisibleTop - targetVisibleTop;
-      
-      // 부드러운 스크롤 애니메이션
+    // 목표 스크롤 위치 계산
+    // 선택된 아이템이 사이드바 뷰포트의 특정 위치(예: 6번째 아이템 위치)에 오도록 조정
+    const desiredScrollTop = itemTop - targetVisibleTop;
+
+    // 현재 스크롤 위치와 목표 스크롤 위치가 다르면 스크롤 실행
+    if (currentScrollTop !== desiredScrollTop) {
       sidebarRef.current.scrollTo({
-        top: currentScrollTop + scrollOffset,
+        top: desiredScrollTop,
         behavior: 'smooth'
       });
     }

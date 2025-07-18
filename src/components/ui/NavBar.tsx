@@ -14,7 +14,11 @@ interface Actor {
   id: number;
 }
 
-export const NavBar: React.FC = () => {
+interface NavBarProps {
+  animateOnMount?: boolean;
+}
+
+export const NavBar: React.FC<NavBarProps> = ({ animateOnMount }) => {
   const router = useRouter();
   const { user, isLoggedIn } = useUser();
 
@@ -143,9 +147,7 @@ export const NavBar: React.FC = () => {
 
   return (
     <motion.nav
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ type: "spring", stiffness: 80 }}
+      {...(animateOnMount && { initial: { y: -100 }, animate: { y: 0 }, transition: { type: "spring", stiffness: 80 } })}
       className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-b border-gray-800 shadow-2xl"
     >
       <div className="max-w-7xl mx-auto px-2 py-4">
@@ -165,7 +167,9 @@ export const NavBar: React.FC = () => {
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="배우 이름 입력"
+
+                placeholder="배우 검색"
+
                 value={searchQuery}
                 onChange={handleInputChange}
                 onKeyDown={handleInputKeyDown}

@@ -3,6 +3,7 @@
 import React from "react";
 import { NavBar } from "./NavBar";
 import { useVisitCheck } from "@/hooks/useSessionStorage";
+import { usePathname } from "next/navigation";
 
 /**
  * 방문 체크를 통해 조건부로 NavBar를 렌더링하는 컴포넌트
@@ -11,6 +12,7 @@ import { useVisitCheck } from "@/hooks/useSessionStorage";
  */
 const ConditionalNavBar: React.FC = () => {
   const { hasVisited, isInitialized } = useVisitCheck();
+  const pathname = usePathname();
 
   // 초기화가 완료되지 않았거나 최초 방문인 경우 NavBar 숨김
   if (!isInitialized) {
@@ -23,7 +25,7 @@ const ConditionalNavBar: React.FC = () => {
   }
 
   // 재방문인 경우에만 NavBar 표시
-  return <NavBar />;
+  return <NavBar animateOnMount={true} />;
 };
 
 export default ConditionalNavBar; 

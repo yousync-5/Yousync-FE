@@ -9,6 +9,8 @@ import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 're
 import { useAudioStore } from '@/store/useAudioStore';
 import { ScriptItem } from "@/types/pitch";
 import { useJobIdsStore } from '@/store/useJobIdsStore';
+import DubbingListenModal from '@/components/result/DubbingListenModal';
+// import { LiquidGauge } from '@/components/LiquidGauge';
 
 interface PitchComparisonProps {
   currentScriptIndex: number;
@@ -29,7 +31,8 @@ interface PitchComparisonProps {
   onRecordingPlaybackChange?: (isPlaying: boolean) => void;
   onOpenSidebar?: () => void;
   onShowResults?: () => void;
-  onRecordingStart?: (scriptIndex: number) => void; // 추가: 녹음 시작 시 콜백
+  onRecordingStart?: (scriptIndex: number) => void;
+  latestResultByScript?: { [key: string]: { overall_score: number } };
 }
 
 const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComparisonProps>(function PitchComparison({ 
@@ -52,6 +55,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   onOpenSidebar,
   onShowResults,
   onRecordingStart,
+  latestResultByScript,
 }: PitchComparisonProps, ref) {
 
   const {
@@ -392,8 +396,19 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
     }
   };
 
+  // 더빙본 들어보기 모달 상태 및 핸들러
+  const [isListenModalOpen, setIsListenModalOpen] = useState(false);
+  const [listenModalId, setListenModalId] = useState<string | undefined>(undefined);
+  const handleOpenDubbingListenModal = () => {
+    setListenModalId(tokenId);
+    setIsListenModalOpen(true);
+  };
+
+  // percent 계산도 기존대로 유지
+  const percent = latestResultByScript?.[currentScriptIndex]?.overall_score || 0;
+
   return (
-    <div className="bg-gray-900 rounded-xl p-6 h-[28em] relative">
+    <div className="bg-gray-900 rounded-xl p-6 h-auto min-h-[28em] relative max-w-xl ml-0 mr-auto">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold">Pitch Comparison</h3>
         {onOpenSidebar && (
@@ -417,36 +432,46 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
         )}
       </div>
       <div className="space-y-4">
+       
         <div>
-          <div className="text-sm text-gray-400 mb-2">Your Pitch</div>
-          <div className="w-full h-16 bg-gray-800 rounded">
-            <MyPitchGraph currentIdx={currentScriptIndex} />
+          {/* 모든 문장 분석 완료 시 버튼 표시 */}
+          {/* {(() => {
+            const total = captions.length;
+            const analyzed = Object.values(recordedScripts).filter(Boolean).length;
+            if (analyzed === total && total > 0) {
+              return (
+                <div className="w-full flex flex-row justify-center gap-4 my-4 z-10 mt-6">
+                  <button 
+                    className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow transition"
+                    onClick={handleOpenDubbingListenModal}
+                  >
+                    더빙본 들어보기
+                  </button>
+                  <button
+                    className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow transition"
+                    onClick={onShowResults}
+                  >
+                    결과보기
+                  </button>
+                </div>
+              );
+            }
+            return null;
+          })()} */}
+          <div className="w-full flex flex-row justify-center gap-4 my-4 z-10 mt-6">
+                  <button 
+                    className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow transition"
+                    onClick={handleOpenDubbingListenModal}
+                  >
+                    더빙본 들어보기
+                  </button>
+                  <button
+                    className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow transition"
+                    onClick={onShowResults}
+                  >
+                    결과보기
+                  </button>
           </div>
-        </div>
-        <div>
-          {/* <div className="text-sm text-gray-400 mb-2">
-            Original Pitch
-          </div> */}
-          
-            {/* 모든 문장 분석 완료 시 버튼 표시 */}
-            {(() => {
-              const total = captions.length;
-              const analyzed = Object.values(recordedScripts).filter(Boolean).length;
-              if (analyzed === total && total > 0) {
-                return (
-                  <div className="flex flex-row justify-center gap-4 my-4">
-                    <button className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow transition">더빙본 들어보기</button>
-                    <button
-                      className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow transition"
-                      onClick={onShowResults}
-                    >
-                      결과보기
-                    </button>
-                  </div>
-                );
-              }
-              return null;
-            })()}
         
         </div>
         
@@ -618,6 +643,13 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
           </div>
         </div>
       </div>
+      {/* 더빙본 들어보기 모달 */}
+      <DubbingListenModal
+        open={isListenModalOpen}
+        onClose={() => setIsListenModalOpen(false)}
+        modalId={listenModalId}
+        tokenId={tokenId}
+      />
     </div>
   );
 });
