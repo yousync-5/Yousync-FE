@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { FaMicrophone, FaUser, FaTag, FaClock } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import type { TokenDetailResponse } from "@/types/pitch";
+import { tokenApi } from "@/services/api";
 
 const YouTube = dynamic(() => import('react-youtube'), { ssr: false });
 
@@ -60,11 +61,20 @@ export default function MovieDetailModal({
 
   if (!isOpen || !youtubeId || !tokenData) return null;
 
-  const handleDubbingClick = () => {
+  const handleDubbingClick = async () => {
     setIsDubbingLoading(true);
     console.log(">> ", tokenData.id, youtubeId);
-    router.push(`/dubbing/${tokenData.id}?modalId=${youtubeId}`);
+    try {
+      await tokenApi.incrementView(tokenData.id);
+      console.log("View count incremented successfully!");
+    } catch (error) {
+      console.error("Failed to increment view count:", error);
+    } finally {
+      router.push(`/dubbing/${tokenData.id}?modalId=${youtubeId}`);
+    }
   };
+
+  
 
   return (
     <div className="fixed inset-0 z-51 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -113,7 +123,10 @@ export default function MovieDetailModal({
         </div>
         <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mt-6 bg-[#20232a] rounded-2xl shadow-lg p-6 border border-[#23272f]">
           <div className="flex-1 flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-lg text-emerald-400 font-bold">
+            <div
+              className="flex items-center gap-2 text-2xl text-emerald-400 font-bold cursor-pointer"
+              onClick={() => router.push(`/actor/${encodeURIComponent(tokenData.actor_name.replace(/\s/g, ''))}`)}
+            >
               <FaUser />
               {tokenData.actor_name}
             </div>
