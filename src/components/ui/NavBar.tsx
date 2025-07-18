@@ -165,7 +165,7 @@ export const NavBar: React.FC = () => {
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="배우, url 검색..."
+                placeholder="배우 이름 입력"
                 value={searchQuery}
                 onChange={handleInputChange}
                 onKeyDown={handleInputKeyDown}
