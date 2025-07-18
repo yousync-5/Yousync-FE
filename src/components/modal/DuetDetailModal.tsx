@@ -26,9 +26,11 @@ export default function DuetDetailModal({
   const router = useRouter();
   const playerRef = useRef<any>(null);
   const [selectedActorId, setSelectedActorId] = useState<number | null>(null);
+  const [isDubbingLoading, setIsDubbingLoading] = useState(false);
 
   useEffect(() => {
     setSelectedActorId(null); // 모달 열릴 때마다 초기화
+    setIsDubbingLoading(false); // 모달 열릴 때마다 로딩 상태 초기화
   }, [isOpen]);
 
   // tokenData가 있을 때만 접근
@@ -68,6 +70,7 @@ export default function DuetDetailModal({
 
   const handleDubbingClick = () => {
     if (selectedActorId) {
+      setIsDubbingLoading(true); // 더빙하기 버튼 클릭 시 로딩 상태 활성화
       router.push(`/duetdubbing/${youtubeId}?actor1=${duetPair[0].actor_id}&actor2=${duetPair[1].actor_id}&selected=${selectedActorId}`);
     }
   };
@@ -178,8 +181,8 @@ export default function DuetDetailModal({
           </div>
           <button
             onClick={handleDubbingClick}
-            className={`flex items-center gap-3 px-8 py-3 rounded-full text-white text-lg font-bold shadow-lg transition-all duration-200 focus:outline-none ${selectedActorId ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-gray-500 cursor-not-allowed'}`}
-            disabled={!selectedActorId}
+            disabled={!selectedActorId || isDubbingLoading}
+            className={`flex items-center gap-3 px-8 py-3 rounded-full text-white text-lg font-bold shadow-lg transition-all duration-200 focus:outline-none ${isDubbingLoading ? 'bg-emerald-500 animate-pulse cursor-not-allowed' : selectedActorId ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-gray-500 cursor-not-allowed'}`}
           >
             <FaMicrophone className="text-2xl" />
             더빙하기

@@ -109,9 +109,7 @@ export default function MovieDetailModal({
             className="absolute top-0 left-0 w-full z-20 pointer-events-none"
             style={{ height: 64, background: '#000', opacity: 1 }}
           />
-          {isDubbingLoading && (
-            <div className="absolute bottom-0 left-0 w-full h-2 bg-emerald-500 rounded-full animate-fade-in-bar"></div>
-          )}
+          
         </div>
         <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mt-6 bg-[#20232a] rounded-2xl shadow-lg p-6 border border-[#23272f]">
           <div className="flex-1 flex flex-col gap-2">
@@ -131,7 +129,7 @@ export default function MovieDetailModal({
           <button
             onClick={handleDubbingClick}
             disabled={isDubbingLoading}
-            className={`flex items-center gap-3 px-8 py-3 rounded-full text-white text-lg font-bold shadow-lg transition-all duration-200 focus:outline-none ${isDubbingLoading ? 'bg-gray-500 cursor-not-allowed' : 'bg-emerald-500 hover:bg-emerald-600'}`}
+            className={`flex items-center gap-3 px-8 py-3 rounded-full text-white text-lg font-bold shadow-lg transition-all duration-200 focus:outline-none ${isDubbingLoading ? 'bg-emerald-500 animate-pulse cursor-not-allowed' : 'bg-emerald-500 hover:bg-emerald-600'}`}
           >
             <FaMicrophone className="text-2xl" />
             더빙하기
