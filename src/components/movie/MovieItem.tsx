@@ -2,7 +2,7 @@ import { PlayIcon, SpeakerWaveIcon } from "@heroicons/react/24/outline";
 import type { MovieItemProps } from "@/types/video";
 import { useBookmark } from '@/hooks/useBookmark';
 import { BookmarkIcon } from '@heroicons/react/24/solid';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function MovieItem({
   video,
@@ -17,20 +17,41 @@ export default function MovieItem({
   // console.log('MovieItem video:', video);
 
   // 북마크 훅 사용
-  const { isLoading, isSuccess, isError, addBookmark } = useBookmark();
+  const { isLoading, isSuccess, isError, addBookmark, removeBookmark, getBookmarks } = useBookmark();
   // 북마크 상태를 로컬에서 관리 (true/false)
   const [bookmarked, setBookmarked] = useState(false);
 
+  // 컴포넌트 마운트 시 북마크 상태 확인
+  useEffect(() => {
+    const checkBookmarkStatus = async () => {
+      try {
+        const bookmarks = await getBookmarks();
+        const isBookmarked = bookmarks.some(bookmark => bookmark.token_id === Number(video.videoId));
+        setBookmarked(isBookmarked);
+      } catch (error) {
+        console.error('북마크 상태 확인 실패:', error);
+      }
+    };
+
+    checkBookmarkStatus();
+  }, [video.videoId]);
 
   const handleBookmarkClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!bookmarked) {
-      setBookmarked(true);
-      await addBookmark(Number(video.videoId));
-    } else {
-      setBookmarked(false);
-      // TODO: 북마크 해제 API가 있다면 여기에 추가
-
+    try {
+      if (!bookmarked) {
+        // 북마크되지 않은 경우 추가 API 호출
+        await addBookmark(Number(video.videoId));
+        setBookmarked(true);
+      } else {
+        // 이미 북마크된 경우 삭제 API 호출
+        const success = await removeBookmark(Number(video.videoId));
+        if (success) {
+          setBookmarked(false);
+        }
+      }
+    } catch (error) {
+      console.error('북마크 처리 중 오류 발생:', error);
     }
   };
 
