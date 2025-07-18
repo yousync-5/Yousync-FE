@@ -149,7 +149,6 @@ const MypageContainer: React.FC = () => {
                   ({data.recent_bookmarks.length}개)
                 </span>
               </h2>
-              <button className="text-blue-400 hover:text-blue-300 text-sm">전체보기</button>
             </div>
 
             {data.recent_bookmarks.length === 0 ? (
@@ -242,7 +241,6 @@ const MypageContainer: React.FC = () => {
                   ({data.recent_dubbed_tokens.length}개)
                 </span>
               </h2>
-              <button className="text-green-400 hover:text-green-300 text-sm">전체보기</button>
             </div>
 
             {data.recent_dubbed_tokens.length === 0 ? (

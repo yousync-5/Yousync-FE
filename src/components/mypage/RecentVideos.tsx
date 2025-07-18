@@ -34,7 +34,6 @@ export default function RecentVideos({ dubbedTokens, loading }: RecentVideosProp
     <section className="mb-12">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold">내가 더빙한 영상</h2>
-        <button className="text-blue-400 hover:text-blue-300 text-sm">전체보기</button>
       </div>
       
       {dubbedTokens.length === 0 ? (
