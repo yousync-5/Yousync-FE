@@ -1,6 +1,6 @@
 "use client";
 
-import React, { MouseEvent, useRef, useEffect } from "react";
+import React, { MouseEvent, useRef, useEffect, useState } from "react";
 import dynamic from 'next/dynamic';
 import { FaMicrophone, FaUser, FaTag, FaClock } from "react-icons/fa";
 import { useRouter } from "next/navigation";
@@ -23,6 +23,7 @@ export default function MovieDetailModal({
 }: VideoModalProps) {
   const router = useRouter();
   const playerRef = useRef<any>(null);
+  const [isDubbingLoading, setIsDubbingLoading] = useState(false);
 
   // tokenData가 있을 때만 접근
   const startTime = Number(tokenData?.start_time) || 0;
@@ -60,7 +61,8 @@ export default function MovieDetailModal({
   if (!isOpen || !youtubeId || !tokenData) return null;
 
   const handleDubbingClick = () => {
-    console.log(">> ", tokenData.id, youtubeId)
+    setIsDubbingLoading(true);
+    console.log(">> ", tokenData.id, youtubeId);
     router.push(`/dubbing/${tokenData.id}?modalId=${youtubeId}`);
   };
 
@@ -107,9 +109,10 @@ export default function MovieDetailModal({
             className="absolute top-0 left-0 w-full z-20 pointer-events-none"
             style={{ height: 64, background: '#000', opacity: 1 }}
           />
-          
+          {isDubbingLoading && (
+            <div className="absolute bottom-0 left-0 w-full h-2 bg-emerald-500 rounded-full animate-fade-in-bar"></div>
+          )}
         </div>
-        {/* 정보 카드 */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mt-6 bg-[#20232a] rounded-2xl shadow-lg p-6 border border-[#23272f]">
           <div className="flex-1 flex flex-col gap-2">
             <div className="flex items-center gap-2 text-lg text-emerald-400 font-bold">
@@ -127,7 +130,8 @@ export default function MovieDetailModal({
           </div>
           <button
             onClick={handleDubbingClick}
-            className="flex items-center gap-3 px-8 py-3 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white text-lg font-bold shadow-lg transition-all duration-200 focus:outline-none"
+            disabled={isDubbingLoading}
+            className={`flex items-center gap-3 px-8 py-3 rounded-full text-white text-lg font-bold shadow-lg transition-all duration-200 focus:outline-none ${isDubbingLoading ? 'bg-gray-500 cursor-not-allowed' : 'bg-emerald-500 hover:bg-emerald-600'}`}
           >
             <FaMicrophone className="text-2xl" />
             더빙하기
