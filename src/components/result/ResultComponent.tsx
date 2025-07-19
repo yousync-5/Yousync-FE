@@ -15,17 +15,42 @@ function calcAvg(arr: number[]) {
 }
 
 function getTotalScores(finalResults: any[]) {
-  const safeResults = Array.isArray(finalResults) ? finalResults.filter(Boolean) : [];
+  console.log('getTotalScores 호출됨, 입력값:', finalResults);
+  console.log('입력값 타입:', Array.isArray(finalResults) ? 'Array' : typeof finalResults);
+  
+  // 배열이 아닌 경우 배열로 변환
+  let resultsArray = finalResults;
+  if (!Array.isArray(finalResults) && typeof finalResults === 'object') {
+    console.log('객체를 배열로 변환');
+    resultsArray = Object.values(finalResults);
+    console.log('변환된 배열:', resultsArray);
+  }
+  
+  const safeResults = Array.isArray(resultsArray) ? resultsArray.filter(Boolean) : [];
+  console.log('필터링된 결과 개수:', safeResults.length);
   
   if (safeResults.length === 0) {
+    console.log('유효한 결과 없음, 기본값 반환');
     return { syncRate: 0, pronunciation: 0, intonation: 0, timing: 0 };
   }
+  
+  // 각 결과의 구조 확인
+  safeResults.forEach((result, index) => {
+    console.log(`결과[${index}] 키:`, Object.keys(result));
+    console.log(`결과[${index}] word_analysis 존재 여부:`, !!result.word_analysis);
+    if (result.word_analysis) {
+      console.log(`결과[${index}] word_analysis 길이:`, result.word_analysis.length);
+    }
+  });
   
   const allWords = safeResults.flatMap(s =>
     Array.isArray(s.word_analysis) ? s.word_analysis : []
   );
   
+  console.log('모든 단어 분석 개수:', allWords.length);
+  
   if (allWords.length === 0) {
+    console.log('단어 분석 없음, 기본값 반환');
     return { syncRate: 0, pronunciation: 0, intonation: 0, timing: 0 };
   }
   
@@ -40,6 +65,9 @@ function getTotalScores(finalResults: any[]) {
       : 0;
   // 싱크율 %: 세 점수의 평균
   const syncRate = (pronunciation + intonation + timing) / 3;
+  
+  console.log('계산된 점수:', { syncRate, pronunciation, intonation, timing });
+  
   return { syncRate, pronunciation, intonation, timing };
 }
 
@@ -58,7 +86,7 @@ function getRankColor(rank: string) {
 }
 
 export interface TestResultAnalysisSectionProps {
-  finalResults?: Record<string, any>;
+  finalResults?: Record<string, any> | any[];
   latestResultByScript?: Record<string, any>;
   hasAnalysisResults?: boolean;
   showResults?: boolean;
@@ -95,38 +123,48 @@ const ResultComponent: React.FC<TestResultAnalysisSectionProps> = ({
 
   // props로 받은 데이터가 있으면 사용, 없으면 훅에서 가져오기
   const dubbingState = useDubbingState();
-  const finalResultsObj = propFinalResults || dubbingState.finalResults;
   const latestResultByScriptObj = propLatestResultByScript || dubbingState.latestResultByScript;
-
-  // 🆕 latestResultByScript에서 실제 데이터 추출
-  const finalResults = latestResultByScriptObj && typeof latestResultByScriptObj === "object"
-    ? Object.values(latestResultByScriptObj)
-    : Array.isArray(finalResultsObj)
-      ? finalResultsObj.filter(Boolean) // null/undefined 필터링
-      : (finalResultsObj && typeof finalResultsObj === "object")
-        ? Object.values(finalResultsObj).filter(Boolean) // null/undefined 필터링
-        : [];
+  
+  // finalResults가 이미 배열인 경우 그대로 사용
+  const finalResults = Array.isArray(propFinalResults) 
+    ? propFinalResults 
+    : latestResultByScriptObj && typeof latestResultByScriptObj === "object"
+      ? Object.values(latestResultByScriptObj)
+      : propFinalResults && typeof propFinalResults === "object"
+        ? Object.values(propFinalResults)
+        : dubbingState.finalResults
+          ? Array.isArray(dubbingState.finalResults)
+            ? dubbingState.finalResults
+            : Object.values(dubbingState.finalResults)
+          : [];
+          
+  // null/undefined 필터링
+  const filteredResults = finalResults.filter(Boolean);
 
   // 디버깅 로그 추가
   useEffect(() => {
-    console.log('ResultComponent - finalResults:', finalResults);
-    console.log('ResultComponent - finalResults 타입:', Array.isArray(finalResults) ? 'Array' : typeof finalResults);
-    console.log('ResultComponent - finalResults 길이:', Array.isArray(finalResults) ? finalResults.length : 0);
-    if (Array.isArray(finalResults) && finalResults.length > 0) {
-      console.log('ResultComponent - 첫 번째 항목:', finalResults[0]);
-      console.log('ResultComponent - word_analysis 존재 여부:', !!finalResults[0]?.word_analysis);
+    console.log('ResultComponent - propFinalResults:', propFinalResults);
+    console.log('ResultComponent - propFinalResults 타입:', Array.isArray(propFinalResults) ? 'Array' : typeof propFinalResults);
+    
+    console.log('ResultComponent - finalResults(처리 후):', filteredResults);
+    console.log('ResultComponent - finalResults 타입:', Array.isArray(filteredResults) ? 'Array' : typeof filteredResults);
+    console.log('ResultComponent - finalResults 길이:', filteredResults.length);
+    
+    if (filteredResults.length > 0) {
+      console.log('ResultComponent - 첫 번째 항목:', filteredResults[0]);
+      console.log('ResultComponent - word_analysis 존재 여부:', !!filteredResults[0]?.word_analysis);
       
       // 모든 항목에 word_analysis가 있는지 확인
-      const allHaveWordAnalysis = finalResults.every(item => !!item?.word_analysis);
+      const allHaveWordAnalysis = filteredResults.every(item => !!item?.word_analysis);
       console.log('ResultComponent - 모든 항목에 word_analysis가 있는지:', allHaveWordAnalysis);
       
       // word_analysis가 있는 항목 수
-      const itemsWithWordAnalysis = finalResults.filter(item => !!item?.word_analysis).length;
+      const itemsWithWordAnalysis = filteredResults.filter(item => !!item?.word_analysis).length;
       console.log('ResultComponent - word_analysis가 있는 항목 수:', itemsWithWordAnalysis);
     }
-  }, [finalResults]);
+  }, [propFinalResults, filteredResults]);
 
-  const { syncRate, pronunciation, intonation, timing } = getTotalScores(finalResults);
+  const { syncRate, pronunciation, intonation, timing } = getTotalScores(filteredResults);
   const rank = getRank(syncRate);
 
   const radarData = {
@@ -170,7 +208,7 @@ const ResultComponent: React.FC<TestResultAnalysisSectionProps> = ({
     <>
       {(showResults || showCompleted) && (
         <div ref={resultRef} className="min-h-screen flex flex-col items-center justify-center px-4 py-12 overflow-hidden" style={{ background: '#232B3A', color: COLORS.text }}>
-          {finalResults.length > 0 ? (
+          {filteredResults.length > 0 ? (
             <>
               <ScoreCards
                 syncRate={syncRate}
@@ -204,7 +242,7 @@ const ResultComponent: React.FC<TestResultAnalysisSectionProps> = ({
                   <Radar data={radarData} options={radarOptions} />
                 </div>
               </div>
-              <SentenceAnalysis finalResults={finalResults} />
+              <SentenceAnalysis finalResults={filteredResults} />
             </>
           ) : (
             <div className="text-center max-w-md mx-auto p-6 bg-gray-900 rounded-xl border border-gray-800">
