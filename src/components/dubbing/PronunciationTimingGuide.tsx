@@ -97,91 +97,34 @@ export default function PronunciationTimingGuide({
   };
 
   return (
-    <div className="w-full bg-gray-800 rounded-lg p-4 border border-gray-700">
-      <h4 className="text-sm font-semibold text-cyan-400 mb-3 text-center">
-              </h4>
-      <div className="flex flex-col items-center justify-center gap-2 mb-4">
-        {/* 첫 번째 줄 */}
-        <div className="flex items-center justify-center space-x-4">
-          {firstLine.map((word: any, idx: number) => {
-            const animatedScore = animatedScores[word.word] || 0;
-            return (
-              <div
-                key={word.word + idx}
-                className="flex flex-col items-center px-2 py-1 rounded-lg transition-all duration-150"
-              >
+    <div className="w-full">
+      <div className="flex items-center space-x-4 w-full">
+        {/* 배우 뱃지 */}
+        <div className="bg-emerald-500 text-white px-4 py-2 rounded-full flex items-center space-x-2 shadow-lg">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+          </svg>
+          <span className="font-semibold">내 대사</span>
+        </div>
+        {/* 빛나는 컨테이너 안의 자막 */}
+        <div className="flex-1 bg-gray-800 rounded-lg p-4 border border-emerald-400/50 shadow-lg shadow-emerald-400/20">
+          <div className="text-white text-2xl font-bold text-center leading-tight">
+            &quot;{words.map((word: any, idx: number) => {
+              const animatedScore = animatedScores[word.word] || 0;
+              return (
                 <span 
-                  className="text-xl font-bold mb-2"
+                  key={word.word + idx}
+                  className="transition-all duration-150"
                   style={{ color: getGradientColor(animatedScore) }}
                 >
-                  {word.word}
+                  {word.word}{idx < words.length - 1 ? ' ' : ''}
                 </span>
-                <div className="w-20 h-3 mb-1">
-                  <WebGLProgressBar value={animatedScore} width={80} height={12} theme="dark" animation={true} showPercentage={false} />
-                </div>
-                <span className="text-sm text-gray-400 mt-1">
-                  Accuracy {Math.round(animatedScore * 100)}%
-                </span>
-              </div>
-            );
-          })}
+              );
+            })}&quot;
+          </div>
         </div>
-        {/* 두 번째 줄 (있을 때만) */}
-        {secondLine.length > 0 && (
-          <div className="flex items-center justify-center space-x-4">
-            {secondLine.map((word: any, idx: number) => {
-              const animatedScore = animatedScores[word.word] || 0;
-              return (
-                <div
-                  key={word.word + idx}
-                  className="flex flex-col items-center px-2 py-1 rounded-lg transition-all duration-150"
-                >
-                  <span 
-                    className="text-xl font-bold mb-2"
-                    style={{ color: getGradientColor(animatedScore) }}
-                  >
-                    {word.word}
-                  </span>
-                  <div className="w-20 h-3 mb-1">
-                    <WebGLProgressBar value={animatedScore} width={80} height={12} theme="dark" animation={true} showPercentage={false} />
-                  </div>
-                  <span className="text-sm text-gray-400 mt-1">
-                    Accuracy {Math.round(animatedScore * 100)}%
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-        {/* 세 번째 줄 (있을 때만) */}
-        {thirdLine.length > 0 && (
-          <div className="flex items-center justify-center space-x-4">
-            {thirdLine.map((word: any, idx: number) => {
-              const animatedScore = animatedScores[word.word] || 0;
-              return (
-                <div
-                  key={word.word + idx}
-                  className="flex flex-col items-center px-2 py-1 rounded-lg transition-all duration-150"
-                >
-                  <span 
-                    className="text-xl font-bold mb-2"
-                    style={{ color: getGradientColor(animatedScore) }}
-                  >
-                    {word.word}
-                  </span>
-                  <div className="w-20 h-3 mb-1">
-                    <WebGLProgressBar value={animatedScore} width={80} height={12} theme="dark" animation={true} showPercentage={false} />
-                  </div>
-                  <span className="text-sm text-gray-400 mt-1">
-                    Accuracy {Math.round(animatedScore * 100)}%
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
       </div>
-      <div className="text-center text-xs text-gray-300">
+      <div className="text-center text-xs text-gray-300 mt-4">
         {analysisResult?.overall_score !== undefined && (
           <>Overall Accuracy: {Math.round(analysisResult.overall_score * 100)}%</>
         )}
