@@ -14,36 +14,21 @@ export default function MovieItem({
   onStop,
 }: MovieItemProps) {
   // 북마크 훅 사용
-  const { isLoading, isSuccess, isError, addBookmark, removeBookmark, getBookmarks, isLoggedIn } = useBookmark();
+  const { isLoading, isSuccess, isError, addBookmark, removeBookmark, getBookmarks, isLoggedIn, isBookmarked } = useBookmark();
   // 북마크 상태를 로컬에서 관리 (true/false)
   const [bookmarked, setBookmarked] = useState(false);
 
   // 컴포넌트 마운트 시 북마크 상태 확인
   useEffect(() => {
-    const checkBookmarkStatus = async () => {
-      // 로그인 상태 확인 후 북마크 조회
-      if (isLoggedIn()) {
-        try {
-          const bookmarks = await getBookmarks();
-          const isBookmarked = bookmarks.some(bookmark => bookmark.token_id === Number(video.videoId));
-          setBookmarked(isBookmarked);
-        } catch (error) {
-          // 에러 발생 시 북마크 상태를 false로 설정하고 조용히 실패
-          setBookmarked(false);
-          console.error('북마크 상태 확인 실패:', error);
-        }
-      } else {
-        // 로그인되지 않은 경우 북마크 상태 초기화
-        setBookmarked(false);
-      }
-    };
-
     // 로그인 상태일 때만 북마크 상태 확인
     if (isLoggedIn()) {
-      checkBookmarkStatus();
+      // 캐시된 데이터를 사용하여 북마크 상태 확인 (API 요청 없음)
+      setBookmarked(isBookmarked(Number(video.videoId)));
     } else {
+      // 로그인되지 않은 경우 북마크 상태 초기화
       setBookmarked(false);
     }
+    // 의존성 배열에서 isBookmarked 제거 (함수 참조가 변경될 수 있음)
   }, [video.videoId, isLoggedIn]);
 
   const handleBookmarkClick = async (e: React.MouseEvent) => {
