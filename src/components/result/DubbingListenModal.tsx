@@ -18,7 +18,7 @@ interface TokenDetailResponse { bgvoice_url: string; scripts: { id: number; star
 interface ScriptInfo { script_id: number; start_time: number; end_time: number; script?: string; }
 
 async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
-  let accessToken = localStorage.getItem('access_token');
+  const accessToken = localStorage.getItem('access_token');
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
   if (options.headers) {

@@ -648,7 +648,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
         open={isListenModalOpen}
         onClose={() => setIsListenModalOpen(false)}
         modalId={listenModalId}
-        tokenId={tokenId}
+        tokenId={parseInt(tokenId)}
       />
     </div>
   );
