@@ -10,6 +10,7 @@ import {
   PauseIcon
 } from '@heroicons/react/24/outline'
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid'
+import { useUser } from '@/hooks/useUser'
 
 const VIDEO_WIDTH = 432;
 const VIDEO_HEIGHT = 768;
@@ -20,6 +21,7 @@ const SynccollectionPage = () => {
   const [isBookmarked, setIsBookmarked] = useState(false)
   const [showComments, setShowComments] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
+  const { isLoggedIn } = useUser()
 
   const handleLike = () => {
     setIsLiked(!isLiked)
@@ -95,19 +97,21 @@ const SynccollectionPage = () => {
               <span className="text-white text-xs font-medium">공유</span>
             </motion.button>
 
-            {/* 북마크 버튼 */}
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={handleBookmark}
-              className="flex flex-col items-center space-y-1"
-            >
-              {isBookmarked ? (
-                <BookmarkIcon className="w-8 h-8 text-green-500" />
-              ) : (
-                <BookmarkIcon className="w-8 h-8 text-white" />
-              )}
-              <span className="text-white text-xs font-medium">저장</span>
-            </motion.button>
+            {/* 북마크 버튼 (로그인한 사용자에게만 표시) */}
+            {isLoggedIn && (
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={handleBookmark}
+                className="flex flex-col items-center space-y-1"
+              >
+                {isBookmarked ? (
+                  <BookmarkIcon className="w-8 h-8 text-green-500" />
+                ) : (
+                  <BookmarkIcon className="w-8 h-8 text-white" />
+                )}
+                <span className="text-white text-xs font-medium">저장</span>
+              </motion.button>
+            )}
           </div>
 
           {/* 하단 비디오 정보 */}

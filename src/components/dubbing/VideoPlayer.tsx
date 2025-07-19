@@ -152,13 +152,44 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
                 disablekb: 1,
                 fs: 0,
                 start: initialStartTimeRef.current, // 시작 시간 설정
+                cc_load_policy: 0, // 자막 비활성화
+                cc_lang_pref: 'ko', // 자막 언어 한국어
+                hl: 'ko', // 인터페이스 언어 한국어
+                origin: window.location.origin, // 도메인 제한
               },
             }}
           />
-          {/* 상단 오버레이 (텍스트/공유/타이틀 등 가림) */}
+          {/* 상단 오버레이 - 유튜브 헤더만 가리기 */}
           <div
             className="absolute top-0 left-0 w-full z-20 pointer-events-none"
-            style={{ height: 80, background: '#000' }}
+            style={{ 
+              height: 48, 
+              background: 'linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0.3) 80%, transparent 100%)',
+              backdropFilter: 'blur(2px)'
+            }}
+          />
+          {/* 우측 하단 오버레이 - 더보기 버튼 가리기 */}
+          <div
+            className="absolute bottom-4 right-4 z-20 pointer-events-none"
+            style={{ 
+              width: 120,
+              height: 40,
+              background: 'linear-gradient(to left, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.3) 80%, transparent 100%)',
+              backdropFilter: 'blur(2px)',
+              borderRadius: '8px'
+            }}
+          />
+          {/* 전체 영역 클릭 방지 오버레이 */}
+          <div
+            className="absolute inset-0 z-30 pointer-events-auto"
+            style={{ 
+              background: 'transparent',
+              cursor: 'not-allowed'
+            }}
+            onClick={(e) => e.preventDefault()}
+            onMouseDown={(e) => e.preventDefault()}
+            onDoubleClick={(e) => e.preventDefault()}
+            onContextMenu={(e) => e.preventDefault()}
           />
         </div>
       </div>
