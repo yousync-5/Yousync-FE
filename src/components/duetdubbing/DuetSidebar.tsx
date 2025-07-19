@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState } from "react";
 import Loader from "../ui/Loader";
-import { checkAllAnalyzedDuetResult } from '@/utils/checkAllAnalyzedDuetResult';
+import checkAllAnalyzedDuetResult from '@/utils/checkAllAnalyzedDuetResult';
 import isMyLine from '@/utils/isMyLine';
 import DuetResult from '@/utils/DuetResult';
 
@@ -91,6 +91,8 @@ export default function Sidebar({
     const scriptKey = normalizeScript(c.script);
     return !!latestResultByScript[scriptKey];
   }).length;
+  // 분석 완료 여부 유틸 함수로 판별 (기존 코드 삭제)
+  // const isAllAnalyzed = checkAllAnalyzedDuetResult(captions.length, Object.values(latestResultByScript));
 
   // 시간 포맷 함수
   function formatTime(sec?: number) {
@@ -123,14 +125,13 @@ export default function Sidebar({
     // 목표 위치 (6번째 위치)
     const targetVisibleTop =5 * itemHeight;
 
-    // 목표 스크롤 위치 계산
-    // 선택된 아이템이 사이드바 뷰포트의 특정 위치(예: 6번째 아이템 위치)에 오도록 조정
-    const desiredScrollTop = itemTop - targetVisibleTop;
-
-    // 현재 스크롤 위치와 목표 스크롤 위치가 다르면 스크롤 실행
-    if (currentScrollTop !== desiredScrollTop) {
+    // 아이템이 목표 위치보다 아래에 있으면 스크롤 조정
+    if(itemVisibleTop > targetVisibleTop) {
+      const scrollOffset = itemVisibleTop - targetVisibleTop;
+      
+      // 부드러운 스크롤 애니메이션
       sidebarRef.current.scrollTo({
-        top: desiredScrollTop,
+        top: currentScrollTop + scrollOffset,
         behavior: 'smooth'
       });
     }
@@ -228,9 +229,9 @@ export default function Sidebar({
         {captions.map((caption, index) => {
           const scriptKey = normalizeScript(caption.script);
           const isAnalyzed = !!latestResultByScript[scriptKey];
-          const originalIndex = captions.findIndex(c => c === caption);
+          const originalIndex = index;
           const isSelected = currentScriptIndex === originalIndex;
-          const isMyLine = caption.actor?.name === "나";
+          const isMine = isMyLine(caption.actor);
           
           return (
             <li
@@ -243,16 +244,16 @@ export default function Sidebar({
               }}
               className={`cursor-pointer px-4 py-4 transition-all duration-150 select-none relative
                 ${isSelected
-                  ? isMyLine
+                  ? isMine
                     ? "border-2 border-emerald-400 scale-[1.03] bg-transparent text-white shadow-md z-10"
                     : "border-2 border-blue-400 scale-[1.03] bg-transparent text-white shadow-md z-10"
                   : isAnalyzed
                   ? "border-2 border-emerald-400 bg-transparent text-white"
                   : "hover:bg-gray-800/50 hover:text-emerald-300 text-gray-200"}
-                ${isMyLine && !isSelected && !isAnalyzed
+                ${isMine && !isSelected && !isAnalyzed
                   ? "bg-emerald-900/30 border-l-4 border-emerald-400 shadow-lg" 
                   : ""}
-                ${!isMyLine && !isSelected && !isAnalyzed
+                ${!isMine && !isSelected && !isAnalyzed
                   ? "bg-blue-900/30 border-l-4 border-blue-400 shadow-lg" 
                   : ""}
                 ${isSelected ? "transition-transform" : ""}
@@ -260,8 +261,8 @@ export default function Sidebar({
               style={{ wordBreak: 'break-word', zIndex: isSelected ? 10 : 1 }}
             >
               {/* Loader 오버레이 - 현재 선택된 문장에서만 표시 */}
-              {isSelected && !isMyLine && !recording && recordingCompleted && null}
-              {isSelected && isMyLine && !recording && recordingCompleted && (
+              {isSelected && !isMine && !recording && recordingCompleted && null}
+              {isSelected && isMine && !recording && recordingCompleted && (
                 <div className="absolute inset-0 bg-gray-900/30 backdrop-blur-[1px] flex items-center justify-center z-20 rounded pointer-events-none">
                   <Loader />
                 </div>
@@ -271,7 +272,7 @@ export default function Sidebar({
                   {/* 아이콘 + 번호 */}
                   <span className="flex items-center mr-3 mt-1 select-none" style={{ zIndex: 2 }}>
                     {isSelected ? (
-                      isMyLine ? (
+                      isMine ? (
                         // 내 대사 - 빙글빙글 없이 초록색 강조
                         <svg className="w-4 h-4 mr-1 text-emerald-400" viewBox="0 0 20 20" fill="currentColor" aria-label="선택됨">
                           <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" />
@@ -282,7 +283,7 @@ export default function Sidebar({
                           <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" />
                         </svg>
                       )
-                    ) : isMyLine ? (
+                    ) : isMine ? (
                       // 내 대사 - 사용자 아이콘
                       <div className="px-2 py-1 text-xs font-medium text-green-300 bg-green-900/50 border border-green-400 rounded-full">
                         나
@@ -361,6 +362,7 @@ export default function Sidebar({
           </button>
         </div>
       )}
+      {/* 토스트 스타일 전체 녹음 들어보기 버튼 */}
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {

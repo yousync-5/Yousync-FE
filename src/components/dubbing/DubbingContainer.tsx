@@ -703,7 +703,7 @@ useEffect(() => {
       <DubbingListenModal
         open={isDubbingListenModalOpen}
         onClose={() => setIsDubbingListenModalOpen(false)}
-        tokenId={id}
+        tokenId={Number(id)}
         modalId={modalId}
       />
     </div>

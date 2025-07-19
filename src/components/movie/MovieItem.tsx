@@ -15,7 +15,7 @@ export default function MovieItem({
   onStop,
 }: MovieItemProps) {
   // 북마크 훅 사용
-  const { isLoading, isSuccess, isError, addBookmark, removeBookmark, getBookmarks, isLoggedIn, isBookmarked } = useBookmark();
+  const { isLoading, isSuccess, isError, addBookmark, removeBookmark, getBookmarks, isBookmarked } = useLocalBookmark();
   // 북마크 상태를 로컬에서 관리 (true/false)
   const [bookmarked, setBookmarked] = useState(false);
   // 로그인 상태 확인
@@ -24,7 +24,7 @@ export default function MovieItem({
   // 컴포넌트 마운트 시 북마크 상태 확인
   useEffect(() => {
     // 로그인 상태일 때만 북마크 상태 확인
-    if (isLoggedIn()) {
+    if (isLoggedIn) {
       // 캐시된 데이터를 사용하여 북마크 상태 확인 (API 요청 없음)
       setBookmarked(isBookmarked(Number(video.videoId)));
     } else {
@@ -38,7 +38,7 @@ export default function MovieItem({
     e.stopPropagation();
     
     // 로그인 상태 확인
-    if (!isLoggedIn()) {
+    if (!isLoggedIn) {
       alert('북마크 기능은 로그인 후 이용 가능합니다.');
       return;
     }
@@ -96,7 +96,7 @@ export default function MovieItem({
         className="absolute top-3 right-3 z-20 bg-white/80 rounded-full p-2 hover:bg-green-200 opacity-0 group-hover/video:opacity-100 transition-all"
         onClick={handleBookmarkClick}
         disabled={isLoading}
-        title={isLoggedIn() ? (bookmarked ? "북마크 삭제" : "북마크 추가") : "로그인 필요"}
+        title={isLoggedIn ? (bookmarked ? "북마크 삭제" : "북마크 추가") : "로그인 필요"}
       >
         <BookmarkIcon className={`w-6 h-6`} style={{ color: bookmarked ? '#22ff88' : '#9ca3af', transition: 'color 0.2s' }} />
       </button>

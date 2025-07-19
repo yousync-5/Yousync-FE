@@ -419,75 +419,36 @@ export default function ScriptDisplay({
             </span>
           </div>
         </div>
-        <div className="relative w-full h-8 bg-gray-900 rounded-full overflow-hidden shadow-inner border border-gray-700">
-          {/* 네온 글로우 배경 */}
-          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20 blur-xl"></div>
+        <div className="relative w-full h-3 bg-gray-800 rounded-full overflow-hidden shadow-inner">
+          {/* 구간별 세로선 */}
+          {captions.map((caption, idx) => {
+            const position = videoTotalDuration
+              ? ((caption.start_time - videoStartTime) / videoTotalDuration) * 100
+              : 0;
+            return (
+              <div
+                key={`line-${idx}`}
+                className="absolute top-0 h-full w-0.5 bg-gray-600 z-5"
+                style={{ left: `${position}%` }}
+              />
+            );
+          })}
           
-          {/* 진행도 바 - 각 구간별 네온 그라데이션 */}
-          <div className="absolute top-0 left-0 h-full w-full flex z-10">
-            {captions.map((caption, idx) => {
-              const startPercent = videoTotalDuration
-                ? ((caption.start_time - videoStartTime) / videoTotalDuration) * 100
-                : 0;
-              const endPercent = videoTotalDuration
-                ? ((caption.end_time - videoStartTime) / videoTotalDuration) * 100
-                : 0;
-              const width = endPercent - startPercent;
-              
-              // 네온 느낌의 그라데이션 색상
-              const neonGradients = [
-                'from-cyan-400 via-blue-500 to-cyan-600',
-                'from-pink-400 via-purple-500 to-pink-600',
-                'from-green-400 via-emerald-500 to-green-600',
-                'from-yellow-400 via-orange-500 to-yellow-600',
-                'from-purple-400 via-indigo-500 to-purple-600',
-                'from-teal-400 via-cyan-500 to-teal-600',
-                'from-red-400 via-pink-500 to-red-600',
-                'from-indigo-400 via-purple-500 to-indigo-600'
-              ];
-              const gradientIndex = idx % neonGradients.length;
-              
-              return (
-                <div
-                  key={idx}
-                  className={`h-full bg-gradient-to-r ${neonGradients[gradientIndex]} transition-all duration-500 ease-out relative`}
-                  style={{ 
-                    width: `${width}%`,
-                    marginLeft: idx === 0 ? '0' : '0'
-                  }}
-                >
-                  {/* 네온 글로우 효과 */}
-                  <div className={`absolute inset-0 bg-gradient-to-r ${neonGradients[gradientIndex]} blur-sm opacity-60`}></div>
-                  {/* 네온 테두리 */}
-                  <div className={`absolute inset-0 bg-gradient-to-r ${neonGradients[gradientIndex]} opacity-30`} style={{ filter: 'blur(2px)' }}></div>
-                </div>
-              );
-            })}
-          </div>
-          
-          {/* 현재 진행률 네온 오버레이 */}
+          {/* 진행도 바 */}
           <div
-            className="absolute top-0 left-0 h-full bg-gradient-to-r from-cyan-400 via-green-500 to-emerald-600 transition-all duration-500 ease-out z-20"
+            className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-500 ease-out z-10"
             style={{
               width: videoTotalDuration
                 ? `${Math.min(((currentVideoTime - videoStartTime) / videoTotalDuration) * 100, 100)}%`
                 : "0%",
-              opacity: 0.9
             }}
           >
-            {/* 네온 글로우 효과 */}
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-300/70 via-green-400/70 to-emerald-500/70 blur-md"></div>
-            {/* 네온 테두리 */}
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/50 via-green-500/50 to-emerald-600/50" style={{ filter: 'blur(3px)' }}></div>
-            {/* 애니메이션 글로우 */}
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-300/30 via-green-400/30 to-emerald-500/30 animate-pulse"></div>
-          </div>
-          
-          {/* 네온 파티클 효과 */}
-          <div className="absolute inset-0 z-30 pointer-events-none">
-            <div className="absolute top-1 left-1 w-1 h-1 bg-cyan-400 rounded-full animate-ping"></div>
-            <div className="absolute top-2 right-2 w-1 h-1 bg-green-400 rounded-full animate-ping" style={{ animationDelay: '0.5s' }}></div>
-            <div className="absolute bottom-1 left-4 w-1 h-1 bg-purple-400 rounded-full animate-ping" style={{ animationDelay: '1s' }}></div>
+            <span className="absolute right-2 text-[10px] font-bold text-white drop-shadow-sm z-20">
+              {videoTotalDuration
+                ? Math.round(((currentVideoTime - videoStartTime) / videoTotalDuration) * 100)
+                : 0}
+              %
+            </span>
           </div>
         </div>
         <div className="flex flex-col items-center space-y-3">
