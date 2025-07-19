@@ -192,20 +192,10 @@ useEffect(() => {
       console.error(`[SSE][${jobId}] 에러 상태:`, sse.readyState);
       console.error(`[SSE][${jobId}] URL:`, sse.url);
       
-      // 에러 상태에 따른 처리
-      if (sse.readyState === EventSource.CONNECTING) {
-        console.log(`[SSE][${jobId}] 재연결 시도 중...`);
-      } else if (sse.readyState === EventSource.CLOSED) {
-        console.log(`[SSE][${jobId}] 연결이 닫힘`);
+      // 브라우저의 자동 재연결에 맡기고 수동 재연결 로직 제거
+      if (sse.readyState === EventSource.CLOSED) {
+        console.log(`[SSE][${jobId}] 연결이 닫힘 - 브라우저 자동 재연결 대기`);
         connectedJobIdsRef.current.delete(jobId);
-        
-        // 3초 후 재연결 시도
-        setTimeout(() => {
-          if (!connectedJobIdsRef.current.has(jobId)) {
-            console.log(`[SSE][${jobId}] 재연결 시도`);
-            // 여기서 재연결 로직을 추가할 수 있음
-          }
-        }, 3000);
       }
     };
   });

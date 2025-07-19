@@ -120,17 +120,7 @@ export function useDubbingRecorder({
         console.log(`[✅ 업로드 성공] 문장 ${idx + 1}번 업로드 완료!`);
         console.log(`[📊 Job ID 추가] 총 ${jobIds.length + 1}개의 Job ID 수집됨`);
         
-        // 🆕 분석 조회 API 호출
-        try {
-          console.log(`[🔍 분석 조회] 문장 ${idx + 1}번 분석 결과 조회 시작`);
-          const analysisResponse = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/analysis-result/${res.data.job_id}`
-          );
-          console.log(`[✅ 분석 조회 성공] 문장 ${idx + 1}번 분석 결과:`, analysisResponse.data);
-        } catch (analysisError) {
-          console.error(`[❌ 분석 조회 실패] 문장 ${idx + 1}번 분석 조회 실패:`, analysisError);
-          // 분석 조회 실패해도 업로드는 성공했으므로 계속 진행
-        }
+
         
         // 문장별 업로드 성공 시 onUploadComplete 콜백 호출
         if (onUploadComplete) {

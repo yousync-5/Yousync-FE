@@ -155,7 +155,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
                 cc_load_policy: 0, // 자막 비활성화
                 cc_lang_pref: 'ko', // 자막 언어 한국어
                 hl: 'ko', // 인터페이스 언어 한국어
-                origin: window.location.origin, // 도메인 제한
+                origin: typeof window !== 'undefined' ? window.location.origin : '', // 도메인 제한
               },
             }}
           />
