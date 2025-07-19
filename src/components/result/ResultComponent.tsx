@@ -123,6 +123,7 @@ const ResultComponent: React.FC<TestResultAnalysisSectionProps> = ({
 
   // props로 받은 데이터가 있으면 사용, 없으면 훅에서 가져오기
   const dubbingState = useDubbingState();
+  const latestResultByScriptObj = propLatestResultByScript || dubbingState.latestResultByScript;
   
   // finalResults가 이미 배열인 경우 그대로 사용
   const finalResults = Array.isArray(propFinalResults) 
