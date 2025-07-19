@@ -6,6 +6,7 @@ import { useVideos, usePopularVideos, useLatestVideos, useRomanticVideos, useDue
 import Movie from "@/components/movie/Movie";
 import type { TokenDetailResponse } from "@/types/pitch";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 export default function HomeClient() {
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
