@@ -13,31 +13,48 @@ export default function MovieItem({
   onOpenModal,
   onStop,
 }: MovieItemProps) {
-  // 디버깅용 로그
-  // console.log('MovieItem video:', video);
-
   // 북마크 훅 사용
-  const { isLoading, isSuccess, isError, addBookmark, removeBookmark, getBookmarks } = useBookmark();
+  const { isLoading, isSuccess, isError, addBookmark, removeBookmark, getBookmarks, isLoggedIn } = useBookmark();
   // 북마크 상태를 로컬에서 관리 (true/false)
   const [bookmarked, setBookmarked] = useState(false);
 
   // 컴포넌트 마운트 시 북마크 상태 확인
   useEffect(() => {
     const checkBookmarkStatus = async () => {
-      try {
-        const bookmarks = await getBookmarks();
-        const isBookmarked = bookmarks.some(bookmark => bookmark.token_id === Number(video.videoId));
-        setBookmarked(isBookmarked);
-      } catch (error) {
-        console.error('북마크 상태 확인 실패:', error);
+      // 로그인 상태 확인 후 북마크 조회
+      if (isLoggedIn()) {
+        try {
+          const bookmarks = await getBookmarks();
+          const isBookmarked = bookmarks.some(bookmark => bookmark.token_id === Number(video.videoId));
+          setBookmarked(isBookmarked);
+        } catch (error) {
+          // 에러 발생 시 북마크 상태를 false로 설정하고 조용히 실패
+          setBookmarked(false);
+          console.error('북마크 상태 확인 실패:', error);
+        }
+      } else {
+        // 로그인되지 않은 경우 북마크 상태 초기화
+        setBookmarked(false);
       }
     };
 
-    checkBookmarkStatus();
-  }, [video.videoId]);
+    // 로그인 상태일 때만 북마크 상태 확인
+    if (isLoggedIn()) {
+      checkBookmarkStatus();
+    } else {
+      setBookmarked(false);
+    }
+  }, [video.videoId, isLoggedIn]);
 
   const handleBookmarkClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    // 로그인 상태 확인
+    if (!isLoggedIn()) {
+      alert('북마크 기능은 로그인 후 이용 가능합니다.');
+      return;
+    }
+    
     try {
       if (!bookmarked) {
         // 북마크되지 않은 경우 추가 API 호출
@@ -77,7 +94,7 @@ export default function MovieItem({
         className="absolute top-3 right-3 z-20 bg-white/80 rounded-full p-2 hover:bg-green-200 opacity-0 group-hover/video:opacity-100 transition-all"
         onClick={handleBookmarkClick}
         disabled={isLoading}
-        title={bookmarked ? "북마크 삭제" : "북마크 추가"}
+        title={isLoggedIn() ? (bookmarked ? "북마크 삭제" : "북마크 추가") : "로그인 필요"}
       >
         <BookmarkIcon className={`w-6 h-6`} style={{ color: bookmarked ? '#22ff88' : '#9ca3af', transition: 'color 0.2s' }} />
       </button>
