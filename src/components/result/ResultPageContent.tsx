@@ -124,7 +124,7 @@ export default function ResultPageContent() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => window.location.href = `/dubbing?token_id=${tokenId}`}
+              onClick={() => window.location.href = `/dubbing/${tokenId}`}
               className="px-4 py-2 bg-gradient-to-r from-blue-500 to-green-500 text-white font-semibold rounded-lg shadow-lg hover:from-blue-600 hover:to-green-600 transition-all"
             >
               🎙️ 더빙하러 가기
