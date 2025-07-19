@@ -164,7 +164,9 @@ export const NavBar: React.FC<NavBarProps> = ({ animateOnMount }) => {
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="배우, URL 검색"
+
+                placeholder="배우 검색"
+
                 value={searchQuery}
                 onChange={handleInputChange}
                 onKeyDown={handleInputKeyDown}

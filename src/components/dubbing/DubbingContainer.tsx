@@ -576,10 +576,10 @@ useEffect(() => {
       />
   
       {/* 본문 - 항상 중앙 */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
+      <div className="w-full mx-auto px-2 sm:px-4 md:px-6 py-4 md:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
           {/* Left Column - Video & Script */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 md:space-y-6">
             <VideoPlayer
               videoId={front_data.movie.youtube_url.split("v=")[1]}
               onTimeUpdate={handleTimeUpdate}

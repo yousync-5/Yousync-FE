@@ -18,6 +18,7 @@ export interface BookmarkToken {
   actor_name: string;
   category: string;
   thumbnail_url?: string;
+  youtube_url?: string;
 }
 
 // 북마크 정보 타입
@@ -35,6 +36,7 @@ export interface DubbedTokenInfo {
   token_name: string;
   actor_name: string;
   category: string;
+  youtube_url?: string;
   last_dubbed_at: string;
   total_scripts: number;
   completed_scripts: number;
