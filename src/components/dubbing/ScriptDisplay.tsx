@@ -67,6 +67,10 @@ export default function ScriptDisplay({
   // 분석 결과 애니메이션을 위한 상태
   const [animatedScores, setAnimatedScores] = useState<Record<string, number>>({});
 
+  // 부드러운 전환을 위한 상태
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showContent, setShowContent] = useState(false);
+
   // 현재 시간을 분:초 형식으로 변환
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -269,6 +273,24 @@ export default function ScriptDisplay({
       }
     }, 50); // 200ms → 50ms로 단축
   }, [currentScriptIndex]);
+
+  // 분석 결과 도착 시 부드러운 전환 로직
+  useEffect(() => {
+    const hasAnalysisResult = analysisResult?.word_analysis && analysisResult.word_analysis.length > 0;
+    
+    if (hasAnalysisResult && !showContent) {
+      // 분석 결과가 도착했을 때 부드럽게 전환
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setShowContent(true);
+        setIsTransitioning(false);
+      }, 150); // 150ms 지연으로 부드러운 전환
+    } else if (!hasAnalysisResult && showContent) {
+      // 분석 결과가 없어졌을 때 즉시 로딩창으로
+      setShowContent(false);
+      setIsTransitioning(false);
+    }
+  }, [analysisResult, showContent]);
 
   // RGB 그라데이션 색상 계산 (PronunciationTimingGuide에서 복사)
   const getGradientColor = (score: number) => {

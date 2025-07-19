@@ -40,6 +40,10 @@ export default function PronunciationTimingGuide({
 
   // 게이지 애니메이션을 위한 상태
   const [animatedScores, setAnimatedScores] = useState<Record<string, number>>({});
+  
+  // 부드러운 전환을 위한 상태
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showContent, setShowContent] = useState(false);
 
   // 분석 결과가 표시될 때 게이지 애니메이션 시작
   useEffect(() => {
@@ -72,6 +76,24 @@ export default function PronunciationTimingGuide({
       setAnimatedScores({});
     }
   }, [analysisResult]);
+
+  // 부드러운 전환 효과
+  useEffect(() => {
+    const hasAnalysisResult = analysisResult?.word_analysis && analysisResult.word_analysis.length > 0;
+    
+    if (hasAnalysisResult && !showContent) {
+      // 분석 결과가 도착했을 때 부드럽게 전환
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setShowContent(true);
+        setIsTransitioning(false);
+      }, 150); // 150ms 지연으로 부드러운 전환
+    } else if (!hasAnalysisResult && showContent) {
+      // 분석 결과가 없어졌을 때 즉시 로딩창으로
+      setShowContent(false);
+      setIsTransitioning(false);
+    }
+  }, [analysisResult, showContent]);
 
   const WORDS_PER_LINE = 10;
   const firstLine = words.slice(0, WORDS_PER_LINE);
@@ -109,9 +131,9 @@ export default function PronunciationTimingGuide({
           {/* 자막 텍스트 - 듀엣자막디스플레이와 동일한 위치 */}
           <div className="text-center w-full">
             <div className="text-2xl font-bold leading-tight text-emerald-100">
-              {analysisResult?.word_analysis && analysisResult.word_analysis.length > 0 ? (
+              {showContent && analysisResult?.word_analysis && analysisResult.word_analysis.length > 0 ? (
                 // 분석 결과가 있을 때만 표시
-                <>
+                <div className={`transition-all duration-300 ease-out ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
                   &quot;{words.map((word: any, idx: number) => {
                     const animatedScore = animatedScores[word.word] || 0;
                     return (
@@ -124,10 +146,10 @@ export default function PronunciationTimingGuide({
                       </span>
                     );
                   })}&quot;
-                </>
+                </div>
               ) : (
                 // 분석 결과가 없을 때 로딩창 표시
-                <div className="flex flex-col items-center justify-center space-y-3 w-full">
+                <div className={`flex flex-col items-center justify-center space-y-3 w-full transition-all duration-300 ease-out ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
                   <Loader />
                   <span className="text-gray-400 text-sm text-center">분석 결과를 기다리는 중...</span>
                 </div>
@@ -135,8 +157,8 @@ export default function PronunciationTimingGuide({
             </div>
             
             {/* WebGL 게이지바 - 자막 텍스트 바로 아래 */}
-            {analysisResult?.word_analysis && analysisResult.word_analysis.length > 0 && analysisResult?.overall_score !== undefined && (
-              <div className="mt-3 flex justify-center">
+            {showContent && analysisResult?.word_analysis && analysisResult.word_analysis.length > 0 && analysisResult?.overall_score !== undefined && (
+              <div className={`mt-3 flex justify-center transition-all duration-300 ease-out ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
                 <WebGLProgressBar 
                   value={analysisResult.overall_score} 
                   width={200} 
