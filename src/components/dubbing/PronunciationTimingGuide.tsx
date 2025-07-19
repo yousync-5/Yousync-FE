@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Loader from "../ui/Loader";
 
 interface PronunciationTimingGuideProps {
   captions: Array<{
@@ -33,13 +34,15 @@ export default function PronunciationTimingGuide({
   recording = false,
 }: PronunciationTimingGuideProps) {
   const sentence = captions[currentScriptIndex];
-  // 분석 결과가 없으면 아무것도 렌더링하지 않음
-  if (!analysisResult?.word_analysis) return null;
-
-  const words = analysisResult.word_analysis;
+  // 분석 결과가 없어도 컴포넌트는 렌더링하되, 내용만 조건부로 표시
+  const words = analysisResult?.word_analysis || [];
 
   // 게이지 애니메이션을 위한 상태
   const [animatedScores, setAnimatedScores] = useState<Record<string, number>>({});
+  
+  // 부드러운 전환을 위한 상태
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showContent, setShowContent] = useState(false);
 
   // 분석 결과가 표시될 때 게이지 애니메이션 시작
   useEffect(() => {
@@ -49,29 +52,30 @@ export default function PronunciationTimingGuide({
         targetScores[word.word] = word.word_score;
       });
 
-      // 애니메이션 시작
-      const startTime = performance.now();
-      const duration = 2000; // 2초
-
-      const animate = (currentTime: number) => {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        // easeOutCubic - 자연스러운 감속
-        const easeOutCubic = 1 - Math.pow(1 - progress, 3);
-        const newScores: Record<string, number> = {};
-        Object.keys(targetScores).forEach(word => {
-          newScores[word] = targetScores[word] * easeOutCubic;
-        });
-        setAnimatedScores(newScores);
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        }
-      };
-      requestAnimationFrame(animate);
+      // 즉시 최종 점수로 설정 (애니메이션 제거)
+      setAnimatedScores(targetScores);
     } else {
       setAnimatedScores({});
     }
   }, [analysisResult]);
+
+  // 부드러운 전환 효과
+  useEffect(() => {
+    const hasAnalysisResult = analysisResult?.word_analysis && analysisResult.word_analysis.length > 0;
+    
+    if (hasAnalysisResult && !showContent) {
+      // 분석 결과가 도착했을 때 부드럽게 전환
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setShowContent(true);
+        setIsTransitioning(false);
+      }, 150); // 150ms 지연으로 부드러운 전환
+    } else if (!hasAnalysisResult && showContent) {
+      // 분석 결과가 없어졌을 때 즉시 로딩창으로
+      setShowContent(false);
+      setIsTransitioning(false);
+    }
+  }, [analysisResult, showContent]);
 
   const WORDS_PER_LINE = 10;
   const firstLine = words.slice(0, WORDS_PER_LINE);
@@ -95,114 +99,95 @@ export default function PronunciationTimingGuide({
     return `rgb(${r}, ${g}, ${b})`;
   };
 
+  // HTML 엔티티를 디코딩하는 함수 (SSR 호환)
+  const decodeHtmlEntities = (text: string) => {
+    if (typeof window === 'undefined') {
+      // 서버 사이드에서는 기본적인 HTML 엔티티만 처리
+      return text
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ');
+    }
+    
+    // 클라이언트 사이드에서는 textarea를 사용
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value;
+  };
+
+  // 현재 시간을 분:초 형식으로 변환
+  const getMinutesAndSeconds = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return {
+      minutes: minutes.toString().padStart(2, '0'),
+      seconds: seconds.toString().padStart(2, '0'),
+    };
+  };
+
+  const timeBoxClass = "inline-block font-mono text-lg bg-gray-800 rounded px-1 w-[36px] text-center align-middle";
+  const current = getMinutesAndSeconds(currentVideoTime);
+  
+  // 스크립트의 마지막 end_time에서 종료시간 계산
+  const lastScriptEndTime = captions.length > 0 ? captions[captions.length - 1].end_time : 0;
+  const total = getMinutesAndSeconds(lastScriptEndTime);
+
   return (
-    <div className="w-full bg-gray-800 rounded-lg p-4 border border-gray-700">
-      <h4 className="text-sm font-semibold text-cyan-400 mb-3 text-center">
-        📊 발음 정확도 분석
-      </h4>
-      <div className="flex flex-col items-center justify-center gap-2 mb-4">
-        {/* 첫 번째 줄 */}
-        <div className="flex items-center justify-center space-x-4">
-          {firstLine.map((word: any, idx: number) => {
-            const animatedScore = animatedScores[word.word] || 0;
-            return (
-              <div
-                key={word.word + idx}
-                className="flex flex-col items-center px-2 py-1 rounded-lg transition-all duration-150"
-              >
-                <span 
-                  className="text-xl font-bold mb-2"
-                  style={{ color: getGradientColor(animatedScore) }}
-                >
-                  {word.word}
-                </span>
-                <div className="w-20 h-3 bg-gray-700 rounded-full overflow-hidden mb-1">
-                  <div
-                    className="h-full transition-all duration-200"
-                    style={{ 
-                      width: `${Math.round(animatedScore * 100)}%`,
-                      backgroundColor: getGradientColor(animatedScore)
-                    }}
-                  />
-                </div>
-                <span className="text-sm text-gray-400 mt-1">
-                  정확도 {Math.round(animatedScore * 100)}%
-                </span>
-              </div>
-            );
-          })}
-        </div>
-        {/* 두 번째 줄 (있을 때만) */}
-        {secondLine.length > 0 && (
-          <div className="flex items-center justify-center space-x-4">
-            {secondLine.map((word: any, idx: number) => {
-              const animatedScore = animatedScores[word.word] || 0;
-              return (
-                <div
-                  key={word.word + idx}
-                  className="flex flex-col items-center px-2 py-1 rounded-lg transition-all duration-150"
-                >
-                  <span 
-                    className="text-xl font-bold mb-2"
-                    style={{ color: getGradientColor(animatedScore) }}
-                  >
-                    {word.word}
-                  </span>
-                  <div className="w-20 h-3 bg-gray-700 rounded-full overflow-hidden mb-1">
-                    <div
-                      className="h-full transition-all duration-200"
-                      style={{ 
-                        width: `${Math.round(animatedScore * 100)}%`,
-                        backgroundColor: getGradientColor(animatedScore)
-                      }}
-                    />
-                  </div>
-                  <span className="text-sm text-gray-400 mt-1">
-                    정확도 {Math.round(animatedScore * 100)}%
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
-        {/* 세 번째 줄 (있을 때만) */}
-        {thirdLine.length > 0 && (
-          <div className="flex items-center justify-center space-x-4">
-            {thirdLine.map((word: any, idx: number) => {
-              const animatedScore = animatedScores[word.word] || 0;
-              return (
-                <div
-                  key={word.word + idx}
-                  className="flex flex-col items-center px-2 py-1 rounded-lg transition-all duration-150"
-                >
-                  <span 
-                    className="text-xl font-bold mb-2"
-                    style={{ color: getGradientColor(animatedScore) }}
-                  >
-                    {word.word}
-                  </span>
-                  <div className="w-20 h-3 bg-gray-700 rounded-full overflow-hidden mb-1">
-                    <div
-                      className="h-full transition-all duration-200"
-                      style={{ 
-                        width: `${Math.round(animatedScore * 100)}%`,
-                        backgroundColor: getGradientColor(animatedScore)
-                      }}
-                    />
-                  </div>
-                  <span className="text-sm text-gray-400 mt-1">
-                    정확도 {Math.round(animatedScore * 100)}%
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        )}
+    <div className="relative w-full h-full flex items-center justify-center">
+      
+      {/* 배우 뱃지 - 듀엣자막디스플레이와 동일한 위치 */}
+      <div className="absolute top-1/2 -translate-y-1/2 left-3 flex items-center gap-2 px-3 py-1 rounded-full text-xl font-semibold bg-emerald-600 text-white">
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+        </svg>
+        내 대사
       </div>
-      <div className="text-center text-xs text-gray-300">
-        {analysisResult?.overall_score !== undefined && (
-          <>전체 정확도: {Math.round(analysisResult.overall_score * 100)}%</>
-        )}
+      {/* 자막 텍스트 - 듀엣자막디스플레이와 동일한 위치 */}
+      <div className="text-center w-full">
+        <div className="text-2xl font-bold leading-tight text-emerald-100">
+          {showContent && analysisResult?.word_analysis && analysisResult.word_analysis.length > 0 ? (
+            // 분석 결과가 있을 때만 표시
+            <div className={`transition-all duration-300 ease-out ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+              <div className="flex flex-wrap justify-center items-center gap-4">
+                {words.map((word: any, idx: number) => {
+                  const animatedScore = animatedScores[word.word] || 0;
+                  return (
+                    <div 
+                      key={word.word + idx}
+                      className="flex flex-col items-center"
+                    >
+                      <span className="text-emerald-100 mb-2">
+                        {decodeHtmlEntities(word.word)}
+                      </span>
+                      {/* 단어별 정확도 게이지 */}
+                      <div className="w-20 h-2 bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full transition-all duration-300 ease-out"
+                          style={{
+                            width: `${Math.round(animatedScore * 100)}%`,
+                            backgroundColor: getGradientColor(animatedScore)
+                          }}
+                        />
+                      </div>
+                      <div className="text-xs text-gray-400 mt-1">
+                        {Math.round(animatedScore * 100)}%
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            // 분석 결과가 없을 때 로딩창 표시
+            <div className={`flex flex-col items-center justify-center space-y-3 w-full transition-all duration-300 ease-out ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+              <Loader />
+              <span className="text-gray-400 text-sm text-center">분석 결과를 기다리는 중...</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

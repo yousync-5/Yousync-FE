@@ -3,6 +3,9 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import Loader from "../ui/Loader";
+import { checkAllAnalyzedDuetResult } from '@/utils/checkAllAnalyzedDuetResult';
+import isMyLine from "@/utils/isMyLine";
+import DuetResult from "@/utils/DuetResult";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -59,12 +62,17 @@ export default function Sidebar({
 
   // 화자 구분 로직 - Second Speaker가 내 대사
   const currentScript = captions[currentScriptIndex];
-  const isMyLine = currentScript?.actor?.name === "나";
+  const isMineCurrent = isMyLine(currentScript?.actor);
 
   // 내 대사만 필터링
-  const filteredCaptions = showMyLinesOnly 
-    ? captions.filter(caption => caption.actor?.name === "나")
-    : captions;
+  const myCaptions = captions.filter(caption => isMyLine(caption.actor));
+  // 내 대사 중 분석 완료된 개수
+  const myAnalyzedCount = myCaptions.filter(c => {
+    const scriptKey = normalizeScript(c.script);
+    return !!latestResultByScript[scriptKey];
+  }).length;
+  // 내 대사만 모두 분석 완료됐는지 체크
+  const isAllAnalyzed = myCaptions.length > 0 && myAnalyzedCount === myCaptions.length;
 
   useEffect(() => {
     console.log("[Sidebar] captions:", captions);
@@ -73,7 +81,7 @@ export default function Sidebar({
   useEffect(() => {
     // currentScriptIndex가 변경될 때마다 자동스크롤 실행
     scrollToSelectedItem();
-  }, [currentScriptIndex, filteredCaptions])
+  }, [currentScriptIndex, myCaptions])
 
   // captions에서 정보 추출 (존재하지 않으면 '-')
   const actorName = (captions[0] && (captions[0] as any).actor && (captions[0] as any).actor.name) ? (captions[0] as any).actor.name : '-';
@@ -83,6 +91,8 @@ export default function Sidebar({
     const scriptKey = normalizeScript(c.script);
     return !!latestResultByScript[scriptKey];
   }).length;
+  // 분석 완료 여부 유틸 함수로 판별 (기존 코드 삭제)
+  // const isAllAnalyzed = checkAllAnalyzedDuetResult(captions.length, Object.values(latestResultByScript));
 
   // 시간 포맷 함수
   function formatTime(sec?: number) {
@@ -115,14 +125,13 @@ export default function Sidebar({
     // 목표 위치 (6번째 위치)
     const targetVisibleTop =5 * itemHeight;
 
-    // 목표 스크롤 위치 계산
-    // 선택된 아이템이 사이드바 뷰포트의 특정 위치(예: 6번째 아이템 위치)에 오도록 조정
-    const desiredScrollTop = itemTop - targetVisibleTop;
-
-    // 현재 스크롤 위치와 목표 스크롤 위치가 다르면 스크롤 실행
-    if (currentScrollTop !== desiredScrollTop) {
+    // 아이템이 목표 위치보다 아래에 있으면 스크롤 조정
+    if(itemVisibleTop > targetVisibleTop) {
+      const scrollOffset = itemVisibleTop - targetVisibleTop;
+      
+      // 부드러운 스크롤 애니메이션
       sidebarRef.current.scrollTo({
-        top: desiredScrollTop,
+        top: currentScrollTop + scrollOffset,
         behavior: 'smooth'
       });
     }
@@ -177,12 +186,12 @@ export default function Sidebar({
         <div className="mt-2">
           <div className="flex justify-between text-xs text-gray-400 mb-1">
             <span>문장 진행률</span>
-            <span>{filteredCaptions.length} / {totalCount}</span>
+            <span>{myCaptions.length} / {captions.length}</span>
           </div>
           <div className="w-full h-2 bg-gray-700 rounded">
             <div
               className="h-2 bg-emerald-400 rounded"
-              style={{ width: `${(filteredCaptions.length / totalCount) * 100}%` }}
+              style={{ width: `${(myCaptions.length / captions.length) * 100}%` }}
             />
           </div>
         </div>
@@ -190,12 +199,12 @@ export default function Sidebar({
         <div className="mt-2">
           <div className="flex justify-between text-xs text-gray-400 mb-1">
             <span>문장 분석완료</span>
-            <span>{analyzedCount} / {totalCount}</span>
+            <span>{myAnalyzedCount} / {myCaptions.length}</span>
           </div>
           <div className="w-full h-2 bg-gray-700 rounded">
             <div
               className="h-2 bg-blue-400 rounded"
-              style={{ width: `${(analyzedCount / totalCount) * 100}%` }}
+              style={{ width: `${(myAnalyzedCount / myCaptions.length) * 100}%` }}
             />
           </div>
         </div>
@@ -217,12 +226,12 @@ export default function Sidebar({
       </div>
 
       <ul ref={listRef} className="px-4 py-6 pb-32">
-        {filteredCaptions.map((caption, index) => {
+        {captions.map((caption, index) => {
           const scriptKey = normalizeScript(caption.script);
           const isAnalyzed = !!latestResultByScript[scriptKey];
-          const originalIndex = captions.findIndex(c => c === caption);
+          const originalIndex = index;
           const isSelected = currentScriptIndex === originalIndex;
-          const isMyLine = caption.actor?.name === "나";
+          const isMine = isMyLine(caption.actor);
           
           return (
             <li
@@ -235,16 +244,16 @@ export default function Sidebar({
               }}
               className={`cursor-pointer px-4 py-4 transition-all duration-150 select-none relative
                 ${isSelected
-                  ? isMyLine
+                  ? isMine
                     ? "border-2 border-emerald-400 scale-[1.03] bg-transparent text-white shadow-md z-10"
                     : "border-2 border-blue-400 scale-[1.03] bg-transparent text-white shadow-md z-10"
                   : isAnalyzed
                   ? "border-2 border-emerald-400 bg-transparent text-white"
                   : "hover:bg-gray-800/50 hover:text-emerald-300 text-gray-200"}
-                ${isMyLine && !isSelected && !isAnalyzed
+                ${isMine && !isSelected && !isAnalyzed
                   ? "bg-emerald-900/30 border-l-4 border-emerald-400 shadow-lg" 
                   : ""}
-                ${!isMyLine && !isSelected && !isAnalyzed
+                ${!isMine && !isSelected && !isAnalyzed
                   ? "bg-blue-900/30 border-l-4 border-blue-400 shadow-lg" 
                   : ""}
                 ${isSelected ? "transition-transform" : ""}
@@ -252,8 +261,8 @@ export default function Sidebar({
               style={{ wordBreak: 'break-word', zIndex: isSelected ? 10 : 1 }}
             >
               {/* Loader 오버레이 - 현재 선택된 문장에서만 표시 */}
-              {isSelected && !isMyLine && !recording && recordingCompleted && null}
-              {isSelected && isMyLine && !recording && recordingCompleted && (
+              {isSelected && !isMine && !recording && recordingCompleted && null}
+              {isSelected && isMine && !recording && recordingCompleted && (
                 <div className="absolute inset-0 bg-gray-900/30 backdrop-blur-[1px] flex items-center justify-center z-20 rounded pointer-events-none">
                   <Loader />
                 </div>
@@ -263,7 +272,7 @@ export default function Sidebar({
                   {/* 아이콘 + 번호 */}
                   <span className="flex items-center mr-3 mt-1 select-none" style={{ zIndex: 2 }}>
                     {isSelected ? (
-                      isMyLine ? (
+                      isMine ? (
                         // 내 대사 - 빙글빙글 없이 초록색 강조
                         <svg className="w-4 h-4 mr-1 text-emerald-400" viewBox="0 0 20 20" fill="currentColor" aria-label="선택됨">
                           <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" />
@@ -274,7 +283,7 @@ export default function Sidebar({
                           <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" />
                         </svg>
                       )
-                    ) : isMyLine ? (
+                    ) : isMine ? (
                       // 내 대사 - 사용자 아이콘
                       <div className="px-2 py-1 text-xs font-medium text-green-300 bg-green-900/50 border border-green-400 rounded-full">
                         나
@@ -328,39 +337,31 @@ export default function Sidebar({
       )}
 
       {/* 토스트 스타일 전체 녹음 들어보기 버튼 */}
-      <div
-        className={`
-          fixed bottom-8 z-[9999]
-          w-[220px] max-w-[90vw]
-          bg-gradient-to-r from-emerald-400 via-blue-400 to-pink-400
-          text-white font-bold rounded-2xl shadow-2xl
-          flex items-center gap-3 px-4 py-3 animate-pulse
-          transition-all duration-500
-          ${isOpen ? 'right-4 translate-x-0' : 'right-[-240px] translate-x-full'}
-        `}
-        style={{ boxShadow: "0 8px 32px rgba(34,197,94,0.25)" }}
-      >
-        <button
-          className="flex-1 flex items-center gap-2 focus:outline-none"
-          onClick={() => onStopLooping && onStopLooping()}
+      {isAllAnalyzed && (
+        <div
+          className={`
+            fixed bottom-8 z-[9999]
+            w-[220px] max-w-[90vw]
+            bg-gradient-to-r from-emerald-400 via-blue-400 to-pink-400
+            text-white font-bold rounded-2xl shadow-2xl
+            flex items-center gap-3 px-4 py-3 animate-pulse
+            transition-all duration-500
+            ${isOpen ? 'right-4 translate-x-0' : 'right-[-240px] translate-x-full'}
+          `}
+          style={{ boxShadow: "0 8px 32px rgba(34,197,94,0.25)" }}
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
-            <polygon points="10,8 16,12 10,16" fill="white" />
-          </svg>
-          전체 녹음 들어보기
-        </button>
-        <button
-          className="ml-2 text-white/80 hover:text-white transition"
-          onClick={() => {}}
-          aria-label="닫기"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 20 20">
-            <line x1="4" y1="4" x2="16" y2="16" stroke="white" strokeWidth="2"/>
-            <line x1="16" y1="4" x2="4" y2="16" stroke="white" strokeWidth="2"/>
-          </svg>
-        </button>
-      </div>
+          <button
+            className="flex-1 flex items-center gap-2 focus:outline-none"
+            onClick={() => onStopLooping && onStopLooping()}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
+              <polygon points="10,8 16,12 10,16" fill="white" />
+            </svg>
+            전체 녹음 들어보기
+          </button>
+        </div>
+      )}
       {/* 토스트 스타일 전체 녹음 들어보기 버튼 */}
 
       <style jsx global>{`
