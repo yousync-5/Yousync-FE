@@ -29,7 +29,6 @@ export interface MyDubbedTokenResponse {
   token_name: string;
   actor_name: string;
   category: string;
-  youtube_url?: string; // 유튜브 URL 추가
   last_dubbed_at: string;
   total_scripts: number;
   completed_scripts: number;
