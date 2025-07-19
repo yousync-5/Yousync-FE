@@ -91,15 +91,17 @@ export default function MovieItem({
         }
       }}
     >
-      {/* 북마크 버튼 - 카드 우상단 */}
-      <button
-        className="absolute top-3 right-3 z-20 bg-white/80 rounded-full p-2 hover:bg-green-200 opacity-0 group-hover/video:opacity-100 transition-all"
-        onClick={handleBookmarkClick}
-        disabled={isLoading}
-        title={isLoggedIn ? (bookmarked ? "북마크 삭제" : "북마크 추가") : "로그인 필요"}
-      >
-        <BookmarkIcon className={`w-6 h-6`} style={{ color: bookmarked ? '#22ff88' : '#9ca3af', transition: 'color 0.2s' }} />
-      </button>
+      {/* 북마크 버튼 - 로그인한 경우에만 표시 */}
+      {isLoggedIn && (
+        <button
+          className="absolute top-3 right-3 z-20 bg-white/80 rounded-full p-2 hover:bg-green-200 opacity-0 group-hover/video:opacity-100 transition-all"
+          onClick={handleBookmarkClick}
+          disabled={isLoading}
+          title={bookmarked ? "북마크 삭제" : "북마크 추가"}
+        >
+          <BookmarkIcon className={`w-6 h-6`} style={{ color: bookmarked ? '#22ff88' : '#9ca3af', transition: 'color 0.2s' }} />
+        </button>
+      )}
       {/* 유튜브 썸네일만 표시 */}
       {video.youtubeId ? (
         <img
