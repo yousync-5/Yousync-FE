@@ -68,7 +68,7 @@ export default function LandingPage() {
         />
       )}
        {/* 우측 하단 + 버튼 */}
-    <div 
+    {step !== "main" && (<div 
       className="fixed z-50"
       style={{ bottom: '2rem', right: '2rem' }}
     >
@@ -82,7 +82,7 @@ export default function LandingPage() {
           <rect x="6" y="14" width="20" height="4" rx="2" fill="currentColor" />
         </svg>
       </Link>
-    </div>
+    </div>)}
     </div>
   );
 } 
