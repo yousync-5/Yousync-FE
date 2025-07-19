@@ -7,6 +7,7 @@ import checkAllAnalyzedDuetResult from '@/utils/checkAllAnalyzedDuetResult';
 import isMyLine from '@/utils/isMyLine';
 import DuetResult from '@/utils/DuetResult';
 
+
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;

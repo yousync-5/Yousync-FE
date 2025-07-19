@@ -43,6 +43,7 @@ interface ScriptDisplayProps {
   videoEndTime?: number; // 영상 전체 종료 시간
   isAllAnalyzed?: boolean; // 전체 분석 완료 여부
   isOpen?: boolean; // 토스트 열림 상태
+  totalDuration?: number; // 전체 영상 길이
 }
 
 export default function ScriptDisplay({ 
@@ -402,7 +403,7 @@ export default function ScriptDisplay({
   const total = getMinutesAndSeconds(videoEndTime);
 
   return (
-    <div className="bg-gray-900 rounded-xl p-6 w-[77em] flex flex-col relative">
+    <div className="bg-gray-900 rounded-xl p-6 w-[85em] flex flex-col relative">
       <div className="bg-gradient-to-br from-[#0f172a] to-[#1e293b] rounded-2xl p-6 shadow-xl text-white mb-6 border border-gray-700 space-y-6">
         <div>
           <div className="flex items-center justify-between mb-2">

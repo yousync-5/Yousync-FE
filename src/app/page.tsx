@@ -10,6 +10,7 @@ import { useVideos } from "@/hooks/useVideos";
 import { useVisitCheck } from "@/hooks/useSessionStorage";
 import type { TokenDetailResponse } from "@/types/pitch";
 import HomeClient from "@/app/home/HomeClient";
+import Link from "next/link";
 
 export default function LandingPage() {
   const [step, setStep] = useState<'intro'|'video'|'main'|'home'>('main');
@@ -66,6 +67,22 @@ export default function LandingPage() {
           tokenData={selectedTokenData}
         />
       )}
+       {/* 우측 하단 + 버튼 */}
+    {step !== "main" && (<div 
+      className="fixed z-50"
+      style={{ bottom: '2rem', right: '2rem' }}
+    >
+      <Link
+        href="/uploadrequest"
+        className="w-16 h-16 rounded-full bg-gradient-to-r from-emerald-400 via-green-500 to-emerald-400 text-black font-bold shadow-lg flex items-center justify-center text-3xl"
+        aria-label="게시판 열기"
+      >
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect x="14" y="6" width="4" height="20" rx="2" fill="currentColor" />
+          <rect x="6" y="14" width="20" height="4" rx="2" fill="currentColor" />
+        </svg>
+      </Link>
+    </div>)}
     </div>
   );
 } 
