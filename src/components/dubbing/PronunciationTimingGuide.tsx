@@ -53,25 +53,8 @@ export default function PronunciationTimingGuide({
         targetScores[word.word] = word.word_score;
       });
 
-      // 애니메이션 시작
-      const startTime = performance.now();
-      const duration = 2000; // 2초
-
-      const animate = (currentTime: number) => {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        // easeOutCubic - 자연스러운 감속
-        const easeOutCubic = 1 - Math.pow(1 - progress, 3);
-        const newScores: Record<string, number> = {};
-        Object.keys(targetScores).forEach(word => {
-          newScores[word] = targetScores[word] * easeOutCubic;
-        });
-        setAnimatedScores(newScores);
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        }
-      };
-      requestAnimationFrame(animate);
+      // 즉시 최종 점수로 설정 (애니메이션 제거)
+      setAnimatedScores(targetScores);
     } else {
       setAnimatedScores({});
     }
@@ -117,6 +100,25 @@ export default function PronunciationTimingGuide({
     return `rgb(${r}, ${g}, ${b})`;
   };
 
+  // HTML 엔티티를 디코딩하는 함수 (SSR 호환)
+  const decodeHtmlEntities = (text: string) => {
+    if (typeof window === 'undefined') {
+      // 서버 사이드에서는 기본적인 HTML 엔티티만 처리
+      return text
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ');
+    }
+    
+    // 클라이언트 사이드에서는 textarea를 사용
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = text;
+    return textarea.value;
+  };
+
   return (
     <div className="w-full">
       <div className="bg-gray-800 rounded-lg p-2 sm:p-4 shadow-inner border border-emerald-400/50 shadow-lg shadow-emerald-400/20 flex items-center justify-center min-h-[80px] sm:min-h-[100px] relative overflow-hidden">
@@ -140,9 +142,14 @@ export default function PronunciationTimingGuide({
                       <span 
                         key={word.word + idx}
                         className="transition-all duration-150"
-                        style={{ color: getGradientColor(animatedScore) }}
+                        style={{ 
+                          color: getGradientColor(animatedScore),
+                          display: 'inline-block',
+                          paddingLeft: '0',
+                          paddingRight: '0',
+                        }}
                       >
-                        {word.word}{idx < words.length - 1 ? ' ' : ''}
+                        {decodeHtmlEntities(word.word)}{idx < words.length - 1 ? '\u00A0' : ''}
                       </span>
                     );
                   })}&quot;
@@ -173,11 +180,6 @@ export default function PronunciationTimingGuide({
         </div>
       </div>
       <div className="text-center text-xs text-gray-300 mt-4 h-4">
-        {analysisResult?.overall_score !== undefined ? (
-          <>Overall Accuracy: {Math.round(analysisResult.overall_score * 100)}%</>
-        ) : (
-          <span className="text-gray-500">정확도 계산 중...</span>
-        )}
       </div>
     </div>
   );
