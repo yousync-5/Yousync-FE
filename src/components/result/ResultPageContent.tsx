@@ -33,20 +33,46 @@ export default function ResultPageContent() {
       }
 
       try {
-        // 토큰 ID에 해당하는 결과 데이터 가져오기
+        console.log(`토큰 ID ${tokenId}에 대한 분석 결과 가져오기 시작`);
+        // 토큰 ID에 해당하는 분석 상태 정보 가져오기
         const response = await backendApi.get<AnalysisResponse>(`/mypage/tokens/${tokenId}/analysis-status`);
-        console.log('분석 결과 데이터:', response); // 응답 데이터 구조 확인
+        console.log('분석 결과 데이터:', JSON.stringify(response, null, 2)); // 전체 응답 데이터 구조 확인
         
         // 데이터 구조 디버깅
         if (response?.script_results) {
           console.log('script_results 개수:', response.script_results.length);
-          console.log('첫 번째 script_result:', response.script_results[0]);
-          if (response.script_results[0]?.result) {
-            console.log('첫 번째 result:', response.script_results[0].result);
-            console.log('word_analysis 존재 여부:', !!response.script_results[0].result.word_analysis);
-          }
+          
+          // 각 스크립트 결과 확인
+          response.script_results.forEach((item, index) => {
+            console.log(`script_result[${index}] has_result:`, item.has_result);
+            if (item.has_result && item.result) {
+              console.log(`script_result[${index}] result 키:`, Object.keys(item.result));
+              
+              // 중첩된 result 객체 확인
+              if (item.result.result) {
+                console.log(`script_result[${index}] 중첩된 result 키:`, Object.keys(item.result.result));
+                console.log(`script_result[${index}] word_analysis 존재 여부:`, !!item.result.result.word_analysis);
+                if (item.result.result.word_analysis) {
+                  console.log(`script_result[${index}] word_analysis 길이:`, item.result.result.word_analysis.length);
+                }
+              }
+            }
+          });
+          
+          // 유효한 결과가 있는지 확인 (중첩된 result 구조 고려)
+          const validResults = response.script_results.filter(item => 
+            item.has_result && 
+            item.result && 
+            item.result.result && 
+            item.result.result.word_analysis && 
+            Array.isArray(item.result.result.word_analysis) && 
+            item.result.result.word_analysis.length > 0
+          );
+          
+          console.log('유효한 결과 개수:', validResults.length);
         }
         
+        // 백엔드에서 이미 result 데이터를 포함하여 반환하므로 추가 API 호출 불필요
         setResultData(response);
         setLoading(false);
       } catch (err) {
@@ -115,12 +141,31 @@ export default function ResultPageContent() {
     );
   }
 
+  // ResultContainer에 전달할 결과 데이터 준비
+  const finalResultsData = resultData?.script_results
+    ?.filter((item: ScriptResultItem) => 
+      item.has_result && 
+      item.result && 
+      item.result.result && 
+      item.result.result.word_analysis && 
+      Array.isArray(item.result.result.word_analysis) && 
+      item.result.result.word_analysis.length > 0
+    )
+    ?.map((item: ScriptResultItem) => item.result.result) || [];
+  
+  // 전달할 데이터 로깅
+  console.log('ResultContainer에 전달할 데이터:', finalResultsData);
+  console.log('데이터 길이:', finalResultsData.length);
+  if (finalResultsData.length > 0) {
+    console.log('첫 번째 항목:', finalResultsData[0]);
+    console.log('word_analysis 존재 여부:', !!finalResultsData[0]?.word_analysis);
+    console.log('word_analysis 길이:', finalResultsData[0]?.word_analysis?.length);
+  }
+
   return (
     <ResultContainer 
-      finalResults={resultData?.script_results
-        ?.filter((item: ScriptResultItem) => item.has_result && item.result)
-        ?.map((item: ScriptResultItem) => item.result) || []} 
-      hasAnalysisResults={resultData?.has_analysis || false} 
+      finalResults={finalResultsData}
+      hasAnalysisResults={resultData?.has_analysis && finalResultsData.length > 0} 
       showResults={true} 
     />
   );
