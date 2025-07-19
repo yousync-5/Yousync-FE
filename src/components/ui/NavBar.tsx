@@ -148,7 +148,7 @@ export const NavBar: React.FC<NavBarProps> = ({ animateOnMount }) => {
   return (
     <motion.nav
       {...(animateOnMount && { initial: { y: -100 }, animate: { y: 0 }, transition: { type: "spring", stiffness: 80 } })}
-      className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-b border-gray-800 shadow-2xl mb-0"
+      className="relative z-50 bg-black/95 backdrop-blur-md border-b border-gray-800 shadow-2xl mb-0"
     >
       <div className="max-w-7xl mx-auto px-2 py-4">
         <div className="flex items-center w-full">

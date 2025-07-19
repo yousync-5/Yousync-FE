@@ -821,18 +821,20 @@ useEffect(() => {
         </div>
       </div>
       
-      {/* 🆕 결과 섹션을 그리드 밖으로 이동하여 전체 너비 사용 */}
+      {/* 🆕 결과 섹션을 위쪽 컨테이너와 같은 너비로 맞춤 */}
       {(showCompleted || showResults) && (
         <div ref={resultsRef} className="result-container mt-8 w-full">
-          <div className="animate-fade-in-up">
-            <ResultContainer
-              finalResults={finalResults}
-              latestResultByScript={latestResultByScript}
-              hasAnalysisResults={hasAnalysisResults}
-              showResults={showResults}
-              showCompleted={showCompleted}
-              onViewResults={handleViewResults}
-            />
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="animate-fade-in-up">
+              <ResultContainer
+                finalResults={finalResults}
+                latestResultByScript={latestResultByScript}
+                hasAnalysisResults={hasAnalysisResults}
+                showResults={showResults}
+                showCompleted={showCompleted}
+                onViewResults={handleViewResults}
+              />
+            </div>
           </div>
         </div>
       )}

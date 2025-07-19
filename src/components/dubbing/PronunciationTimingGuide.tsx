@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import WebGLProgressBar from "../graph/WebGLProgressBar";
 import Loader from "../ui/Loader";
 
 interface PronunciationTimingGuideProps {

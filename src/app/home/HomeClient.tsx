@@ -54,7 +54,7 @@ export default function HomeClient() {
       : undefined;
 
   return (
-    <div className="bg-neutral-950 text-white px-6 py-4 font-sans min-h-full flex flex-col pt-24">
+    <div className="bg-neutral-950 text-white px-6 py-4 font-sans min-h-full flex flex-col pt-2">
       {isLoading && tokens.length === 0 && (
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="flex flex-col items-center space-y-4">
