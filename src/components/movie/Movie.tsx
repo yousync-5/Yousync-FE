@@ -204,9 +204,9 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              {/* 비디오 정보 - 우측으로 이동 */}
-              <div className="w-full px-8">
-                <div className="max-w-2xl relative" style={{ left: '0%' }}>
+              {/* 비디오 정보 - 네비게이션 바와 동일한 반응형 구조 */}
+              <div className="max-w-7xl mx-auto px-2 w-full">
+                <div className="max-w-2xl relative">
                   <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 drop-shadow-lg">
                     {(() => {
                       const nameParts = heroVideos[currentIndex].actor_name.split(' ');

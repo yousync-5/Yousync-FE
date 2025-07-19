@@ -39,7 +39,8 @@ interface ScriptDisplayProps {
   onStopLooping?: () => void;
   showAnalysisResult?: boolean;
   analysisResult?: any;
-  totalDuration?: number; // 전체 영상 길이 추가
+  videoStartTime?: number; // 영상 전체 시작 시간
+  videoEndTime?: number; // 영상 전체 종료 시간
   isAllAnalyzed?: boolean; // 전체 분석 완료 여부
   isOpen?: boolean; // 토스트 열림 상태
 }
@@ -57,7 +58,8 @@ export default function ScriptDisplay({
   onStopLooping,
   showAnalysisResult = false,
   analysisResult = null,
-  totalDuration,
+  videoStartTime = 0,
+  videoEndTime = 0,
   isAllAnalyzed = false,
   isOpen = false,
 }: ScriptDisplayProps) {
@@ -122,13 +124,13 @@ export default function ScriptDisplay({
     if (!currentWords || currentWords.length === 0) {
       return getSentenceProgress(); // 기존 방식
     }
-    const totalDuration = currentWords.reduce((sum, word) => 
+    const wordsTotalDuration = currentWords.reduce((sum, word) => 
       sum + (word.end_time - word.start_time), 0
     );
     let accumulatedProgress = 0;
     for (const word of currentWords) {
       const wordDuration = word.end_time - word.start_time;
-      const wordWeight = wordDuration / totalDuration;
+      const wordWeight = wordDuration / wordsTotalDuration;
       if (currentVideoTime >= word.start_time && currentVideoTime <= word.end_time) {
         // 현재 단어 내에서의 진행률
         const wordProgress = (currentVideoTime - word.start_time) / wordDuration;
@@ -394,7 +396,10 @@ export default function ScriptDisplay({
   }
   const timeBoxClass = "inline-block font-mono text-lg bg-gray-800 rounded px-1 w-[36px] text-center align-middle";
   const current = getMinutesAndSeconds(currentVideoTime);
-  const total = getMinutesAndSeconds(totalDuration ?? 0);
+  
+  // 영상 전체 시간을 기준으로 계산
+  const videoTotalDuration = videoEndTime - videoStartTime;
+  const total = getMinutesAndSeconds(videoEndTime);
 
   return (
     <div className="bg-gray-900 rounded-xl p-6 w-[77em] flex flex-col relative">
@@ -414,112 +419,149 @@ export default function ScriptDisplay({
             </span>
           </div>
         </div>
-        <div className="relative w-full h-3 bg-gray-800 rounded-full overflow-hidden shadow-inner">
-          {/* 진행도 바 */}
-          <div
-            className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-500 ease-out z-10"
-            style={{
-              width: totalDuration
-                ? `${Math.min((currentVideoTime / totalDuration) * 100, 100)}%`
-                : "0%",
-            }}
-          >
-            <span className="absolute right-2 text-[10px] font-bold text-white drop-shadow-sm z-20">
-              {totalDuration
-                ? Math.round((currentVideoTime / totalDuration) * 100)
-                : 0}
-              %
-            </span>
-          </div>
-          {/* 문장 구분선 (시간 기준) */}
-          {captions.length > 0 &&
-            captions.map((caption, idx) => {
-              if (idx === 0) return null;
-              const leftPercent = totalDuration
-                ? (caption.start_time / totalDuration) * 100
+        <div className="relative w-full h-8 bg-gray-900 rounded-full overflow-hidden shadow-inner border border-gray-700">
+          {/* 네온 글로우 배경 */}
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20 blur-xl"></div>
+          
+          {/* 진행도 바 - 각 구간별 네온 그라데이션 */}
+          <div className="absolute top-0 left-0 h-full w-full flex z-10">
+            {captions.map((caption, idx) => {
+              const startPercent = videoTotalDuration
+                ? ((caption.start_time - videoStartTime) / videoTotalDuration) * 100
                 : 0;
+              const endPercent = videoTotalDuration
+                ? ((caption.end_time - videoStartTime) / videoTotalDuration) * 100
+                : 0;
+              const width = endPercent - startPercent;
+              
+              // 네온 느낌의 그라데이션 색상
+              const neonGradients = [
+                'from-cyan-400 via-blue-500 to-cyan-600',
+                'from-pink-400 via-purple-500 to-pink-600',
+                'from-green-400 via-emerald-500 to-green-600',
+                'from-yellow-400 via-orange-500 to-yellow-600',
+                'from-purple-400 via-indigo-500 to-purple-600',
+                'from-teal-400 via-cyan-500 to-teal-600',
+                'from-red-400 via-pink-500 to-red-600',
+                'from-indigo-400 via-purple-500 to-indigo-600'
+              ];
+              const gradientIndex = idx % neonGradients.length;
+              
               return (
                 <div
                   key={idx}
-                  className="absolute top-0 h-full w-0.5 bg-white drop-shadow-sm z-0"
-                  style={{ left: `${leftPercent}%` }}
-                />
+                  className={`h-full bg-gradient-to-r ${neonGradients[gradientIndex]} transition-all duration-500 ease-out relative`}
+                  style={{ 
+                    width: `${width}%`,
+                    marginLeft: idx === 0 ? '0' : '0'
+                  }}
+                >
+                  {/* 네온 글로우 효과 */}
+                  <div className={`absolute inset-0 bg-gradient-to-r ${neonGradients[gradientIndex]} blur-sm opacity-60`}></div>
+                  {/* 네온 테두리 */}
+                  <div className={`absolute inset-0 bg-gradient-to-r ${neonGradients[gradientIndex]} opacity-30`} style={{ filter: 'blur(2px)' }}></div>
+                </div>
               );
             })}
+          </div>
+          
+          {/* 현재 진행률 네온 오버레이 */}
+          <div
+            className="absolute top-0 left-0 h-full bg-gradient-to-r from-cyan-400 via-green-500 to-emerald-600 transition-all duration-500 ease-out z-20"
+            style={{
+              width: videoTotalDuration
+                ? `${Math.min(((currentVideoTime - videoStartTime) / videoTotalDuration) * 100, 100)}%`
+                : "0%",
+              opacity: 0.9
+            }}
+          >
+            {/* 네온 글로우 효과 */}
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-300/70 via-green-400/70 to-emerald-500/70 blur-md"></div>
+            {/* 네온 테두리 */}
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/50 via-green-500/50 to-emerald-600/50" style={{ filter: 'blur(3px)' }}></div>
+            {/* 애니메이션 글로우 */}
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-300/30 via-green-400/30 to-emerald-500/30 animate-pulse"></div>
+          </div>
+          
+          {/* 네온 파티클 효과 */}
+          <div className="absolute inset-0 z-30 pointer-events-none">
+            <div className="absolute top-1 left-1 w-1 h-1 bg-cyan-400 rounded-full animate-ping"></div>
+            <div className="absolute top-2 right-2 w-1 h-1 bg-green-400 rounded-full animate-ping" style={{ animationDelay: '0.5s' }}></div>
+            <div className="absolute bottom-1 left-4 w-1 h-1 bg-purple-400 rounded-full animate-ping" style={{ animationDelay: '1s' }}></div>
+          </div>
         </div>
         <div className="flex flex-col items-center space-y-3">
           {/* 스크립트 본문 + 내비게이션 */}
           <div className="flex items-center space-x-4 w-full">
-            {showAnalysisResult && analysisResult ? (
-              <div className="w-full">
-                <PronunciationTimingGuide
-                  captions={captions}
-                  currentScriptIndex={currentScriptIndex}
-                  currentVideoTime={currentVideoTime}
-                  currentWords={currentWords}
-                  showAnalysisResult={showAnalysisResult}
-                  analysisResult={analysisResult}
-                  recording={recording}
-                />
-              </div>
-            ) : (
-              <div 
-                className={`rounded-lg p-4 flex-1 shadow-inner border flex items-center justify-center min-h-[100px] relative overflow-hidden transition-all duration-500 ease-out ${
-                  isMyLine 
-                    ? 'bg-gradient-to-br from-emerald-900/50 to-emerald-800/30 border-emerald-500 shadow-lg shadow-emerald-500/20' 
-                    : 'bg-gradient-to-br from-blue-900/50 to-blue-800/30 border-blue-500 shadow-lg shadow-blue-500/20'
-                }`}
-                style={{
-                  background: isAnalyzing 
-                    ? 'rgba(31, 41, 55, 1)'
-                    : isMyLine
-                      ? `linear-gradient(to right, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.15) ${animatedProgress * 100}%, rgba(31, 41, 55, 1) ${animatedProgress * 100}%, rgba(31, 41, 55, 1) 100%)`
-                      : `linear-gradient(to right, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) ${animatedProgress * 100}%, rgba(31, 41, 55, 1) ${animatedProgress * 100}%, rgba(31, 41, 55, 1) 100%)`,
-                  transition: disableTransition ? 'none' : 'background 0.3s ease-out'
-                }}
-              >
-                {isAnalyzing ? (
-                  <div className="relative w-full h-full flex items-center justify-center">
-                    {renderScriptWithWords()}
-                    {/* 분석 중 로딩 오버레이 (사이드바 스타일 적용) */}
-                    <div className="absolute inset-0 bg-gray-900/30 backdrop-blur-[1px] flex items-center justify-center z-20 rounded pointer-events-none">
-                      <div className="flex flex-col items-center space-y-3">
-                        <svg className="w-12 h-12 text-emerald-300 animate-spin" viewBox="0 0 20 20" fill="none" aria-label="분석 중">
-                          <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" strokeDasharray="20 10" />
-                        </svg>
-                        <span className="text-emerald-300 text-sm font-medium">분석 중...</span>
-                      </div>
+            <div 
+              className={`rounded-lg p-4 flex-1 shadow-inner border flex items-center justify-center min-h-[100px] relative overflow-hidden transition-all duration-500 ease-out ${
+                isMyLine 
+                  ? 'bg-gradient-to-br from-emerald-900/50 to-emerald-800/30 border-emerald-500 shadow-lg shadow-emerald-500/20' 
+                  : 'bg-gradient-to-br from-blue-900/50 to-blue-800/30 border-blue-500 shadow-lg shadow-blue-500/20'
+              }`}
+              style={{
+                background: isAnalyzing 
+                  ? 'rgba(31, 41, 55, 1)'
+                  : isMyLine
+                    ? `linear-gradient(to right, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.15) ${animatedProgress * 100}%, rgba(31, 41, 55, 1) ${animatedProgress * 100}%, rgba(31, 41, 55, 1) 100%)`
+                    : `linear-gradient(to right, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) ${animatedProgress * 100}%, rgba(31, 41, 55, 1) ${animatedProgress * 100}%, rgba(31, 41, 55, 1) 100%)`,
+                transition: disableTransition ? 'none' : 'background 0.3s ease-out'
+              }}
+            >
+              {showAnalysisResult && analysisResult ? (
+                // 발음분석가이드 표시
+                <div className="relative w-full h-full flex items-center justify-center">
+                  <PronunciationTimingGuide
+                    captions={captions}
+                    currentScriptIndex={currentScriptIndex}
+                    currentVideoTime={currentVideoTime}
+                    currentWords={currentWords}
+                    showAnalysisResult={showAnalysisResult}
+                    analysisResult={analysisResult}
+                    recording={recording}
+                  />
+                </div>
+              ) : isAnalyzing ? (
+                <div className="relative w-full h-full flex items-center justify-center">
+                  {renderScriptWithWords()}
+                  {/* 분석 중 로딩 오버레이 (사이드바 스타일 적용) */}
+                  <div className="absolute inset-0 bg-gray-900/30 backdrop-blur-[1px] flex items-center justify-center z-20 rounded pointer-events-none">
+                    <div className="flex flex-col items-center space-y-3">
+                      <svg className="w-12 h-12 text-emerald-300 animate-spin" viewBox="0 0 20 20" fill="none" aria-label="분석 중">
+                        <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" strokeDasharray="20 10" />
+                      </svg>
+                      <span className="text-emerald-300 text-sm font-medium">분석 중...</span>
                     </div>
                   </div>
-                ) : (
-                  <div className="relative w-full h-full flex items-center justify-center">
-                    <div className={`absolute top-1/2 -translate-y-1/2 left-3 flex items-center gap-2 px-3 py-1 rounded-full text-xl font-semibold ${
-                      isMyLine 
-                        ? 'bg-emerald-600 text-white' 
-                        : 'bg-blue-600 text-white'
+                </div>
+              ) : (
+                <div className="relative w-full h-full flex items-center justify-center">
+                  <div className={`absolute top-1/2 -translate-y-1/2 left-3 flex items-center gap-2 px-3 py-1 rounded-full text-xl font-semibold ${
+                    isMyLine 
+                      ? 'bg-emerald-600 text-white' 
+                      : 'bg-blue-600 text-white'
+                  }`}>
+                    {isMyLine ? (
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
+                      </svg>
+                    )}
+                    {isMyLine ? '내 대사' : currentScript?.actor?.name}
+                  </div>
+                  <div className="text-center w-full">
+                    <div className={`text-2xl font-bold leading-tight ${
+                      isMyLine ? 'text-emerald-100' : 'text-blue-100'
                     }`}>
-                      {isMyLine ? (
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                        </svg>
-                      ) : (
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
-                        </svg>
-                      )}
-                      {isMyLine ? '내 대사' : currentScript?.actor?.name}
-                    </div>
-                    <div className="text-center w-full">
-                      <div className={`text-2xl font-bold leading-tight ${
-                        isMyLine ? 'text-emerald-100' : 'text-blue-100'
-                      }`}>
-                        {renderScriptWithWords()}
-                      </div>
+                      {renderScriptWithWords()}
                     </div>
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

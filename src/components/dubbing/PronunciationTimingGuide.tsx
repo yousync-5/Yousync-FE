@@ -119,67 +119,76 @@ export default function PronunciationTimingGuide({
     return textarea.value;
   };
 
+  // 현재 시간을 분:초 형식으로 변환
+  const getMinutesAndSeconds = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return {
+      minutes: minutes.toString().padStart(2, '0'),
+      seconds: seconds.toString().padStart(2, '0'),
+    };
+  };
+
+  const timeBoxClass = "inline-block font-mono text-lg bg-gray-800 rounded px-1 w-[36px] text-center align-middle";
+  const current = getMinutesAndSeconds(currentVideoTime);
+  
+  // 스크립트의 마지막 end_time에서 종료시간 계산
+  const lastScriptEndTime = captions.length > 0 ? captions[captions.length - 1].end_time : 0;
+  const total = getMinutesAndSeconds(lastScriptEndTime);
+
   return (
-    <div className="w-full">
-      <div className="bg-gray-800 rounded-lg p-2 sm:p-4 shadow-inner border border-emerald-400/50 shadow-lg shadow-emerald-400/20 flex items-center justify-center min-h-[80px] sm:min-h-[100px] relative overflow-hidden">
-        <div className="relative w-full h-full flex items-center justify-center">
-          {/* 배우 뱃지 - 듀엣자막디스플레이와 동일한 위치 */}
-          <div className="absolute top-1/2 -translate-y-1/2 left-3 flex items-center gap-2 px-3 py-1 rounded-full text-xl font-semibold bg-emerald-600 text-white">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-            </svg>
-            내 대사
-          </div>
-          {/* 자막 텍스트 - 듀엣자막디스플레이와 동일한 위치 */}
-          <div className="text-center w-full">
-            <div className="text-2xl font-bold leading-tight text-emerald-100">
-              {showContent && analysisResult?.word_analysis && analysisResult.word_analysis.length > 0 ? (
-                // 분석 결과가 있을 때만 표시
-                <div className={`transition-all duration-300 ease-out ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
-                  &quot;{words.map((word: any, idx: number) => {
-                    const animatedScore = animatedScores[word.word] || 0;
-                    return (
-                      <span 
-                        key={word.word + idx}
-                        className="transition-all duration-150"
-                        style={{ 
-                          color: getGradientColor(animatedScore),
-                          display: 'inline-block',
-                          paddingLeft: '0',
-                          paddingRight: '0',
-                        }}
-                      >
-                        {decodeHtmlEntities(word.word)}{idx < words.length - 1 ? '\u00A0' : ''}
-                      </span>
-                    );
-                  })}&quot;
-                </div>
-              ) : (
-                // 분석 결과가 없을 때 로딩창 표시
-                <div className={`flex flex-col items-center justify-center space-y-3 w-full transition-all duration-300 ease-out ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
-                  <Loader />
-                  <span className="text-gray-400 text-sm text-center">분석 결과를 기다리는 중...</span>
-                </div>
-              )}
-            </div>
-            
-            {/* WebGL 게이지바 - 자막 텍스트 바로 아래 */}
-            {showContent && analysisResult?.word_analysis && analysisResult.word_analysis.length > 0 && analysisResult?.overall_score !== undefined && (
-              <div className={`mt-3 flex justify-center transition-all duration-300 ease-out ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
-                <WebGLProgressBar 
-                  value={analysisResult.overall_score} 
-                  width={200} 
-                  height={20} 
-                  theme="dark" 
-                  animation={true} 
-                  showPercentage={true} 
-                />
-              </div>
-            )}
-          </div>
-        </div>
+    <div className="relative w-full h-full flex items-center justify-center">
+      
+      {/* 배우 뱃지 - 듀엣자막디스플레이와 동일한 위치 */}
+      <div className="absolute top-1/2 -translate-y-1/2 left-3 flex items-center gap-2 px-3 py-1 rounded-full text-xl font-semibold bg-emerald-600 text-white">
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+        </svg>
+        내 대사
       </div>
-      <div className="text-center text-xs text-gray-300 mt-4 h-4">
+      {/* 자막 텍스트 - 듀엣자막디스플레이와 동일한 위치 */}
+      <div className="text-center w-full">
+        <div className="text-2xl font-bold leading-tight text-emerald-100">
+          {showContent && analysisResult?.word_analysis && analysisResult.word_analysis.length > 0 ? (
+            // 분석 결과가 있을 때만 표시
+            <div className={`transition-all duration-300 ease-out ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+              <div className="flex flex-wrap justify-center items-center gap-4">
+                {words.map((word: any, idx: number) => {
+                  const animatedScore = animatedScores[word.word] || 0;
+                  return (
+                    <div 
+                      key={word.word + idx}
+                      className="flex flex-col items-center"
+                    >
+                      <span className="text-emerald-100 mb-2">
+                        {decodeHtmlEntities(word.word)}
+                      </span>
+                      {/* 단어별 정확도 게이지 */}
+                      <div className="w-20 h-2 bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full transition-all duration-300 ease-out"
+                          style={{
+                            width: `${Math.round(animatedScore * 100)}%`,
+                            backgroundColor: getGradientColor(animatedScore)
+                          }}
+                        />
+                      </div>
+                      <div className="text-xs text-gray-400 mt-1">
+                        {Math.round(animatedScore * 100)}%
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            // 분석 결과가 없을 때 로딩창 표시
+            <div className={`flex flex-col items-center justify-center space-y-3 w-full transition-all duration-300 ease-out ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+              <Loader />
+              <span className="text-gray-400 text-sm text-center">분석 결과를 기다리는 중...</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

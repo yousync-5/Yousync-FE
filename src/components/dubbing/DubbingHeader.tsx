@@ -27,7 +27,7 @@ export default function DubbingHeader({ title, category, actorName }: DubbingHea
 
   return (
     <header className="bg-black/50 backdrop-blur-sm border-b border-gray-800">
-      <div className="w-full mx-auto px-3 sm:px-6 py-3 sm:py-4">
+      <div className="w-full mx-auto px-3 sm:px-6 py-1">
         <div className="flex items-center justify-between">
           <div className="flex-1 min-w-0">
             <h1 className="text-lg sm:text-xl md:text-2xl font-bold truncate">{title}</h1>
