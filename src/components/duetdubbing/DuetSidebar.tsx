@@ -3,10 +3,9 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import Loader from "../ui/Loader";
-import checkAllAnalyzedDuetResult from '@/utils/checkAllAnalyzedDuetResult';
-import isMyLine from '@/utils/isMyLine';
-import DuetResult from '@/utils/DuetResult';
-
+import { checkAllAnalyzedDuetResult } from '@/utils/checkAllAnalyzedDuetResult';
+import isMyLine from "@/utils/isMyLine";
+import DuetResult from "@/utils/DuetResult";
 
 interface SidebarProps {
   isOpen: boolean;

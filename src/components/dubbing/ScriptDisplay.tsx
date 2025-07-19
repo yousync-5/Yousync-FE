@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 import { VideoPlayerRef } from "./VideoPlayer";
 import PronunciationTimingGuide from "./PronunciationTimingGuide";
-import Loader from "../ui/Loader";
 import "@/styles/analysis-animations.css";
 
 interface ScriptDisplayProps {
@@ -66,10 +65,6 @@ export default function ScriptDisplay({
   
   // 분석 결과 애니메이션을 위한 상태
   const [animatedScores, setAnimatedScores] = useState<Record<string, number>>({});
-
-  // 부드러운 전환을 위한 상태
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [showContent, setShowContent] = useState(false);
 
   // 현재 시간을 분:초 형식으로 변환
   const formatTime = (seconds: number) => {
@@ -274,24 +269,6 @@ export default function ScriptDisplay({
     }, 50); // 200ms → 50ms로 단축
   }, [currentScriptIndex]);
 
-  // 분석 결과 도착 시 부드러운 전환 로직
-  useEffect(() => {
-    const hasAnalysisResult = analysisResult?.word_analysis && analysisResult.word_analysis.length > 0;
-    
-    if (hasAnalysisResult && !showContent) {
-      // 분석 결과가 도착했을 때 부드럽게 전환
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setShowContent(true);
-        setIsTransitioning(false);
-      }, 150); // 150ms 지연으로 부드러운 전환
-    } else if (!hasAnalysisResult && showContent) {
-      // 분석 결과가 없어졌을 때 즉시 로딩창으로
-      setShowContent(false);
-      setIsTransitioning(false);
-    }
-  }, [analysisResult, showContent]);
-
   // RGB 그라데이션 색상 계산 (PronunciationTimingGuide에서 복사)
   const getGradientColor = (score: number) => {
     // 0% = 빨간색 (255, 0, 0)
@@ -378,10 +355,6 @@ export default function ScriptDisplay({
     );
   };
 
-  const sentence = captions[currentScriptIndex];
-  // 분석 결과가 없어도 컴포넌트는 렌더링하되, 내용만 조건부로 표시
-  const words = analysisResult?.word_analysis || [];
-
   return (
     <div className="bg-gray-900 rounded-xl p-3 sm:p-4 md:p-6 w-full flex flex-col relative">
       <div className="bg-gradient-to-br from-[#0f172a] to-[#1e293b] rounded-2xl p-3 sm:p-4 md:p-6 shadow-xl text-white mb-4 md:mb-6 border border-gray-700 space-y-4 md:space-y-6">
@@ -409,7 +382,7 @@ export default function ScriptDisplay({
               )}
               {recordingCompleted && !analysisResult ? (
                 <div className="flex items-center space-x-2 font-medium text-blue-400">
-                  <Loader />
+                  <div className="animate-spin w-3 h-3 sm:w-4 sm:h-4 border-2 border-blue-400 border-t-transparent rounded-full"></div>
                   <span>분석 중</span>
                 </div>
               ) : (
@@ -461,19 +434,21 @@ export default function ScriptDisplay({
             >
              {isAnalyzing ? (
                 <div className="relative w-full h-full flex items-center justify-center">
-                  <div className="text-white text-base sm:text-xl md:text-2xl font-bold text-center leading-tight w-full">
-                    {renderScriptWithWords()}
-                  </div>
+                  {renderScriptWithWords()}
                   {/* 분석 중 로딩 오버레이 (사이드바 스타일 적용) */}
                   <div className="absolute inset-0 bg-gray-900/30 backdrop-blur-[1px] flex items-center justify-center z-20 rounded pointer-events-none">
                     <div className="flex flex-col items-center space-y-3">
-                      <Loader />
+                      {/* 빙빙 도는 아이콘 */}
+                      <svg className="w-8 h-8 sm:w-12 sm:h-12 text-emerald-300 animate-spin" viewBox="0 0 20 20" fill="none" aria-label="분석 중">
+                        <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" strokeDasharray="20 10" />
+                      </svg>
+                      {/* 분석 중 텍스트 */}
                       <span className="text-emerald-300 text-xs sm:text-sm font-medium">분석 중...</span>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-white text-base sm:text-xl md:text-2xl font-bold text-center leading-tight w-full">
+                <div className="text-white text-base sm:text-xl md:text-2xl font-bold text-center leading-tight">
                   {renderScriptWithWords()}
                 </div>
               )}
