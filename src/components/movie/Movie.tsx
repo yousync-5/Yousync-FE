@@ -168,10 +168,10 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
     <div className="bg-black min-h-screen text-white font-sans overflow-x-hidden flex flex-col">
       
       {/* Main Content */}
-      <div className="pt-24">
+      <div className="pt-0">
         {/* Hero Banner */}
         {heroVideos.length > 0 && (
-          <div className="relative h-[70vh] min-h-[500px] mb-8 group">
+          <div className="relative h-[70vh] min-h-[500px] mb-8 group -mx-6 -mt-8">
             {/* 유튜브 썸네일 배경 */}
             <div className="absolute inset-0">
               <AnimatePresence initial={false} custom={direction}>
@@ -180,7 +180,10 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                   src={`https://img.youtube.com/vi/${heroVideos[currentIndex].youtubeId}/maxresdefault.jpg`}
                   alt="배너 배경"
                   className="w-full h-full object-cover object-center absolute inset-0"
-                  style={{ filter: 'brightness(1)' }}
+                  style={{ 
+                    filter: 'brightness(1)',
+                    transform: 'translateY(-10%) translateX(20%) scale(1.2)'
+                  }}
                   initial={{ x: direction > 0 ? 300 : -300, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   exit={{ x: direction > 0 ? -300 : 300, opacity: 0 }}
@@ -201,9 +204,9 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              {/* 비디오 정보 */}
+              {/* 비디오 정보 - 우측으로 이동 */}
               <div className="w-full px-8">
-                <div className="max-w-2xl">
+                <div className="max-w-2xl relative" style={{ left: '0%' }}>
                   <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 drop-shadow-lg">
                     {(() => {
                       const nameParts = heroVideos[currentIndex].actor_name.split(' ');
@@ -265,7 +268,7 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
             <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/70 to-transparent"></div>
           </div>
         )}
-        <div className="max-w-7xl mx-auto px-2">
+        <div className="max-w-7xl mx-auto px-7">
           
           {isLoading && (
             <div className="flex items-center justify-center py-20">

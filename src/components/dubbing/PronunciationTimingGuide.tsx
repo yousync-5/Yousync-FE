@@ -99,8 +99,7 @@ export default function PronunciationTimingGuide({
   return (
     <div className="w-full bg-gray-800 rounded-lg p-4 border border-gray-700">
       <h4 className="text-sm font-semibold text-cyan-400 mb-3 text-center">
-        📊 Pronunciation Accuracy Analysis
-      </h4>
+              </h4>
       <div className="flex flex-col items-center justify-center gap-2 mb-4">
         {/* 첫 번째 줄 */}
         <div className="flex items-center justify-center space-x-4">
