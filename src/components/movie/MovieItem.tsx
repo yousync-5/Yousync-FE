@@ -14,11 +14,8 @@ export default function MovieItem({
   onOpenModal,
   onStop,
 }: MovieItemProps) {
-  // 디버깅용 로그
-  // console.log('MovieItem video:', video);
-
-  // 로컬 북마크 훅 사용
-  const { isLoading, isSuccess, isError, addBookmark, removeBookmark, isBookmarked } = useLocalBookmark();
+  // 북마크 훅 사용
+  const { isLoading, isSuccess, isError, addBookmark, removeBookmark, getBookmarks, isLoggedIn, isBookmarked } = useBookmark();
   // 북마크 상태를 로컬에서 관리 (true/false)
   const [bookmarked, setBookmarked] = useState(false);
   // 로그인 상태 확인
@@ -26,17 +23,25 @@ export default function MovieItem({
 
   // 컴포넌트 마운트 시 북마크 상태 확인
   useEffect(() => {
-    setBookmarked(isBookmarked(Number(video.videoId)));
-  }, [video.videoId, isBookmarked]);
+    // 로그인 상태일 때만 북마크 상태 확인
+    if (isLoggedIn()) {
+      // 캐시된 데이터를 사용하여 북마크 상태 확인 (API 요청 없음)
+      setBookmarked(isBookmarked(Number(video.videoId)));
+    } else {
+      // 로그인되지 않은 경우 북마크 상태 초기화
+      setBookmarked(false);
+    }
+    // 의존성 배열에서 isBookmarked 제거 (함수 참조가 변경될 수 있음)
+  }, [video.videoId, isLoggedIn]);
 
   const handleBookmarkClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log('🔍 북마크 클릭됨:', {
-      videoId: video.videoId,
-      actorName: video.actor_name,
-      currentBookmarked: bookmarked,
-      isLoggedIn
-    });
+    
+    // 로그인 상태 확인
+    if (!isLoggedIn()) {
+      alert('북마크 기능은 로그인 후 이용 가능합니다.');
+      return;
+    }
     
     try {
       if (!bookmarked) {
@@ -86,16 +91,15 @@ export default function MovieItem({
         }
       }}
     >
-      {isLoggedIn && (
-        <button
-          className="absolute top-3 right-3 z-20 bg-white/80 rounded-full p-2 hover:bg-green-200 opacity-0 group-hover/video:opacity-100 transition-all"
-          onClick={handleBookmarkClick}
-          disabled={isLoading}
-          title={bookmarked ? "북마크 제거" : "북마크 추가"}
-        >
-          <BookmarkIcon className={`w-6 h-6`} style={{ color: bookmarked ? '#22ff88' : '#9ca3af', transition: 'color 0.2s' }} />
-        </button>
-      )}
+      {/* 북마크 버튼 - 카드 우상단 */}
+      <button
+        className="absolute top-3 right-3 z-20 bg-white/80 rounded-full p-2 hover:bg-green-200 opacity-0 group-hover/video:opacity-100 transition-all"
+        onClick={handleBookmarkClick}
+        disabled={isLoading}
+        title={isLoggedIn() ? (bookmarked ? "북마크 삭제" : "북마크 추가") : "로그인 필요"}
+      >
+        <BookmarkIcon className={`w-6 h-6`} style={{ color: bookmarked ? '#22ff88' : '#9ca3af', transition: 'color 0.2s' }} />
+      </button>
       {/* 유튜브 썸네일만 표시 */}
       {video.youtubeId ? (
         <img

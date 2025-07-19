@@ -52,6 +52,12 @@ refreshClient.interceptors.request.use(attachAuthToken, Promise.reject);
 
 // ✅ 응답 인터셉터 - 에러 로깅 및 401 처리
 const handleResponseError = async (error: any) => {
+  // 타임아웃 에러인 경우 간단한 메시지만 출력
+  if (error.code === 'ECONNABORTED') {
+    console.warn('API 요청 타임아웃 발생');
+    return Promise.reject(error);
+  }
+  
   console.error('API Error:', error);
   
   if (error.response?.status === 401) {
@@ -84,7 +90,6 @@ const handleResponseError = async (error: any) => {
         localStorage.removeItem('access_token');
         localStorage.removeItem('google_user');
         window.dispatchEvent(new Event('auth-change'));
-        window.location.href = '/';
       }
     }
   }
@@ -94,6 +99,12 @@ const handleResponseError = async (error: any) => {
 
 // ✅ Next.js API 라우트용 응답 인터셉터
 const handleApiClientResponseError = async (error: any) => {
+  // 타임아웃 에러인 경우 간단한 메시지만 출력
+  if (error.code === 'ECONNABORTED') {
+    console.warn('API 요청 타임아웃 발생');
+    return Promise.reject(error);
+  }
+  
   console.error('API Client Error:', error);
   
   if (error.response?.status === 401) {
@@ -126,7 +137,6 @@ const handleApiClientResponseError = async (error: any) => {
         localStorage.removeItem('access_token');
         localStorage.removeItem('google_user');
         window.dispatchEvent(new Event('auth-change'));
-        window.location.href = '/';
       }
     }
   }
