@@ -47,7 +47,7 @@ export const ActorContainer: React.FC<ActorContainerProps> = ({
 
   return (
     <div className="h-screen overflow-hidden bg-neutral-950">
-      <div className="flex flex-col lg:flex-row h-full pt-20">
+              <div className="flex flex-col lg:flex-row h-full pt-0">
         {/* 왼쪽 섹션 */}
         <LeftSection movies={movies} actorName={actorName} />
         {/* 오른쪽 영화 리스트 섹션 */}

@@ -402,7 +402,7 @@ export default function ScriptDisplay({
   const total = getMinutesAndSeconds(videoEndTime);
 
   return (
-    <div className="bg-gray-900 rounded-xl p-6 w-[77em] flex flex-col relative">
+    <div className="bg-gray-900 rounded-xl p-6 w-[85em] flex flex-col relative">
       <div className="bg-gradient-to-br from-[#0f172a] to-[#1e293b] rounded-2xl p-6 shadow-xl text-white mb-6 border border-gray-700 space-y-6">
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -471,7 +471,7 @@ export default function ScriptDisplay({
             >
               {showAnalysisResult && analysisResult ? (
                 // 발음분석가이드 표시
-                <div className="relative w-full h-full flex items-center justify-center">
+                <div className="relative w-full h-full flex items-center justify-center min-h-[120px]">
                   <PronunciationTimingGuide
                     captions={captions}
                     currentScriptIndex={currentScriptIndex}
@@ -483,7 +483,7 @@ export default function ScriptDisplay({
                   />
                 </div>
               ) : isAnalyzing ? (
-                <div className="relative w-full h-full flex items-center justify-center">
+                <div className="relative w-full h-full flex items-center justify-center min-h-[120px]">
                   {renderScriptWithWords()}
                   {/* 분석 중 로딩 오버레이 (사이드바 스타일 적용) */}
                   <div className="absolute inset-0 bg-gray-900/30 backdrop-blur-[1px] flex items-center justify-center z-20 rounded pointer-events-none">
@@ -496,7 +496,7 @@ export default function ScriptDisplay({
                   </div>
                 </div>
               ) : (
-                <div className="relative w-full h-full flex items-center justify-center">
+                <div className="relative w-full h-full flex items-center justify-center min-h-[120px]">
                   <div className={`absolute top-1/2 -translate-y-1/2 left-3 flex items-center gap-2 px-3 py-1 rounded-full text-xl font-semibold ${
                     isMyLine 
                       ? 'bg-emerald-600 text-white' 
