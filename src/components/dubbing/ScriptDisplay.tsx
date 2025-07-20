@@ -340,14 +340,14 @@ export default function ScriptDisplay({
     if (!currentWords || currentWords.length === 0) {
       // word 데이터가 없으면 기존 방식으로 렌더링
       return (
-        <div className="text-white text-base sm:text-xl md:text-2xl font-bold text-center leading-tight">
+        <div className="text-white text-lg sm:text-2xl md:text-3xl font-bold text-center leading-tight">
           &quot;{decodeHtmlEntities(captions[currentScriptIndex]?.script || '')}&quot;
         </div>
       );
     }
 
     return (
-      <div className="text-white text-base sm:text-xl md:text-2xl font-bold text-center leading-tight">
+      <div className="text-white text-lg sm:text-2xl md:text-3xl font-bold text-center leading-tight">
         &quot;{currentWords.map((word, index) => {
           const isCurrent = currentVideoTime >= word.start_time && currentVideoTime <= word.end_time;
           const animatedScore = animatedScores[word.word] || 0;
