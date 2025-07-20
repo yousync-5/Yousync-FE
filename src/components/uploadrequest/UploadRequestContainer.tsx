@@ -132,7 +132,7 @@ const UploadRequestContainer = () => {
           <div className="space-y-3">
             <input
               type="text"
-              placeholder="제목"
+              placeholder="배우"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full p-3 rounded-lg bg-neutral-800 text-white border border-emerald-500/40 focus:outline-none focus:ring-2 focus:ring-emerald-400 transition"
