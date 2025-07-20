@@ -34,13 +34,13 @@ export default function DubbingContainer({
   const { isLoggedIn, isLoading } = useUser();
   
   // 로그인 상태 확인 (로딩 완료 후에만 체크)
-  useEffect(() => {
-    if (!isLoading && !isLoggedIn) {
-      alert('듀엣 더빙 기능은 로그인 후 이용 가능합니다.');
-      router.push('/login');
-      return;
-    }
-  }, [isLoggedIn, isLoading, router]);
+  // useEffect(() => {
+  //   if (!isLoading && !isLoggedIn) {
+  //     alert('듀엣 더빙 기능은 로그인 후 이용 가능합니다.');
+  //     router.push('/login');
+  //     return;
+  //   }
+  // }, [isLoggedIn, isLoading, router]);
 
   // 데이터 준비 여부 체크
   const isReady = !!(front_data && tokenData && serverPitchData);
@@ -525,7 +525,14 @@ export default function DubbingContainer({
       console.log('[DEBUG] API 엔드포인트:', `/mypage/tokens/${id}/my-results`);
       console.log('[DEBUG] Authorization 헤더:', `Bearer ${accessToken.substring(0, 20)}...`);
       
-      await mypageService.deleteMyTokenResults(Number(id));
+
+      if (Object.keys(latestResultByScript).length > 0) {
+        // 분석 결과가 있을 때만 삭제 요청
+        await mypageService.deleteMyTokenResults(Number(id));
+        // ...이하 동일
+      } else {
+        console.log('[재더빙] 삭제할 분석 결과가 없음, 삭제 요청 생략');
+      }
       console.log('[재더빙] 기존 분석 결과 삭제 완료');
       
       // 삭제 후 상태 초기화
@@ -804,6 +811,7 @@ export default function DubbingContainer({
               analysisResult={analysisResult}
               videoStartTime={tokenData.start_time}
               videoEndTime={getDuetEndTime()}
+              id={id}
             />
           </div>
   

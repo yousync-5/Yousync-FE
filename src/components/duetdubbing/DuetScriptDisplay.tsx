@@ -43,6 +43,7 @@ interface ScriptDisplayProps {
   videoEndTime?: number; // 영상 전체 종료 시간
   isAllAnalyzed?: boolean; // 전체 분석 완료 여부
   isOpen?: boolean; // 토스트 열림 상태
+  id?: string | number;
 }
 
 export default function ScriptDisplay({ 
@@ -62,6 +63,7 @@ export default function ScriptDisplay({
   videoEndTime = 0,
   isAllAnalyzed = false,
   isOpen = false,
+  id,
 }: ScriptDisplayProps) {
 
   // 디버깅 로그: captions 배열 순서, currentScriptIndex, currentScript
@@ -480,6 +482,7 @@ export default function ScriptDisplay({
                     showAnalysisResult={showAnalysisResult}
                     analysisResult={analysisResult}
                     recording={recording}
+                    id={id}
                   />
                 </div>
               ) : isAnalyzing ? (

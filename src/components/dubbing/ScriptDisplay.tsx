@@ -7,13 +7,7 @@ import PronunciationTimingGuide from "./PronunciationTimingGuide";
 import "@/styles/analysis-animations.css";
 
 interface ScriptDisplayProps {
-  captions: Array<{
-    id: number;
-    script: string;
-    translation: string;
-    start_time: number;
-    end_time: number;
-  }>;
+  captions: Array<any>;
   currentScriptIndex: number;
   onScriptChange: (index: number) => void;
   currentVideoTime?: number;
@@ -21,32 +15,24 @@ interface ScriptDisplayProps {
     startTime: number;
     endTime?: number;
   };
-  videoPlayerRef?: React.RefObject<VideoPlayerRef | null>;
-  currentWords?: Array<{
-    script_id: number;
-    start_time: number;
-    end_time: number;
-    word: string;
-    probability: number;
-    id: number;
-  }>;
+  videoPlayerRef?: React.RefObject<any>;
+  currentWords?: Array<any>;
   recording?: boolean;
   recordingCompleted?: boolean;
   isAnalyzing?: boolean;
   onStopLooping?: () => void;
   showAnalysisResult?: boolean;
   analysisResult?: any;
-  // 추가된 props
   isVideoPlaying?: boolean;
   onPlay?: () => void;
   onPause?: () => void;
   onMicClick?: () => void;
   isLooping?: boolean;
   onLoopToggle?: () => void;
-  // 더빙본 들어보기와 결과보기 버튼 관련 props
   showCompletedButtons?: boolean;
   onOpenDubbingListenModal?: () => void;
   onShowResults?: () => void;
+  id?: string | number; // 추가
 }
 
 export default function ScriptDisplay({ 
@@ -63,17 +49,16 @@ export default function ScriptDisplay({
   onStopLooping,
   showAnalysisResult = false,
   analysisResult = null,
-  // 추가된 props
   isVideoPlaying = false,
   onPlay,
   onPause,
   onMicClick,
   isLooping = false,
   onLoopToggle,
-  // 더빙본 들어보기와 결과보기 버튼 관련 props
   showCompletedButtons = false,
   onOpenDubbingListenModal,
   onShowResults,
+  id, // 추가
 }: ScriptDisplayProps) {
 
   const [animatedProgress, setAnimatedProgress] = useState(0);
@@ -290,6 +275,23 @@ export default function ScriptDisplay({
       }
     }, 50); // 200ms → 50ms로 단축
   }, [currentScriptIndex]);
+
+  // 녹음(recording)이 시작될 때 showAnalysisResult를 false로, isAnalyzing을 true로, animatedScores를 초기화하는 useEffect를 추가합니다.
+  useEffect(() => {
+    if (recording) {
+      // setShowAnalysisResultState(false); // 기존 코드에서 제거됨
+      // setIsAnalyzingState(true); // 기존 코드에서 제거됨
+      setAnimatedScores({});
+    }
+  }, [recording]);
+
+  // analysisResult가 오면 분석 결과 표시, 분석 중 해제
+  useEffect(() => {
+    if (showAnalysisResult && analysisResult) {
+      // setShowAnalysisResultState(true); // 기존 코드에서 제거됨
+      // setIsAnalyzingState(false); // 기존 코드에서 제거됨
+    }
+  }, [showAnalysisResult, analysisResult]);
 
   // RGB 그라데이션 색상 계산 (PronunciationTimingGuide에서 복사)
   const getGradientColor = (score: number) => {
@@ -556,6 +558,7 @@ export default function ScriptDisplay({
                   showAnalysisResult={showAnalysisResult}
                   analysisResult={analysisResult}
                   recording={recording}
+                  id={id} // 추가
                 />
               ) : isAnalyzing ? (
                 <div className="relative w-full h-full flex items-center justify-center">

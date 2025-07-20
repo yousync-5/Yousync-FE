@@ -67,17 +67,15 @@ export default function WordDetailModal({ isOpen, onClose, word, userSTT }: Word
         {/* 단어 */}
         <div className="text-center mb-6 w-full">
           <div className="text-4xl font-bold text-emerald-300 mb-2">
-            "{word.word}"
+            "{word.word.replace(/,$/, "")}"
           </div>
-          <div className="text-gray-400 text-sm">
-            전체 정확도
-          </div>
+        
         </div>
 
         {/* 전체 점수 - 중앙 강조 */}
         <div className="mb-8 w-full flex flex-col items-center justify-center">
           <div className="flex items-center justify-center mb-2 w-full">
-            <span className="text-white font-medium text-lg mr-2">전체 점수</span>
+            <span className="text-white font-medium text-lg mr-2">전체 유사도</span>
             <span className="text-emerald-300 font-bold text-2xl">
               {Math.round(word.word_score * 100)}%
             </span>
@@ -106,7 +104,7 @@ export default function WordDetailModal({ isOpen, onClose, word, userSTT }: Word
             {word.pronunciation_score !== undefined && (
               <div className="w-full">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-gray-300 text-sm">발음 정확도</span>
+                  <span className="text-gray-300 text-sm">전체 유사도</span>
                   <span className="text-emerald-300 font-medium">
                     {Math.round(word.pronunciation_score * 100)}%
                   </span>
@@ -166,26 +164,19 @@ export default function WordDetailModal({ isOpen, onClose, word, userSTT }: Word
         )}
 
         {/* 실제 사용자 발음 */}
-        {userSTT && (
-          <div className="mt-6 p-4 bg-gray-800 rounded-lg border border-gray-600 w-full">
-            <h3 className="text-lg font-semibold text-white mb-3 text-center w-full">실제 발음</h3>
-            <div className="text-gray-300 text-sm leading-relaxed text-center w-full">
-              "{userSTT.text}"
-            </div>
-            <div className="mt-3 text-xs text-gray-400 text-center w-full">
-              <div className="flex flex-wrap gap-1 justify-center">
-                {userSTT.word_timestamps.map((timestamp, idx) => (
-                  <span 
-                    key={idx}
-                    className="px-2 py-1 bg-gray-700 rounded text-gray-300"
-                  >
-                    {timestamp.word}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+        {/* 플레이 버튼만 표시 (기능 없음) */}
+        <div className="mt-6 p-4 bg-gray-800 rounded-lg border border-gray-600 w-full flex justify-center">
+          <button
+            className="w-12 h-12 flex items-center justify-center rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-2xl transition-colors duration-200 shadow-lg"
+            type="button"
+            title="플레이 (기능 없음)"
+            disabled
+          >
+            <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 20 20">
+              <polygon points="6,4 16,10 6,16" />
+            </svg>
+          </button>
+        </div>
 
         {/* 닫기 버튼 */}
         <div className="mt-8 text-center w-full">

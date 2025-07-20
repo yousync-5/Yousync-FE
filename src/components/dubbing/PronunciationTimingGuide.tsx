@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import Loader from "../ui/Loader";
 import WordDetailModal from "./wordDetailModal";
+import demoDataRaw from "../../../data.json";
+
+const demoData: Record<string, any>[] = demoDataRaw as Record<string, any>[];
 
 interface PronunciationTimingGuideProps {
   captions: Array<{
@@ -23,6 +26,7 @@ interface PronunciationTimingGuideProps {
   showAnalysisResult?: boolean;
   analysisResult?: any;
   recording?: boolean;
+  id?: string | number; // 추가
 }
 
 export default function PronunciationTimingGuide({
@@ -33,10 +37,23 @@ export default function PronunciationTimingGuide({
   showAnalysisResult = false,
   analysisResult = null,
   recording = false,
+  id, // 추가
 }: PronunciationTimingGuideProps) {
+  // id가 72일 때만 demoData의 첫 번째 결과를 analysisResult로 사용하도록 분기 조건을 변경합니다.
+  let displayAnalysisResult = analysisResult;
+  let userSTT = undefined;
+  if (id === 72 || id === '72') {
+    // demoData는 배열이므로 currentScriptIndex에 따라 결과를 선택
+    const demoIdx = Math.min(currentScriptIndex, demoData.length - 1);
+    const demoObj = demoData[demoIdx];
+    const firstKey = Object.keys(demoObj)[0];
+    displayAnalysisResult = demoObj[firstKey];
+    userSTT = demoObj[firstKey]?.user_stt;
+  }
+
   const sentence = captions[currentScriptIndex];
   // 분석 결과가 없어도 컴포넌트는 렌더링하되, 내용만 조건부로 표시
-  const words = analysisResult?.word_analysis || [];
+  const words = displayAnalysisResult?.word_analysis || [];
 
   // 게이지 애니메이션을 위한 상태
   const [animatedScores, setAnimatedScores] = useState<Record<string, number>>({});
@@ -51,9 +68,9 @@ export default function PronunciationTimingGuide({
 
   // 분석 결과가 표시될 때 게이지 애니메이션 시작
   useEffect(() => {
-    if (analysisResult?.word_analysis) {
+    if (displayAnalysisResult?.word_analysis) {
       const targetScores: Record<string, number> = {};
-      analysisResult.word_analysis.forEach((word: any) => {
+      displayAnalysisResult.word_analysis.forEach((word: any) => {
         targetScores[word.word] = word.word_score;
       });
 
@@ -62,11 +79,18 @@ export default function PronunciationTimingGuide({
     } else {
       setAnimatedScores({});
     }
-  }, [analysisResult]);
+  }, [displayAnalysisResult]);
+
+  // 분석 결과가 표시될 때 id 콘솔 출력
+  useEffect(() => {
+    if (displayAnalysisResult?.word_analysis && id !== undefined) {
+      console.log('[PronunciationTimingGuide] 분석 결과 도착, id:', id);
+    }
+  }, [displayAnalysisResult, id]);
 
   // 부드러운 전환 효과
   useEffect(() => {
-    const hasAnalysisResult = analysisResult?.word_analysis && analysisResult.word_analysis.length > 0;
+    const hasAnalysisResult = displayAnalysisResult?.word_analysis && displayAnalysisResult.word_analysis.length > 0;
     
     if (hasAnalysisResult && !showContent) {
       // 분석 결과가 도착했을 때 부드럽게 전환
@@ -80,7 +104,22 @@ export default function PronunciationTimingGuide({
       setShowContent(false);
       setIsTransitioning(false);
     }
-  }, [analysisResult, showContent]);
+  }, [displayAnalysisResult, showContent]);
+
+  // 녹음이 시작될 때 애니메이션/색상 상태 초기화
+  useEffect(() => {
+    if (recording) {
+      setAnimatedScores({});
+      setShowContent(false);
+      setIsTransitioning(false);
+    }
+  }, [recording]);
+
+  useEffect(() => {
+    if (id !== undefined) {
+      console.log('[PronunciationTimingGuide] 받은 id:', id);
+    }
+  }, [id]);
 
   const WORDS_PER_LINE = 10;
   const firstLine = words.slice(0, WORDS_PER_LINE);
@@ -154,7 +193,7 @@ export default function PronunciationTimingGuide({
       {/* 자막 텍스트 - 단어 게이지를 여러 줄로 분할 */}
       <div className="text-center w-full">
         <div className="text-2xl font-bold leading-tight text-emerald-100">
-          {showContent && analysisResult?.word_analysis && analysisResult.word_analysis.length > 0 ? (
+          {showContent && displayAnalysisResult?.word_analysis && displayAnalysisResult.word_analysis.length > 0 ? (
             // 분석 결과가 있을 때만 표시
             <div className={`transition-all duration-300 ease-out ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}> 
               <div className="flex flex-col items-center gap-2">
@@ -261,7 +300,7 @@ export default function PronunciationTimingGuide({
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         word={selectedWord}
-        userSTT={undefined}
+        userSTT={userSTT}
       />
     </div>
   );
