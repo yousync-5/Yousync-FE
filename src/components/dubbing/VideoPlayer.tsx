@@ -171,7 +171,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
             className="absolute top-2 right-2 flex items-center justify-center w-8 h-8 bg-gray-800/80 text-gray-300 rounded-md hover:bg-gray-700 hover:text-white transition-all duration-200 z-30"
             title="전체 스크립트 보기"
           >
-            <svg width="16" height="16" viewBox="0 0 28 28" fill="none">
+            <svg width="50" height="50" viewBox="0 2 28 28" fill="none">
               <g stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="5,8 8,11 13,6" />
                 <line x1="16" y1="8" x2="23" y2="8" />

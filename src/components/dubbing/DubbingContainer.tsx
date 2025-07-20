@@ -16,6 +16,13 @@ import DubbingListenModal from "@/components/result/DubbingListenModal";
 import Sidebar from "@/components/ui/Sidebar";
 import { useDubbingRecorder } from '@/hooks/useDubbingRecorder';
 
+// 전역 타입 선언 (window 객체 확장)
+declare global {
+  interface Window {
+    loopIntervalId?: NodeJS.Timeout;
+  }
+}
+
 
 interface DubbingContainerProps {
   tokenData: any;
@@ -280,7 +287,7 @@ useEffect(() => {
       sse.close();
     });
   };
-}, [multiJobIds]);
+}, [multiJobIds, setFinalResults, setLatestResultByScript, setRecordingCompleted, setIsAnalyzing, front_data.captions]);
 
 // ✅ 결과 개수로 전체 완료 감지
 useEffect(() => {
@@ -301,7 +308,7 @@ useEffect(() => {
   } else {
     setShowCompleted(false);
   }
-}, [latestResultByScript, multiJobIds.length, front_data.captions.length]);
+}, [latestResultByScript, multiJobIds.length, front_data.captions.length, setShowCompleted]);
 
 
 // ✅ 새로운 분석 시작 시 연결 목록 초기화
@@ -327,7 +334,7 @@ useEffect(() => {
       console.log('📊 latestResultByScript 전체 내용:');
       console.log(JSON.stringify(latestResultByScript, null, 2));
     }
-  }, [latestResultByScript, front_data.captions]);
+  }, [latestResultByScript, front_data.captions.length]);
 
   // 점수 색상 헬퍼
   const getScoreColor = (score: number) => {
@@ -353,7 +360,7 @@ useEffect(() => {
         block: 'start'
       });
     }, 100);
-  }, []);
+  }, [setShowResults]);
 
   // 🆕 결과 조회 버튼 클릭 핸들러
   const handleViewResults = useCallback(() => {
@@ -365,7 +372,7 @@ useEffect(() => {
         block: 'start'
       });
     }, 100);
-  }, []);
+  }, [setShowResults]);
 
   // 데이터가 준비되지 않았으면 내부 로직 실행하지 않음
   const findScriptIndexByTime = useCallback((time: number) => {
@@ -388,7 +395,7 @@ useEffect(() => {
     if (newScriptIndex !== -1 && newScriptIndex !== currentScriptIndex) {
       setCurrentScriptIndex(newScriptIndex);
     }
-  }, [isReady, currentScriptIndex, findScriptIndexByTime, front_data?.captions]);
+  }, [isReady, currentScriptIndex, findScriptIndexByTime, front_data?.captions, setCurrentVideoTime, setCurrentScriptIndex]);
 
   const getCurrentScriptPlaybackRange = useCallback(() => {
     if (!isReady) return { startTime: 0, endTime: undefined };
@@ -410,7 +417,7 @@ useEffect(() => {
     if (front_data.captions && front_data.captions[currentScriptIndex]) {
       setCurrentVideoTime(front_data.captions[currentScriptIndex].start_time);
     }
-  }, [isReady, currentScriptIndex, front_data?.captions]);
+  }, [isReady, currentScriptIndex, front_data?.captions, setCurrentVideoTime]);
 
   // 기존 함수들을 훅의 함수로 대체
   const customHandlePlay = () => {
@@ -510,7 +517,7 @@ useEffect(() => {
       console.log('[DubbingContainer] 분석 결과 도착');
       setShowAnalysisResult(true);
     }
-  }, [analysisResult]);
+  }, [analysisResult, setShowAnalysisResult]);
 
   // 녹음이 시작되면 분석 결과 표시 해제
   useEffect(() => {
@@ -518,7 +525,7 @@ useEffect(() => {
       console.log('[DubbingContainer] 녹음 시작 - 분석 결과 표시 해제');
       setShowAnalysisResult(false);
     }
-  }, [recording]);
+  }, [recording, setShowAnalysisResult]);
 
   // 자동재생 상태에 따라 분석 결과 표시 제어
   useEffect(() => {
@@ -529,7 +536,7 @@ useEffect(() => {
       console.log('[DubbingContainer] 자동재생 완료 - 분석 결과 다시 표시');
       setShowAnalysisResult(true);
     }
-  }, [isRecordingPlayback, analysisResult, recording]);
+  }, [isRecordingPlayback, analysisResult, recording, setShowAnalysisResult]);
   // Job ID 유효성 확인 함수
   const validateJobId = async (jobId: string): Promise<boolean> => {
     try {
