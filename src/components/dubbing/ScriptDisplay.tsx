@@ -383,9 +383,13 @@ export default function ScriptDisplay({
         {/* 진행 정보 + 시간 정보 */}
         <div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 gap-1 py-2">
-            <div className="text-base sm:text-2xl font-semibold text-white flex items-center">
+            {/* 왼쪽에 스크립트 번호 표시 */}
+            <div className="text-base sm:text-2xl font-semibold text-white">
               &nbsp;&nbsp;Script&nbsp; <span className="text-teal-300">{currentScriptIndex + 1}</span> / {captions.length}
-              
+            </div>
+            
+            {/* 중앙에 버튼들 배치 */}
+            <div className="flex items-center justify-center mx-auto">
               {/* 재생/정지 버튼 */}
               <button
                 onClick={() => {
@@ -413,7 +417,7 @@ export default function ScriptDisplay({
                     }
                   }
                 }}
-                className={`ml-4 w-10 h-10 ${recording ? 'bg-gradient-to-r from-gray-600 to-gray-700' : 'bg-gradient-to-r from-green-600 to-lime-500 hover:from-green-700 hover:to-lime-600'} text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed`}
+                className={`w-10 h-10 ${recording ? 'bg-gradient-to-r from-gray-600 to-gray-700' : 'bg-gradient-to-r from-green-600 to-lime-500 hover:from-green-700 hover:to-lime-600'} text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed`}
                 title={isVideoPlaying ? '정지' : '실행'}
                 disabled={!videoPlayerRef?.current}
               >
@@ -484,6 +488,8 @@ export default function ScriptDisplay({
                 </>
               )}
             </div>
+            
+            {/* 오른쪽에 시간 정보 */}
             <div className="flex flex-wrap items-center gap-1 text-m">
               {playbackRange && (
                 <span className="text-gray-300 font-medium hidden sm:inline">
@@ -523,7 +529,7 @@ export default function ScriptDisplay({
                 handleScriptChange(Math.max(0, currentScriptIndex - 1));
               }}
               disabled={currentScriptIndex === 0 || recording || recordingCompleted}
-              className={`p-2 rounded-full transition-all duration-200 ${
+              className={`p-2 rounded-full transition-all duration-200  ${
                 currentScriptIndex === 0 
                   ? 'bg-gray-800/50 text-gray-500 cursor-not-allowed' 
                   : 'bg-gray-800 text-green-400 hover:bg-gray-700 hover:text-green-300'
