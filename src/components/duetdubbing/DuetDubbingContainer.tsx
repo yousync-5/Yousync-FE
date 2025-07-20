@@ -183,20 +183,10 @@ useEffect(() => {
       console.error(`[SSE][${jobId}] 에러 상태:`, sse.readyState);
       console.error(`[SSE][${jobId}] URL:`, sse.url);
       
-      // 에러 상태에 따른 처리
-      if (sse.readyState === EventSource.CONNECTING) {
-        console.log(`[SSE][${jobId}] 재연결 시도 중...`);
-      } else if (sse.readyState === EventSource.CLOSED) {
-        console.log(`[SSE][${jobId}] 연결이 닫힘`);
+      // 브라우저의 자동 재연결에 맡기고 수동 재연결 로직 제거
+      if (sse.readyState === EventSource.CLOSED) {
+        console.log(`[SSE][${jobId}] 연결이 닫힘 - 브라우저 자동 재연결 대기`);
         connectedJobIdsRef.current.delete(jobId);
-        
-        // 3초 후 재연결 시도
-        setTimeout(() => {
-          if (!connectedJobIdsRef.current.has(jobId)) {
-            console.log(`[SSE][${jobId}] 재연결 시도`);
-            // 여기서 재연결 로직을 추가할 수 있음
-          }
-        }, 3000);
       }
     };
   });
@@ -421,6 +411,20 @@ useEffect(() => {
     }
   }, [isReady, currentScriptIndex, findScriptIndexByTime, front_data?.captions, recording, isAnalyzing, showAnalysisResult]);
 
+  // 🆕 두 토큰의 마지막 스크립트 end_time 중 더 긴 것으로 듀엣더빙 완료시간 계산
+  const getDuetEndTime = useCallback(() => {
+    if (!tokenData || !front_data) return undefined;
+    
+    // 현재 토큰의 마지막 스크립트 end_time
+    const currentTokenEndTime = front_data.captions[front_data.captions.length - 1]?.end_time || 0;
+    
+    // 상대 토큰의 마지막 스크립트 end_time (tokenData에서 추출)
+    const opponentTokenEndTime = tokenData.end_time || 0;
+    
+    // 더 긴 시간을 반환
+    return Math.max(currentTokenEndTime, opponentTokenEndTime);
+  }, [tokenData, front_data]);
+
   const getCurrentScriptPlaybackRange = useCallback(() => {
     if (!isReady) return { startTime: 0, endTime: undefined };
     if (!front_data.captions || front_data.captions.length === 0) {
@@ -641,7 +645,7 @@ useEffect(() => {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white relative overflow-hidden">
+    <div className="min-h-screen bg-neutral-950 text-white relative overflow-hidden flex flex-col">
       <Toaster position="top-center" />
       
       <DubbingHeader
@@ -650,8 +654,8 @@ useEffect(() => {
         actorName={front_data.captions[0]?.actor?.name || ""}
       />
   
-      {/* 본문 - 항상 중앙 */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      {/* 본문 - 네비게이션 바 높이만큼 상단 마진 추가하여 가운데 정렬 */}
+      <div className="max-w-7xl mx-auto px-6 mt-20 flex-1 flex items-center justify-center">
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Column - Video & Script */}
           <div className="lg:col-span-2 space-y-6">
@@ -752,7 +756,8 @@ useEffect(() => {
               onStopLooping={() => pitchRef.current?.stopLooping?.()}
               showAnalysisResult={showAnalysisResult}
               analysisResult={analysisResult}
-              totalDuration={tokenData.end_time}
+              videoStartTime={tokenData.start_time}
+              videoEndTime={getDuetEndTime()}
             />
           </div>
   
@@ -804,10 +809,12 @@ useEffect(() => {
             />
           </div>
         </div>
-  
-        {/* 🆕 결과 섹션을 기존 레이아웃 안에 통합 */}
-        {(showCompleted || showResults) && (
-          <div ref={resultsRef} className="result-container mt-8">
+      </div>
+      
+      {/* 🆕 결과 섹션을 위쪽 컨테이너와 같은 너비로 맞춤 */}
+      {(showCompleted || showResults) && (
+        <div ref={resultsRef} className="result-container mt-8 w-full">
+          <div className="max-w-7xl mx-auto px-6">
             <div className="animate-fade-in-up">
               <ResultContainer
                 finalResults={finalResults}
@@ -819,13 +826,11 @@ useEffect(() => {
               />
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* 🆕 분석 결과 조회 버튼 - 항상 렌더링 */}
-        {/* ResultViewBtn 완전히 제거 */}
-
-
-      </div>
+      {/* 🆕 분석 결과 조회 버튼 - 항상 렌더링 */}
+      {/* ResultViewBtn 완전히 제거 */}
       {/* Sidebar - 오른쪽 고정 */}
       <DuetSidebar
         isOpen={isSidebarOpen}

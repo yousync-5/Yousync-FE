@@ -29,7 +29,7 @@ export default function UrlSearchContainer({ initialTokens, errorMessage }: UrlS
   return (
     <div className="bg-black min-h-screen text-white font-sans overflow-x-hidden flex flex-col">
       <NavBar />
-      <div className="pt-24 max-w-7xl mx-auto px-2 w-full">
+              <div className="pt-0 max-w-7xl mx-auto px-2 w-full">
         {errorMessage && <ErrorMessage message={errorMessage} />}
 
         {!errorMessage && initialTokens.length > 0 && (

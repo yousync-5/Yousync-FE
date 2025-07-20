@@ -14,7 +14,6 @@ export default async function Page(props: any) {
   const selected = searchParams.selected as string | undefined;
 
   if (!actor1 || !actor2 || !selected) {
-    // 에러 처리
 
     return <div>배우 정보가 없습니다.</div>;
   }

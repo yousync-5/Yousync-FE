@@ -1,8 +1,9 @@
 import { PlayIcon, SpeakerWaveIcon } from "@heroicons/react/24/outline";
 import type { MovieItemProps } from "@/types/video";
-import { useBookmark } from '@/hooks/useBookmark';
+import { useLocalBookmark } from '@/hooks/useLocalBookmark';
 import { BookmarkIcon } from '@heroicons/react/24/solid';
 import { useState, useEffect } from 'react';
+import { useUser } from '@/hooks/useUser';
 
 export default function MovieItem({
   video,
@@ -14,14 +15,16 @@ export default function MovieItem({
   onStop,
 }: MovieItemProps) {
   // 북마크 훅 사용
-  const { isLoading, isSuccess, isError, addBookmark, removeBookmark, getBookmarks, isLoggedIn, isBookmarked } = useBookmark();
+  const { isLoading, isSuccess, isError, addBookmark, removeBookmark, getBookmarks, isBookmarked } = useLocalBookmark();
   // 북마크 상태를 로컬에서 관리 (true/false)
   const [bookmarked, setBookmarked] = useState(false);
+  // 로그인 상태 확인
+  const { isLoggedIn } = useUser();
 
   // 컴포넌트 마운트 시 북마크 상태 확인
   useEffect(() => {
     // 로그인 상태일 때만 북마크 상태 확인
-    if (isLoggedIn()) {
+    if (isLoggedIn) {
       // 캐시된 데이터를 사용하여 북마크 상태 확인 (API 요청 없음)
       setBookmarked(isBookmarked(Number(video.videoId)));
     } else {
@@ -35,25 +38,39 @@ export default function MovieItem({
     e.stopPropagation();
     
     // 로그인 상태 확인
-    if (!isLoggedIn()) {
+    if (!isLoggedIn) {
       alert('북마크 기능은 로그인 후 이용 가능합니다.');
       return;
     }
     
     try {
       if (!bookmarked) {
-        // 북마크되지 않은 경우 추가 API 호출
-        await addBookmark(Number(video.videoId));
+        // 북마크되지 않은 경우 추가
+        console.log('📝 북마크 추가 시도...');
+        await addBookmark(
+          Number(video.videoId), 
+          `${video.actor_name} 더빙`, 
+          video.actor_name, 
+          '액션', // 기본 카테고리
+          video.youtubeId ? `https://www.youtube.com/watch?v=${video.youtubeId}` : undefined
+        );
         setBookmarked(true);
+        console.log(`✅ 북마크 추가 완료: ${video.actor_name} 더빙`);
+        
+        // 로컬스토리지 확인
+        const stored = localStorage.getItem('yousync_bookmarks');
+        console.log('💾 저장된 북마크 데이터:', stored ? JSON.parse(stored) : '없음');
       } else {
-        // 이미 북마크된 경우 삭제 API 호출
+        // 이미 북마크된 경우 삭제
+        console.log('🗑️ 북마크 제거 시도...');
         const success = await removeBookmark(Number(video.videoId));
         if (success) {
           setBookmarked(false);
+          console.log(`🗑️ 북마크 제거 완료: ${video.actor_name} 더빙`);
         }
       }
     } catch (error) {
-      console.error('북마크 처리 중 오류 발생:', error);
+      console.error('❌ 북마크 처리 중 오류 발생:', error);
     }
   };
 
@@ -74,15 +91,17 @@ export default function MovieItem({
         }
       }}
     >
-      {/* 북마크 버튼 - 카드 우상단 */}
-      <button
-        className="absolute top-3 right-3 z-20 bg-white/80 rounded-full p-2 hover:bg-green-200 opacity-0 group-hover/video:opacity-100 transition-all"
-        onClick={handleBookmarkClick}
-        disabled={isLoading}
-        title={isLoggedIn() ? (bookmarked ? "북마크 삭제" : "북마크 추가") : "로그인 필요"}
-      >
-        <BookmarkIcon className={`w-6 h-6`} style={{ color: bookmarked ? '#22ff88' : '#9ca3af', transition: 'color 0.2s' }} />
-      </button>
+      {/* 북마크 버튼 - 로그인한 경우에만 표시 */}
+      {isLoggedIn && (
+        <button
+          className="absolute top-3 right-3 z-20 bg-white/80 rounded-full p-2 hover:bg-green-200 opacity-0 group-hover/video:opacity-100 transition-all"
+          onClick={handleBookmarkClick}
+          disabled={isLoading}
+          title={bookmarked ? "북마크 삭제" : "북마크 추가"}
+        >
+          <BookmarkIcon className={`w-6 h-6`} style={{ color: bookmarked ? '#22ff88' : '#9ca3af', transition: 'color 0.2s' }} />
+        </button>
+      )}
       {/* 유튜브 썸네일만 표시 */}
       {video.youtubeId ? (
         <img
