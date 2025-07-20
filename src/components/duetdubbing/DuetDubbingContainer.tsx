@@ -8,6 +8,7 @@ import { Toaster } from "react-hot-toast";
 import toast from "react-hot-toast";
 import { useAudioStream } from "@/hooks/useAudioStream";
 import { useJobIdsStore } from '@/store/useJobIdsStore';
+import { useDuetTokenStore } from '@/store/useDuetTokenStore';
 import { useDubbingState } from "@/hooks/useDubbingState";
 import DuetSidebar from "./DuetSidebar";
 import DuetPitchComparison from "./DuetPitchComparison";
@@ -84,8 +85,58 @@ export default function DubbingContainer({
   const multiJobIds = useJobIdsStore((state) => state.multiJobIds);
   const setMultiJobIds = useJobIdsStore((state) => state.setMultiJobIds);
 
+  // 🆕 useDuetTokenStore에서 데이터 읽기
+  const {
+    tokenId,
+    frontDataId,
+    startTime,
+    endTime,
+    actorInfo,
+    setTokenId,
+    setFrontDataId,
+    setStartTime,
+    setEndTime,
+    setActorInfo,
+    reset: resetDuetToken
+  } = useDuetTokenStore();
+
   // 🆕 분석 결과 수신 상태 추가
   const [hasAnalysisResults, setHasAnalysisResults] = useState(false);
+
+  // 🆕 컴포넌트 마운트 시 스토어에 데이터 저장
+  useEffect(() => {
+    if (isReady) {
+      // front_data.captions에서 첫 번째와 마지막 대사의 시간 가져오기
+      const firstCaption = front_data.captions[0];
+      const lastCaption = front_data.captions[front_data.captions.length - 1];
+      
+      const startTime = firstCaption?.start_time || 0;
+      const endTime = lastCaption?.end_time || 0;
+      
+      console.log('[🔄 DuetDubbingContainer] 스토어에 데이터 저장');
+      console.log('[📊 저장할 데이터]', {
+        tokenId: id,
+        frontDataId: front_data.id,
+        startTime: startTime,
+        endTime: endTime,
+        actorInfo: front_data.captions[0]?.actor,
+        firstCaption: firstCaption,
+        lastCaption: lastCaption
+      });
+      
+      setTokenId(id);
+      setFrontDataId(front_data.id);
+      setStartTime(startTime);
+      setEndTime(endTime);
+      
+      if (front_data.captions[0]?.actor) {
+        setActorInfo({
+          name: front_data.captions[0].actor.name,
+          character: front_data.captions[0].actor.character
+        });
+      }
+    }
+  }, [isReady, id, front_data, setTokenId, setFrontDataId, setStartTime, setEndTime, setActorInfo]);
 
   // 🆕 hasAnalysisResults 상태 디버깅
   useEffect(() => {
@@ -577,7 +628,7 @@ useEffect(() => {
       setShowAnalysisResult(false);
     }
   }, [recording]);
- 
+
   // 자동재생 상태에 따라 분석 결과 표시 제어
   useEffect(() => {
     if (isRecordingPlayback) {
@@ -618,7 +669,7 @@ useEffect(() => {
     
     console.log(`[SSE] Job ID ${jobId} 유효성 확인 완료, SSE 연결 시작`);
     return new EventSource(`${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/analysis-progress/${jobId}`);
-  };  
+  };
   // 반복재생 버그 수정
   // currentScriptIndex가 내 대사로 바뀔 때마다 강제로 영상 이동+재생을 반복 시도
   useEffect(() => {
@@ -630,7 +681,7 @@ useEffect(() => {
       }
     }
   }, [currentScriptIndex]);
-  
+
   // --- 렌더링 ---
   if (!isReady) {
     return (
