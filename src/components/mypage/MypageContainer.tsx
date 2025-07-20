@@ -39,30 +39,30 @@ const MypageContainer: React.FC = () => {
   const approvedTokens = [
     {
       token_id: 1,
-      token_name: "에스파 - Next Level",
-      actor_name: "카리나",
+      token_name: "라라랜드",
+      actor_name: "라이언 고슬링",
       completed_scripts: 95,
       total_scripts: 100,
-      youtube_url: "https://www.youtube.com/watch?v=4m1EFMoRFvY",
-      thumbnail: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=225&fit=crop"
+      youtube_url: "https://www.youtube.com/watch?v=JyQqorUskVM",
+      thumbnail: "https://images.christiantoday.co.kr/data/images/full/306792/image.jpg"
     },
     {
       token_id: 2,
-      token_name: "에스파 - Savage",
-      actor_name: "윈터",
+      token_name: "위대한 개츠비",
+      actor_name: "레오나르도 디카프리오",
       completed_scripts: 88,
       total_scripts: 100,
-      youtube_url: "https://www.youtube.com/watch?v=WmXWHcnI0PI",
-      thumbnail: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=400&h=225&fit=crop"
+      youtube_url: "https://www.youtube.com/watch?v=g_Ri7HQAaMw",
+      thumbnail: "https://pds.joongang.co.kr/news/component/htmlphoto_mmdata/201911/12/3006d1d1-66d4-4a3f-9b17-83252da27fb4.jpg"
     },
     {
       token_id: 3,
-      token_name: "에스파 - Girls",
-      actor_name: "지젤",
+      token_name: "레베카",
+      actor_name: "로렌스 올리비에",
       completed_scripts: 92,
       total_scripts: 100,
-      youtube_url: "https://www.youtube.com/watch?v=3bqTKVd2dCI",
-      thumbnail: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=400&h=225&fit=crop"
+      youtube_url: "https://www.youtube.com/watch?v=dIFRonefRms",
+      thumbnail: "https://cdn.sisajournal.com/news/photo/202309/271403_189056_2358.jpg"
     }
   ];
   const sortedApprovedTokens = approvedTokens.sort((a, b) => b.token_id - a.token_id);

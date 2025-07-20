@@ -3,34 +3,34 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 
-// 에스파 관련 더미 데이터
+// 승인된 영상 더미 데이터 - 게시판 MY탭과 통일
 const approvedVideos = [
   {
     id: 1,
-    title: "에스파 - Next Level",
-    member: "카리나",
+    title: "라라랜드",
+    member: "라이언 고슬링",
     completionRate: 95,
-    youtubeUrl: "https://www.youtube.com/watch?v=4m1EFMoRFvY",
-    thumbnail: "https://img.youtube.com/vi/4m1EFMoRFvY/mqdefault.jpg",
-    description: "에스파의 대표곡 Next Level 더빙 완료"
+    youtubeUrl: "https://www.youtube.com/watch?v=JyQqorUskVM",
+    thumbnail: "https://images.christiantoday.co.kr/data/images/full/306792/image.jpg",
+    description: "뮤지컬 영화 더빙 연습"
   },
   {
     id: 2,
-    title: "에스파 - Savage",
-    member: "윈터",
+    title: "위대한 개츠비",
+    member: "레오나르도 디카프리오",
     completionRate: 88,
-    youtubeUrl: "https://www.youtube.com/watch?v=WmXWHcnI0PI",
-    thumbnail: "https://img.youtube.com/vi/WmXWHcnI0PI/mqdefault.jpg",
-    description: "에스파의 Savage 더빙 완료"
+    youtubeUrl: "https://www.youtube.com/watch?v=g_Ri7HQAaMw",
+    thumbnail: "https://pds.joongang.co.kr/news/component/htmlphoto_mmdata/201911/12/3006d1d1-66d4-4a3f-9b17-83252da27fb4.jpg",
+    description: "레오나르도 디카프리오 연기 연습"
   },
   {
     id: 3,
-    title: "에스파 - Girls",
-    member: "지젤",
+    title: "레베카",
+    member: "로렌스 올리비에",
     completionRate: 92,
-    youtubeUrl: "https://www.youtube.com/watch?v=3bqTKVd2dCI",
-    thumbnail: "https://img.youtube.com/vi/3bqTKVd2dCI/mqdefault.jpg",
-    description: "에스파의 Girls 더빙 완료"
+    youtubeUrl: "https://www.youtube.com/watch?v=dIFRonefRms",
+    thumbnail: "https://cdn.sisajournal.com/news/photo/202309/271403_189056_2358.jpg",
+    description: "고전 영화 더빙 연습"
   }
 ];
 

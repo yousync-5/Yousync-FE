@@ -157,7 +157,7 @@ const dummyData: UploadRequest[] = [
       content: "뮤지컬 영화 더빙 연습하고 싶어요",
       date: "2025.07.04",
       status: "승인됨",
-      url: "https://www.youtube.com/watch?v=example13",
+      url: "https://www.youtube.com/watch?v=JyQqorUskVM",
       requester: "사용자"
     },
     {
@@ -206,17 +206,17 @@ const UploadRequestContainer = () => {
     }
   }, [isLoading, isLoggedIn])
 
-  // 사용자별 더미 데이터 생성
+        // 사용자별 더미 데이터 생성
   useEffect(() => {
     if (user?.name) {
       const userSpecificData: UploadRequest[] = [
         {
           id: "user1",
-          title: "라라랜드 더빙 요청",
+          title: "라라랜드",
           content: "뮤지컬 영화 더빙 연습하고 싶어요",
           date: "2025.07.04",
           status: "승인됨",
-          url: "https://www.youtube.com/watch?v=example13",
+          url: "https://www.youtube.com/watch?v=JyQqorUskVM",
           requester: user.name
         },
         {
