@@ -28,7 +28,7 @@ export default function DuetDetailModal({
   const playerRef = useRef<any>(null);
   const [selectedActorId, setSelectedActorId] = useState<number | null>(null);
   const [isDubbingLoading, setIsDubbingLoading] = useState(false);
-  const { isLoggedIn } = useUser();
+  const { isLoggedIn, isLoading } = useUser();
 
   useEffect(() => {
     setSelectedActorId(null); // 모달 열릴 때마다 초기화
@@ -72,8 +72,8 @@ export default function DuetDetailModal({
 
   const handleDubbingClick = () => {
     // 로그인 상태 확인
-    if (!isLoggedIn) {
-      alert('더빙 기능은 로그인 후 이용 가능합니다.');
+    if (!isLoading && !isLoggedIn) {
+      alert('듀엣 더빙 기능은 로그인 후 이용 가능합니다.');
       router.push('/login');
       return;
     }

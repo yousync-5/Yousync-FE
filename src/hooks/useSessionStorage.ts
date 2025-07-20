@@ -58,9 +58,10 @@ export function useSessionStorage({ key, defaultValue }: UseSessionStorageOption
     } catch (error) {
       console.error('세션스토리지 접근 오류:', error);
       setValueState(defaultValue || null);
-    } finally {
-      setIsInitialized(true);
     }
+    
+    // 즉시 초기화 완료로 설정
+    setIsInitialized(true);
   }, [key, defaultValue]);
 
   const setValue = (newValue: string) => {

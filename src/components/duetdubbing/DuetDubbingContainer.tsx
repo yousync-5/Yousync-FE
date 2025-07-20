@@ -30,16 +30,16 @@ export default function DubbingContainer({
   modalId?: string;
 }) {
   const router = useRouter();
-  const { isLoggedIn } = useUser();
+  const { isLoggedIn, isLoading } = useUser();
   
-  // 로그인 상태 확인
+  // 로그인 상태 확인 (로딩 완료 후에만 체크)
   useEffect(() => {
-    if (!isLoggedIn) {
-      alert('더빙 기능은 로그인 후 이용 가능합니다.');
+    if (!isLoading && !isLoggedIn) {
+      alert('듀엣 더빙 기능은 로그인 후 이용 가능합니다.');
       router.push('/login');
       return;
     }
-  }, [isLoggedIn, router]);
+  }, [isLoggedIn, isLoading, router]);
 
   // 데이터 준비 여부 체크
   const isReady = !!(front_data && tokenData && serverPitchData);

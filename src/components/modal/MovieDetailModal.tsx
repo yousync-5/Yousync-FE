@@ -26,7 +26,7 @@ export default function MovieDetailModal({
   const router = useRouter();
   const playerRef = useRef<any>(null);
   const [isDubbingLoading, setIsDubbingLoading] = useState(false);
-  const { isLoggedIn } = useUser();
+  const { isLoggedIn, isLoading } = useUser();
 
   // tokenData가 있을 때만 접근
   const startTime = Number(tokenData?.start_time) || 0;
@@ -65,7 +65,7 @@ export default function MovieDetailModal({
 
   const handleDubbingClick = async () => {
     // 로그인 상태 확인
-    if (!isLoggedIn) {
+    if (!isLoading && !isLoggedIn) {
       alert('더빙 기능은 로그인 후 이용 가능합니다.');
       router.push('/login');
       return;

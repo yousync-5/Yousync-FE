@@ -36,16 +36,16 @@ const DubbingContainer = ({
   modalId,
 }: DubbingContainerProps) => {
   const router = useRouter();
-  const { isLoggedIn } = useUser();
+  const { isLoggedIn, isLoading } = useUser();
   
-  // 로그인 상태 확인
+  // 로그인 상태 확인 (로딩 완료 후에만 체크)
   useEffect(() => {
-    if (!isLoggedIn) {
+    if (!isLoading && !isLoggedIn) {
       alert('더빙 기능은 로그인 후 이용 가능합니다.');
       router.push('/login');
       return;
     }
-  }, [isLoggedIn, router]);
+  }, [isLoggedIn, isLoading, router]);
 
   // 데이터 준비 여부 체크
   const isReady = !!(front_data && tokenData && serverPitchData);
@@ -207,10 +207,12 @@ useEffect(() => {
       console.error(`[SSE][${jobId}] 에러 상태:`, sse.readyState);
       console.error(`[SSE][${jobId}] URL:`, sse.url);
       
-      // 브라우저의 자동 재연결에 맡기고 수동 재연결 로직 제거
+      // 연결이 닫힌 경우에만 처리
       if (sse.readyState === EventSource.CLOSED) {
-        console.log(`[SSE][${jobId}] 연결이 닫힘 - 브라우저 자동 재연결 대기`);
+        console.log(`[SSE][${jobId}] 연결이 닫힘 - 연결 목록에서 제거`);
         connectedJobIdsRef.current.delete(jobId);
+        // 브라우저의 자동 재연결을 방지하기 위해 명시적으로 연결 해제
+        sse.close();
       }
     };
   });
