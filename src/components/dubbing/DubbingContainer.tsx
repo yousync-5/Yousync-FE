@@ -16,6 +16,8 @@ import { useBackgroundAudio } from "@/hooks/useBackgroundAudio";
 import DubbingListenModal from "@/components/result/DubbingListenModal";
 import Sidebar from "@/components/ui/Sidebar";
 import { mypageService } from "@/services/mypage";
+import { useUser } from "@/hooks/useUser";
+import { useRouter } from "next/navigation";
 
 
 interface DubbingContainerProps {
@@ -33,6 +35,18 @@ const DubbingContainer = ({
   id,
   modalId,
 }: DubbingContainerProps) => {
+  const router = useRouter();
+  const { isLoggedIn } = useUser();
+  
+  // 로그인 상태 확인
+  useEffect(() => {
+    if (!isLoggedIn) {
+      alert('더빙 기능은 로그인 후 이용 가능합니다.');
+      router.push('/login');
+      return;
+    }
+  }, [isLoggedIn, router]);
+
   // 데이터 준비 여부 체크
   const isReady = !!(front_data && tokenData && serverPitchData);
   
