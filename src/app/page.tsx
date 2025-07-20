@@ -1,88 +1,33 @@
-//이해완료
 'use client';
 
-import { useState } from "react";
-import MainStartButton from "@/components/lending/MainStartButton";
-import { useRouter } from "next/navigation";
 import React from "react";
-import MovieDetailModal from "@/components/modal/MovieDetailModal";
-import { useVideos } from "@/hooks/useVideos";
+import { useRouter } from "next/navigation";
 import { useVisitCheck } from "@/hooks/useSessionStorage";
-import type { TokenDetailResponse } from "@/types/pitch";
 import HomeClient from "@/app/home/HomeClient";
-import Link from "next/link";
 
-export default function LandingPage() {
-  const [step, setStep] = useState<'intro'|'video'|'main'|'home'>('main');
-  const [showFinalMessage, setShowFinalMessage] = useState(false);
-  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
-  const [selectedTokenData, setSelectedTokenData] = useState<TokenDetailResponse | null>(null);
+export default function HomePage() {
   const router = useRouter();
-  
-  // React Query로 비디오 데이터 미리 로드 (캐싱 활용)
-  const { data: tokens = [], isLoading } = useVideos();
+  const { hasVisited, isInitialized } = useVisitCheck();
 
-  // 방문 체크 커스텀 훅 사용
-  const { hasVisited, setVisited, isInitialized } = useVisitCheck();
-
-  // 방문 상태에 따라 단계 설정
+  // 최초 방문인 경우 랜딩페이지로 리디렉트
   React.useEffect(() => {
-    if (isInitialized) {
-      if (hasVisited) {
-        // 이미 방문한 경우 바로 홈으로
-        setStep('home');
-      } else {
-        // 최초 방문인 경우 Let's run 화면 표시
-        setStep('main');
-      }
+    if (isInitialized && !hasVisited) {
+      router.push('/landing');
     }
-  }, [hasVisited, isInitialized]);
+  }, [hasVisited, isInitialized, router]);
 
-  const closeModal = () => {
-    setSelectedVideoId(null);
-    setSelectedTokenData(null);
-  };
-  
-  return (
-    <div className="bg-neutral-950 text-white min-h-screen">
-      {/* {step === 'intro' && <IntroPlayButton onPlay={handleIntroPlay} />}
-      {step === 'video' && (
-        <VideoAutoPlayer onComplete={handleVideoComplete} />
-      )} */}
-      {isInitialized && step === 'main' && !hasVisited && (
-        <MainStartButton onPlay={() => {
-          setVisited();
-          setStep('home');
-        }} />
-      )}
-      {isInitialized && step === 'home' && (
-        <HomeClient />
-      )}
-      {/* Modal */}
-      {selectedVideoId && selectedTokenData && (
-        <MovieDetailModal
-          youtubeId={selectedVideoId}
-          isOpen={!!selectedVideoId}
-          onClose={closeModal}
-          tokenData={selectedTokenData}
-        />
-      )}
-       {/* 우측 하단 + 버튼 */}
-    {step !== "main" && (<div 
-      className="fixed z-50"
-      style={{ bottom: '2rem', right: '2rem' }}
-    >
-      <Link
-        href="/uploadrequest"
-        className="w-16 h-16 rounded-full bg-gradient-to-r from-emerald-400 via-green-500 to-emerald-400 text-black font-bold shadow-lg flex items-center justify-center text-3xl"
-        aria-label="게시판 열기"
-      >
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-          <rect x="14" y="6" width="4" height="20" rx="2" fill="currentColor" />
-          <rect x="6" y="14" width="20" height="4" rx="2" fill="currentColor" />
-        </svg>
-      </Link>
-    </div>)}
-    </div>
-  );
+  // 로딩 중이거나 최초 방문인 경우 로딩 표시
+  if (!isInitialized || !hasVisited) {
+    return (
+      <div className="bg-neutral-950 text-white min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto mb-4"></div>
+          <p className="text-gray-400">로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 홈페이지 표시
+  return <HomeClient />;
 } 
