@@ -417,7 +417,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
     <div className="bg-gray-900 rounded-xl p-6 h-auto min-h-[28em] relative max-w-xl ml-0 mr-auto">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold">Controller</h3>
-        {onOpenSidebar && (
+        {/* {onOpenSidebar && (
           <button
             onClick={onOpenSidebar}
             className="flex items-center justify-center w-10 h-10 bg-gray-800 text-gray-700 rounded-md hover:bg-gray-700 transition"
@@ -428,14 +428,14 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
               <g stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="5,8 8,11 13,6" />
                 <line x1="16" y1="8" x2="23" y2="8" />
-                <polyline points="5,16 8,19 13,14" />
                 <line x1="16" y1="16" x2="23" y2="16" />
-                <polyline points="5,24 8,27 13,22" />
+                <polyline points="5,16 8,19 13,14" />
                 <line x1="16" y1="24" x2="23" y2="24" />
+                <polyline points="5,24 8,27 13,22" />
               </g>
             </svg>
           </button>
-        )}
+        )} */}
       </div>
       <div className="space-y-4">
        

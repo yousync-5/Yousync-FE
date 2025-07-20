@@ -165,7 +165,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
         </div>
         
         {/* 전체 스크립트 보기 버튼 - 오른쪽 상단에 위치 */}
-        {onOpenSidebar && (
+        {/* {onOpenSidebar && (
           <button
             onClick={onOpenSidebar}
             className="absolute top-2 right-2 flex items-center justify-center w-8 h-8 bg-gray-800/80 text-gray-300 rounded-md hover:bg-gray-700 hover:text-white transition-all duration-200 z-30"
@@ -182,7 +182,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
               </g>
             </svg>
           </button>
-        )}
+        )} */}
       </div>
     );
   }

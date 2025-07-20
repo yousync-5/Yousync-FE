@@ -678,6 +678,13 @@ export default function DubbingContainer({
     }
   }, [currentScriptIndex]);
 
+  // 유튜브 URL을 localStorage에 저장
+  useEffect(() => {
+    if (front_data?.movie?.youtube_url) {
+      localStorage.setItem('currentYoutubeUrl', front_data.movie.youtube_url);
+    }
+  }, [front_data?.movie?.youtube_url]);
+
   // --- 렌더링 ---
   if (!isReady) {
     return (
