@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "start": "cross-env NODE_ENV=production node server.js",
+    "start": "next start",
     "build": "next build",
     "lint": "next lint"
   },

@@ -12,6 +12,9 @@ import { useDubbingState } from "@/hooks/useDubbingState";
 import DuetSidebar from "./DuetSidebar";
 import DuetPitchComparison from "./DuetPitchComparison";
 import DuetScriptDisplay from "./DuetScriptDisplay";
+import { mypageService } from "@/services/mypage";
+import { useUser } from "@/hooks/useUser";
+import { useRouter } from "next/navigation";
 
 
 export default function DubbingContainer({
@@ -26,6 +29,18 @@ export default function DubbingContainer({
   id: string;
   modalId?: string;
 }) {
+  const router = useRouter();
+  const { isLoggedIn, isLoading } = useUser();
+  
+  // 로그인 상태 확인 (로딩 완료 후에만 체크)
+  useEffect(() => {
+    if (!isLoading && !isLoggedIn) {
+      alert('듀엣 더빙 기능은 로그인 후 이용 가능합니다.');
+      router.push('/login');
+      return;
+    }
+  }, [isLoggedIn, isLoading, router]);
+
   // 데이터 준비 여부 체크
   const isReady = !!(front_data && tokenData && serverPitchData);
   
@@ -95,186 +110,163 @@ export default function DubbingContainer({
   }, [hasAnalysisResults, showResults, showCompleted]);
 
   // ✅ SSE 관련 상태 초기화
-const sseRef = useRef<EventSource | null>(null);
-const connectedJobIdsRef = useRef<Set<string>>(new Set());
+  const sseRef = useRef<EventSource | null>(null);
+  const connectedJobIdsRef = useRef<Set<string>>(new Set());
 
-// ✅ SSE 연결 및 결과 수신 처리
-useEffect(() => {
-  if (!multiJobIds.length) return;
-
-  const sseList: EventSource[] = [];
-
-  multiJobIds.forEach((jobId) => {
-    if (connectedJobIdsRef.current.has(jobId)) {
-      console.log(`[SSE] 이미 연결된 job_id 건너뛰기: ${jobId}`);
-      return;
-    }
-
-    console.log('[SSE] 연결 시도:', jobId);
-    console.log('[SSE] API URL:', `${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/analysis-progress/${jobId}`);
-    connectedJobIdsRef.current.add(jobId);
-
-    const sse = new EventSource(`${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/analysis-progress/${jobId}`);
-    sseList.push(sse);
-
-    sse.onopen = () => {
-      console.log(`[SSE][${jobId}] 연결됨`);
-    };
-
-    sse.onmessage = (e) => {
-      const data = JSON.parse(e.data);
-      console.log(`[SSE][${jobId}] 수신:`, data);
-    
-      if (data.status === 'completed' && data.result?.result) {
-        // word_analysis에서 script 재구성
-        const wordArr = data.result.result.word_analysis?.map((w: any) => w.word) || [];
-        const joinedScript = wordArr.join(' ').replace(/\s+/g, ' ').trim();
-        const resultScriptNorm = normalizeScript(joinedScript);
-
-        const captionsNorm = front_data.captions.map((c: any) => normalizeScript(c.script));
-        const idx = captionsNorm.findIndex((normScript: string) => normScript === resultScriptNorm);
-
-        console.log('[디버깅] jobId:', jobId);
-        console.log('[디버깅] joinedScript:', joinedScript);
-        console.log('[디버깅] resultScriptNorm:', resultScriptNorm);
-        console.log('[디버깅] captionsNorm:', captionsNorm);
-        console.log('[디버깅] idx:', idx);
-
-        // 1. jobId 기준으로 저장 (진행상황용)
-        setFinalResults((prev: Record<string, any>) => ({
-          ...prev,
-          [jobId]: data.result.result
-        }));
-        
-        // 2. script 기준으로 마지막 결과만 저장 (문장별 결과용)
-        setLatestResultByScript((prev: Record<string, any>) => {
-          const newState = {
-            ...prev,
-            [resultScriptNorm]: data.result.result
-          };
-          console.log('[디버깅] latestResultByScript 업데이트:');
-          console.log('- 이전 상태:', Object.keys(prev));
-          console.log('- 새로 추가된 키:', resultScriptNorm);
-          console.log('- 업데이트 후 전체 키:', Object.keys(newState));
-          
-          // 분석 결과가 도착하면 상태 초기화
-          setRecordingCompleted(false);
-          setIsAnalyzing(false);
-          return newState;
-        });
-
-        // 🆕 분석 결과 수신 시 상태 업데이트
-        setHasAnalysisResults(true);
-        console.log(`[✅ 분석 결과 수신] Job ID ${jobId} 분석 완료`);
-        console.log(`[✅ 상태 업데이트] hasAnalysisResults를 true로 설정`);
-        console.log(`[✅ 분석 데이터] 받은 결과:`, data.result.result);
-      }
-    
-      if (["completed", "failed", "error"].includes(data.status)) {
-        console.log(`[SSE][${jobId}] 상태 변경: ${data.status}`, data);
-        sse.close();
-        connectedJobIdsRef.current.delete(jobId);
-      }
-    };
-
-    sse.onerror = (e) => {
-      console.error(`[SSE][${jobId}] 에러 발생`, e);
-      console.error(`[SSE][${jobId}] 에러 타입:`, e.type);
-      console.error(`[SSE][${jobId}] 에러 상태:`, sse.readyState);
-      console.error(`[SSE][${jobId}] URL:`, sse.url);
-      
-      // 에러 상태에 따른 처리
-      if (sse.readyState === EventSource.CONNECTING) {
-        console.log(`[SSE][${jobId}] 재연결 시도 중...`);
-      } else if (sse.readyState === EventSource.CLOSED) {
-        console.log(`[SSE][${jobId}] 연결이 닫힘`);
-        connectedJobIdsRef.current.delete(jobId);
-        
-        // 3초 후 재연결 시도
-        setTimeout(() => {
-          if (!connectedJobIdsRef.current.has(jobId)) {
-            console.log(`[SSE][${jobId}] 재연결 시도`);
-            // 여기서 재연결 로직을 추가할 수 있음
-          }
-        }, 3000);
-      }
-    };
-  });
-
-  return () => {
-    sseList.forEach((sse) => {
-      console.log('[SSE] 연결 해제:', sse.url);
-      sse.close();
-    });
-  };
-}, [multiJobIds]);
-
-// ✅ 내 대사만 완료 감지
-useEffect(() => {
-  if (!multiJobIds.length) return;
-  
-  // 내 대사만 필터링
-  const myLines = front_data.captions.filter((caption: any) => caption.actor?.name === "나");
-  const myLinesCount = myLines.length;
-  
-  // 내 대사의 분석 결과만 카운트
-  const myLinesResults = myLines.filter((caption: any) => {
-    const scriptKey = normalizeScript(caption.script);
-    return !!latestResultByScript[scriptKey];
-  }).length;
-  
-  const allMyLinesDone = myLinesResults === myLinesCount && myLinesCount > 0;
-  
-  console.log('[완료 감지] 내 대사 개수:', myLinesCount, '내 대사 분석 완료:', myLinesResults, 'allMyLinesDone:', allMyLinesDone);
-  
-  if (allMyLinesDone) {
-    console.log('[완료 감지] 내 대사 분석 완료 - showCompleted를 true로 설정');
-    // 토스트 강제 해제
-    toast.dismiss("analysis-loading-toast");
-    toast.dismiss(); // 모든 토스트 해제
-    setShowCompleted(true);
-  } else {
-    setShowCompleted(false);
-  }
-}, [latestResultByScript, multiJobIds.length, front_data.captions]);
-
-// 분석 완료 시 토스트 해제
-// useEffect(() => {
-//   const totalCount = front_data.captions.length;
-//   const resultCount = Object.keys(latestResultByScript).length;
-  
-//   if (resultCount > 0 && resultCount < totalCount) {
-//     // 분석 결과가 추가되었을 때 토스트 해제
-//     setTimeout(() => {
-//       toast.dismiss("analysis-loading-toast");
-//     }, 100);
-//   }
-// }, [latestResultByScript, front_data.captions.length]);
-
-// ✅ 새로운 분석 시작 시 연결 목록 초기화
-useEffect(() => {
-  if (multiJobIds.length > 0) {
-    console.log('새로운 분석 시작 - 연결 목록 초기화');
-    connectedJobIdsRef.current.clear();
-  }
-}, [multiJobIds.length]);
-
-  // 문장 개수만큼 분석 결과가 쌓이면 콘솔 출력
+  // ✅ SSE 연결 및 결과 수신 처리
   useEffect(() => {
-    const totalCount = front_data.captions.length;
-    const resultCount = Object.keys(latestResultByScript).length;
-  
-    console.log("🧪 useEffect 실행됨");
-    console.log("📌 totalCount (captions.length):", totalCount);
-    console.log("📌 resultCount (latestResultByScript 개수):", resultCount);
-    console.log("📌 keys:", Object.keys(latestResultByScript));
-    console.log(JSON.stringify(latestResultByScript, null, 2));
-    if (resultCount === totalCount && totalCount > 0) {
-      console.log('✅ 모든 문장 분석 결과가 도착했습니다.');
-      console.log('📊 latestResultByScript 전체 내용:');
-      console.log(JSON.stringify(latestResultByScript, null, 2));
+    if (!multiJobIds.length) return;
+
+    const sseList: EventSource[] = [];
+
+    multiJobIds.forEach((jobId) => {
+      if (connectedJobIdsRef.current.has(jobId)) {
+        console.log(`[SSE] 이미 연결된 job_id 건너뛰기: ${jobId}`);
+        return;
+      }
+
+      console.log('[SSE] 연결 시도:', jobId);
+      console.log('[SSE] API URL:', `${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/analysis-progress/${jobId}`);
+      connectedJobIdsRef.current.add(jobId);
+
+      const sse = new EventSource(`${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/analysis-progress/${jobId}`);
+      sseList.push(sse);
+
+      sse.onopen = () => {
+        console.log(`[SSE][${jobId}] 연결됨`);
+      };
+
+      sse.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        console.log(`[SSE][${jobId}] 수신:`, data);
+      
+        if (data.status === 'completed' && data.result?.result) {
+          // word_analysis에서 script 재구성
+          const wordArr = data.result.result.word_analysis?.map((w: any) => w.word) || [];
+          const joinedScript = wordArr.join(' ').replace(/\s+/g, ' ').trim();
+          const resultScriptNorm = normalizeScript(joinedScript);
+
+          const captionsNorm = front_data.captions.map((c: any) => normalizeScript(c.script));
+          const idx = captionsNorm.findIndex((normScript: string) => normScript === resultScriptNorm);
+
+          console.log('[디버깅] jobId:', jobId);
+          console.log('[디버깅] joinedScript:', joinedScript);
+          console.log('[디버깅] resultScriptNorm:', resultScriptNorm);
+          console.log('[디버깅] captionsNorm:', captionsNorm);
+          console.log('[디버깅] idx:', idx);
+
+          // 1. jobId 기준으로 저장 (진행상황용)
+          setFinalResults((prev: Record<string, any>) => ({
+            ...prev,
+            [jobId]: data.result.result
+          }));
+          
+          // 2. script 기준으로 마지막 결과만 저장 (문장별 결과용)
+          setLatestResultByScript((prev: Record<string, any>) => {
+            const newState = {
+              ...prev,
+              [resultScriptNorm]: data.result.result
+            };
+            console.log('[디버깅] latestResultByScript 업데이트:');
+            console.log('- 이전 상태:', Object.keys(prev));
+            console.log('- 새로 추가된 키:', resultScriptNorm);
+            console.log('- 업데이트 후 전체 키:', Object.keys(newState));
+            
+            // 분석 결과가 도착하면 상태 초기화
+            setRecordingCompleted(false);
+            setIsAnalyzing(false);
+            return newState;
+          });
+
+          // 🆕 분석 결과 수신 시 상태 업데이트
+          setHasAnalysisResults(true);
+          console.log(`[✅ 분석 결과 수신] Job ID ${jobId} 분석 완료`);
+          console.log(`[✅ 상태 업데이트] hasAnalysisResults를 true로 설정`);
+          console.log(`[✅ 분석 데이터] 받은 결과:`, data.result.result);
+        }
+      
+        if (["completed", "failed", "error"].includes(data.status)) {
+          console.log(`[SSE][${jobId}] 상태 변경: ${data.status}`, data);
+          sse.close();
+          connectedJobIdsRef.current.delete(jobId);
+        }
+      };
+
+      sse.onerror = (e) => {
+        console.error(`[SSE][${jobId}] 에러 발생`, e);
+        console.error(`[SSE][${jobId}] 에러 타입:`, e.type);
+        console.error(`[SSE][${jobId}] 에러 상태:`, sse.readyState);
+        console.error(`[SSE][${jobId}] URL:`, sse.url);
+        
+        // 브라우저의 자동 재연결에 맡기고 수동 재연결 로직 제거
+        if (sse.readyState === EventSource.CLOSED) {
+          console.log(`[SSE][${jobId}] 연결이 닫힘 - 브라우저 자동 재연결 대기`);
+          connectedJobIdsRef.current.delete(jobId);
+        }
+      };
+    });
+
+    return () => {
+      sseList.forEach((sse) => {
+        console.log('[SSE] 연결 해제:', sse.url);
+        sse.close();
+      });
+    };
+  }, [multiJobIds]);
+
+  // ✅ 내 대사만 완료 감지
+  useEffect(() => {
+    if (!multiJobIds.length) return;
+    
+    // 내 대사만 필터링
+    const myLines = front_data.captions.filter((caption: any) => caption.actor?.name === "나");
+    const myLinesCount = myLines.length;
+    
+    // 내 대사의 분석 결과만 카운트
+    const myLinesResults = myLines.filter((caption: any) => {
+      const scriptKey = normalizeScript(caption.script);
+      return !!latestResultByScript[scriptKey];
+    }).length;
+    
+    const allMyLinesDone = myLinesResults === myLinesCount && myLinesCount > 0;
+    
+    console.log('[완료 감지] 내 대사 개수:', myLinesCount, '내 대사 분석 완료:', myLinesResults, 'allMyLinesDone:', allMyLinesDone);
+    
+    if (allMyLinesDone) {
+      console.log('[완료 감지] 내 대사 분석 완료 - showCompleted를 true로 설정');
+      // 토스트 강제 해제
+      toast.dismiss("analysis-loading-toast");
+      toast.dismiss(); // 모든 토스트 해제
+      setShowCompleted(true);
+    } else {
+      setShowCompleted(false);
     }
-  }, [latestResultByScript, front_data.captions]);
+  }, [latestResultByScript, multiJobIds.length, front_data.captions]);
+
+  // ✅ 새로운 분석 시작 시 연결 목록 초기화
+  useEffect(() => {
+    if (multiJobIds.length > 0) {
+      console.log('새로운 분석 시작 - 연결 목록 초기화');
+      connectedJobIdsRef.current.clear();
+    }
+  }, [multiJobIds.length]);
+
+    // 문장 개수만큼 분석 결과가 쌓이면 콘솔 출력
+    useEffect(() => {
+      const totalCount = front_data.captions.length;
+      const resultCount = Object.keys(latestResultByScript).length;
+    
+      console.log("🧪 useEffect 실행됨");
+      console.log("📌 totalCount (captions.length):", totalCount);
+      console.log("📌 resultCount (latestResultByScript 개수):", resultCount);
+      console.log("📌 keys:", Object.keys(latestResultByScript));
+      console.log(JSON.stringify(latestResultByScript, null, 2));
+      if (resultCount === totalCount && totalCount > 0) {
+        console.log('✅ 모든 문장 분석 결과가 도착했습니다.');
+        console.log('📊 latestResultByScript 전체 내용:');
+        console.log(JSON.stringify(latestResultByScript, null, 2));
+      }
+    }, [latestResultByScript, front_data.captions]);
 
   // 점수 색상 헬퍼
   const getScoreColor = (score: number) => {
@@ -289,84 +281,6 @@ useEffect(() => {
     if (score >= 70) return "Fair";
     return "Poor";
   };
-
-  // 결과 진행상황 토스트 (완전 재작성)
-  // useEffect(() => {
-  //   const toastId = "analysis-loading-toast";
-
-  //   const totalCount = front_data.captions.length;
-  //   const resultCount = Object.keys(latestResultByScript).length;
-  //   const hasAnyJob = multiJobIds.length > 0;
-    
-  //   console.log('[토스트 로직] totalCount:', totalCount, 'resultCount:', resultCount, 'hasAnyJob:', hasAnyJob, 'showCompleted:', showCompleted);
-    
-  //   // 먼저 기존 토스트를 완전히 제거
-  //   toast.dismiss(toastId);
-    
-  //   // 분석 중이 아니면 토스트 표시하지 않음
-  //   if (!hasAnyJob || resultCount >= totalCount || showCompleted) {
-  //     console.log('[토스트 로직] 토스트 표시 안함 - 분석 중 아님');
-  //     return;
-  //   }
-    
-  //   // 분석 중일 때만 토스트 표시 (단일 문장 분석 중)
-  //   if (hasAnyJob && resultCount < totalCount) {
-  //     console.log('[토스트 로직] 토스트 표시 - 분석 중');
-  //     const analyzingText = `분석중인 문장: ${currentScriptIndex + 1}번`;
-  //     toast.loading(
-  //       <div className="flex items-center gap-4 p-2">
-  //         <div className="animate-spin w-16 h-16 border-5 border-green-400 border-t-transparent rounded-full" />
-  //         <div className="flex flex-col">
-  //           <span className="text-blue-300 text-2xl font-semibold">{analyzingText}</span>
-  //         </div>
-  //       </div>, 
-  //       {
-  //         id: toastId,
-  //         icon: null,
-  //         position: "bottom-right",
-  //         duration: 3000, // 3초 후 자동 해제
-  //         style: {
-  //           background: 'linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%)',
-  //           border: '2px solid #22c55e',
-  //           borderRadius: '12px',
-  //           boxShadow: '0 8px 32px rgba(34, 197, 94, 0.2)',
-  //           minWidth: '500px',
-  //           padding: '32px 36px',
-  //         },
-  //       }
-  //     );
-  //   }
-    
-  //   return () => {
-  //     toast.dismiss(toastId);
-  //   }
-  // }, [showCompleted, latestResultByScript, multiJobIds.length, currentScriptIndex, front_data.captions.length]);
-
-  // 분석 완료 시 토스트 해제
-  // useEffect(() => {
-  //   const totalCount = front_data.captions.length;
-  //   const resultCount = Object.keys(latestResultByScript).length;
-    
-  //   if (resultCount > 0 && resultCount < totalCount) {
-  //     // 분석 결과가 추가되었을 때 토스트 해제
-  //     setTimeout(() => {
-  //       toast.dismiss("analysis-loading-toast");
-  //     }, 100);
-  //   }
-  // }, [latestResultByScript, front_data.captions.length]);
-
-  // 분석 완료 시 토스트 해제
-  // useEffect(() => {
-  //   const totalCount = front_data.captions.length;
-  //   const resultCount = Object.keys(latestResultByScript).length;
-    
-  //   if (resultCount > 0 && resultCount < totalCount) {
-  //     // 분석 결과가 추가되었을 때 토스트 해제
-  //     setTimeout(() => {
-  //       toast.dismiss("analysis-loading-toast");
-  //     }, 100);
-  //   }
-  // }, [latestResultByScript, front_data.captions.length]);
 
   // 결과 보기 버튼 클릭 시 결과 섹션으로 스크롤
   const showResultsSection = useCallback(() => {
@@ -420,6 +334,20 @@ useEffect(() => {
       setCurrentScriptIndex(newScriptIndex);
     }
   }, [isReady, currentScriptIndex, findScriptIndexByTime, front_data?.captions, recording, isAnalyzing, showAnalysisResult]);
+
+  // 🆕 두 토큰의 마지막 스크립트 end_time 중 더 긴 것으로 듀엣더빙 완료시간 계산
+  const getDuetEndTime = useCallback(() => {
+    if (!tokenData || !front_data) return undefined;
+    
+    // 현재 토큰의 마지막 스크립트 end_time
+    const currentTokenEndTime = front_data.captions[front_data.captions.length - 1]?.end_time || 0;
+    
+    // 상대 토큰의 마지막 스크립트 end_time (tokenData에서 추출)
+    const opponentTokenEndTime = tokenData.end_time || 0;
+    
+    // 더 긴 시간을 반환
+    return Math.max(currentTokenEndTime, opponentTokenEndTime);
+  }, [tokenData, front_data]);
 
   const getCurrentScriptPlaybackRange = useCallback(() => {
     if (!isReady) return { startTime: 0, endTime: undefined };
@@ -519,9 +447,80 @@ useEffect(() => {
     return str.toLowerCase().replace(/[^a-z0-9]/g, '');
   }
 
-  // 녹음 시작 시 해당 문장의 분석 결과 제거
-  const handleRecordingStart = useCallback((scriptIndex: number) => {
+  // 녹음 시작 시 해당 문장의 분석 결과 제거 및 기존 분석 결과 삭제
+  const handleRecordingStart = useCallback(async (scriptIndex: number) => {
     console.log('[DEBUG] handleRecordingStart 호출됨:', scriptIndex);
+    
+    // 로그인 상태 확인
+    const accessToken = localStorage.getItem('access_token');
+    const googleUser = localStorage.getItem('google_user');
+    
+    console.log('[DEBUG] 로그인 상태 확인:', {
+      hasAccessToken: !!accessToken,
+      hasGoogleUser: !!googleUser,
+      accessTokenLength: accessToken?.length || 0,
+      tokenId: id
+    });
+    
+    if (!accessToken) {
+      console.error('[재더빙] 로그인이 필요합니다.');
+      toast.error('재더빙을 위해서는 로그인이 필요합니다.');
+      return;
+    }
+    
+    // 재더빙 시 기존 분석 결과 삭제
+    try {
+      console.log('[재더빙] 기존 분석 결과 삭제 시작 - tokenId:', id);
+      console.log('[DEBUG] API 엔드포인트:', `/mypage/tokens/${id}/my-results`);
+      console.log('[DEBUG] Authorization 헤더:', `Bearer ${accessToken.substring(0, 20)}...`);
+      
+      await mypageService.deleteMyTokenResults(Number(id));
+      console.log('[재더빙] 기존 분석 결과 삭제 완료');
+      
+      // 삭제 후 상태 초기화
+      setFinalResults({});
+      setLatestResultByScript({});
+      setHasAnalysisResults(false);
+      setShowCompleted(false);
+      setShowResults(false);
+      
+      // SSE 연결 해제
+      if (sseRef.current) {
+        sseRef.current.close();
+        sseRef.current = null;
+      }
+      connectedJobIdsRef.current.clear();
+      setMultiJobIds([]);
+      
+    } catch (error: any) {
+      console.error('[재더빙] 기존 분석 결과 삭제 실패:', error);
+      console.error('[DEBUG] 에러 상세 정보:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          headers: error.config?.headers
+        }
+      });
+      
+      if (error.response?.status === 401) {
+        toast.error('로그인이 필요합니다. 다시 로그인해주세요.');
+      } else if (error.response?.status === 403) {
+        toast.error('접근 권한이 없습니다.');
+      } else if (error.response?.status === 404) {
+        toast.error('삭제할 분석 결과가 없습니다.');
+      } else if (error.response?.status === 422) {
+        toast.error('재더빙 중 오류가 발생했습니다.');
+      } else if (error.response?.status === 500) {
+        toast.error('서버 오류가 발생했습니다.');
+      } else {
+        toast.error('재더빙 중 오류가 발생했습니다.');
+      }
+      // 삭제 실패해도 계속 진행
+    }
     
     const currentScript = front_data.captions[scriptIndex];
     if (!currentScript) {
@@ -552,10 +551,7 @@ useEffect(() => {
       
       return newState;
     });
-  }, [front_data?.captions, latestResultByScript]);
-
-  // const [showAnalysisResult, setShowAnalysisResult] = useState(false);
-  // const [isRecordingPlayback, setIsRecordingPlayback] = useState(false);
+  }, [front_data?.captions, latestResultByScript, id, setFinalResults, setLatestResultByScript, setHasAnalysisResults, setShowCompleted, setShowResults, setMultiJobIds]);
 
   // 현재 문장의 분석 결과 가져오기
   const currentScript = front_data.captions[currentScriptIndex];
@@ -641,7 +637,7 @@ useEffect(() => {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white relative overflow-hidden">
+    <div className="min-h-screen bg-neutral-950 text-white relative overflow-hidden flex flex-col">
       <Toaster position="top-center" />
       
       <DubbingHeader
@@ -650,94 +646,97 @@ useEffect(() => {
         actorName={front_data.captions[0]?.actor?.name || ""}
       />
   
-      {/* 본문 - 항상 중앙 */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      {/* 본문 - 네비게이션 바 높이만큼 상단 마진 추가하여 가운데 정렬 */}
+      <div className="max-w-7xl mx-auto px-6 mt-20 flex-1 flex items-center justify-center">
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Column - Video & Script */}
           <div className="lg:col-span-2 space-y-6">
-            <VideoPlayer
-              videoId={front_data.movie.youtube_url.split("v=")[1]}
-              onTimeUpdate={handleTimeUpdate}
-              startTime={getCurrentScriptPlaybackRange().startTime}
-              endTime={getCurrentScriptPlaybackRange().endTime}
-              disableAutoPause={true}
-              ref={videoPlayerRef}
-              onEndTimeReached={() => {
-                const nextIndex = currentScriptIndex + 1;
-                const nextScript = front_data.captions[nextIndex];
-                const isCurrentMyLine = front_data.captions[currentScriptIndex]?.actor?.name === "나";
-                const isNextMyLine = nextScript?.actor?.name === "나";
-              
-                console.log("🔚 EndTime Reached");
-                console.log("현재 인덱스:", currentScriptIndex);
-                console.log("다음 인덱스:", nextIndex);
-                console.log("현재 대사: ", front_data.captions[currentScriptIndex]);
-                console.log("다음 대사: ", nextScript);
-                console.log("현재 내 대사인가?", isCurrentMyLine);
-                console.log("다음이 내 대사인가?", isNextMyLine);
-                console.log("녹음 중?", recording);
-                console.log("분석 중?", isAnalyzing);
-                console.log("분석 결과 표시 중?", showAnalysisResult);
-              
-                // 1. 녹음 중이거나, 분석 중/분석 결과 표시 중이면 자동 이동 금지
-                if (
-                  recording ||           // 녹음 중
-                  isAnalyzing ||         // 분석 중
-                  showAnalysisResult ||  // 분석 결과 표시 중
-                  recordingCompleted     // 녹음이 막 끝난 상태
-                ) {
-                  console.log("⛔ 자동 이동 차단 (녹음 또는 분석 중)");
-                  
-                  // 내 대사라면 녹음 정지만
-                  if (isCurrentMyLine && pitchRef.current) {
-                    console.log("🛑 내 대사 → 녹음 강제 정지");
-                    pitchRef.current.handleExternalStop();
+            <div className="w-full aspect-video overflow-hidden rounded-lg">
+              <VideoPlayer
+                videoId={front_data.movie.youtube_url.split("v=")[1]}
+                onTimeUpdate={handleTimeUpdate}
+                startTime={getCurrentScriptPlaybackRange().startTime}
+                endTime={getCurrentScriptPlaybackRange().endTime}
+                disableAutoPause={true}
+                ref={videoPlayerRef}
+                onEndTimeReached={() => {
+                  const nextIndex = currentScriptIndex + 1;
+                  const nextScript = front_data.captions[nextIndex];
+                  const isCurrentMyLine = front_data.captions[currentScriptIndex]?.actor?.name === "나";
+                  const isNextMyLine = nextScript?.actor?.name === "나";
+                
+                  console.log("🔚 EndTime Reached");
+                  console.log("현재 인덱스:", currentScriptIndex);
+                  console.log("다음 인덱스:", nextIndex);
+                  console.log("현재 대사: ", front_data.captions[currentScriptIndex]);
+                  console.log("다음 대사: ", nextScript);
+                  console.log("현재 내 대사인가?", isCurrentMyLine);
+                  console.log("다음이 내 대사인가?", isNextMyLine);
+                  console.log("녹음 중?", recording);
+                  console.log("분석 중?", isAnalyzing);
+                  console.log("분석 결과 표시 중?", showAnalysisResult);
+                
+                  // 1. 녹음 중이거나, 분석 중/분석 결과 표시 중이면 자동 이동 금지
+                  if (
+                    recording ||           // 녹음 중
+                    isAnalyzing ||         // 분석 중
+                    showAnalysisResult ||  // 분석 결과 표시 중
+                    recordingCompleted     // 녹음이 막 끝난 상태
+                  ) {
+                    console.log("⛔ 자동 이동 차단 (녹음 또는 분석 중)");
+                    
+                    // 내 대사라면 녹음 정지만
+                    if (isCurrentMyLine && pitchRef.current) {
+                      console.log("🛑 내 대사 → 녹음 강제 정지");
+                      pitchRef.current.handleExternalStop();
+                    }
+                    return; // 자동 이동/재생 금지
                   }
-                  return; // 자동 이동/재생 금지
-                }
-                // 1. 내 대사가 끝난경우 : 머무르게 하도록
-                if(isCurrentMyLine){
-                  return;
-                }
-              
-                // 2. 상대 → 내 대사로 넘어갈 때 자동 이동/재생
-                if (!isCurrentMyLine && isNextMyLine) {
-                  console.log("➡️ 상대 → 내 대사, 자동 이동 및 재생");
-                  console.log("[DEBUG] nextScript:", nextScript);
-                  console.log("[DEBUG] nextScript.actor:", nextScript?.actor);
-                  console.log("[DEBUG] nextScript.actor.name:", nextScript?.actor?.name);
-                  console.log("[DEBUG] typeof nextScript.actor.name:", typeof nextScript?.actor?.name);
-                  console.log("[DEBUG] nextScript.actor.name === '나':", nextScript?.actor?.name === "나");
-                  // setCurrentScriptIndex(nextIndex);// 이걸 남기라고?
-                  // videoPlayerRef.current?.seekTo(nextScript.start_time);
-                  // videoPlayerRef.current?.playVideo();
-                  return;
-                }
-              
-                // 3. 상대 → 상대 대사인 경우 자동 이동하지 않음 (연속 재생을 위해)
-                if (!isCurrentMyLine && !isNextMyLine && nextScript) {
-                  console.log("➡️ 상대 → 상대 대사, 연속 재생 (자동 이동 안함)");
-                  console.log("[DEBUG] nextScript:", nextScript);
-                  console.log("[DEBUG] nextScript.actor:", nextScript?.actor);
-                  console.log("[DEBUG] nextScript.actor.name:", nextScript?.actor?.name);
-                  console.log("[DEBUG] typeof nextScript.actor.name:", typeof nextScript?.actor?.name);
-                  console.log("[DEBUG] nextScript.actor.name === '나':", nextScript?.actor?.name === "나");
-                  // setCurrentScriptIndex(nextIndex); // 제거
-                  // videoPlayerRef.current?.seekTo(nextScript.start_time); // 제거
-                  // videoPlayerRef.current?.playVideo(); // 제거
-                  return;
-                }
-               
-              
-                // 추가 예외 처리 로그
-                if (!nextScript) {
-                  console.log("📄 더 이상 다음 대사가 없습니다.");
-                }
-              }}
+                  // 1. 내 대사가 끝난경우 : 머무르게 하도록
+                  if(isCurrentMyLine){
+                    return;
+                  }
+                
+                  // 2. 상대 → 내 대사로 넘어갈 때 자동 이동/재생
+                  if (!isCurrentMyLine && isNextMyLine) {
+                    console.log("➡️ 상대 → 내 대사, 자동 이동 및 재생");
+                    console.log("[DEBUG] nextScript:", nextScript);
+                    console.log("[DEBUG] nextScript.actor:", nextScript?.actor);
+                    console.log("[DEBUG] nextScript.actor.name:", nextScript?.actor?.name);
+                    console.log("[DEBUG] typeof nextScript.actor.name:", typeof nextScript?.actor?.name);
+                    console.log("[DEBUG] nextScript.actor.name === '나':", nextScript?.actor?.name === "나");
+                    // setCurrentScriptIndex(nextIndex);// 이걸 남기라고?
+                    // videoPlayerRef.current?.seekTo(nextScript.start_time);
+                    // videoPlayerRef.current?.playVideo();
+                    return;
+                  }
+                
+                  // 3. 상대 → 상대 대사인 경우 자동 이동하지 않음 (연속 재생을 위해)
+                  if (!isCurrentMyLine && !isNextMyLine && nextScript) {
+                    console.log("➡️ 상대 → 상대 대사, 연속 재생 (자동 이동 안함)");
+                    console.log("[DEBUG] nextScript:", nextScript);
+                    console.log("[DEBUG] nextScript.actor:", nextScript?.actor);
+                    console.log("[DEBUG] nextScript.actor.name:", nextScript?.actor?.name);
+                    console.log("[DEBUG] typeof nextScript.actor.name:", typeof nextScript?.actor?.name);
+                    console.log("[DEBUG] nextScript.actor.name === '나':", nextScript?.actor?.name === "나");
+                    // setCurrentScriptIndex(nextIndex); // 제거
+                    // videoPlayerRef.current?.seekTo(nextScript.start_time); // 제거
+                    // videoPlayerRef.current?.playVideo(); // 제거
+                    return;
+                  }
+                 
+                
+                  // 추가 예외 처리 로그
+                  if (!nextScript) {
+                    console.log("📄 더 이상 다음 대사가 없습니다.");
+                  }
+                }}
 
-              onPlay={customHandlePlay}
-              onPause={customHandlePause}
-            />
+                onPlay={customHandlePlay}
+                onPause={customHandlePause}
+              />
+            </div>
+            
             <DuetScriptDisplay
               captions={front_data.captions}
               currentScriptIndex={currentScriptIndex}
@@ -752,7 +751,8 @@ useEffect(() => {
               onStopLooping={() => pitchRef.current?.stopLooping?.()}
               showAnalysisResult={showAnalysisResult}
               analysisResult={analysisResult}
-              totalDuration={tokenData.end_time}
+              videoStartTime={tokenData.start_time}
+              videoEndTime={getDuetEndTime()}
             />
           </div>
   
@@ -804,10 +804,12 @@ useEffect(() => {
             />
           </div>
         </div>
-  
-        {/* 🆕 결과 섹션을 기존 레이아웃 안에 통합 */}
-        {(showCompleted || showResults) && (
-          <div ref={resultsRef} className="result-container mt-8">
+      </div>
+      
+      {/* 🆕 결과 섹션을 위쪽 컨테이너와 같은 너비로 맞춤 */}
+      {(showCompleted || showResults) && (
+        <div ref={resultsRef} className="result-container mt-8 w-full">
+          <div className="max-w-7xl mx-auto px-6">
             <div className="animate-fade-in-up">
               <ResultContainer
                 finalResults={finalResults}
@@ -819,13 +821,9 @@ useEffect(() => {
               />
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* 🆕 분석 결과 조회 버튼 - 항상 렌더링 */}
-        {/* ResultViewBtn 완전히 제거 */}
-
-
-      </div>
       {/* Sidebar - 오른쪽 고정 */}
       <DuetSidebar
         isOpen={isSidebarOpen}
@@ -846,4 +844,3 @@ useEffect(() => {
     </div>
   );
 }
-
