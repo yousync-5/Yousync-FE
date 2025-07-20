@@ -2,7 +2,7 @@
 
 // import ServerPitchGraph from "@/components/graph/ServerPitchGraph";
 // import { MyPitchGraph } from '@/components/graph/MyPitchGraph';
-import type { Caption } from "@/types/caption";
+import type { Caption } from "@/types/dubbing";
 import { VideoPlayerRef } from "./VideoPlayer";
 import { useDubbingRecorder } from '@/hooks/useDubbingRecorder';
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
