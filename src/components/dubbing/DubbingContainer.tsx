@@ -4,7 +4,6 @@ import React, { useRef, useCallback, useEffect, useState } from "react";
 import DubbingHeader from "@/components/dubbing/DubbingHeader";
 import VideoPlayer, { VideoPlayerRef } from "@/components/dubbing/VideoPlayer";
 import ScriptDisplay from "@/components/dubbing/ScriptDisplay";
-import PitchComparison from "@/components/dubbing/PitchComparison";
 import ResultContainer from "@/components/result/ResultComponent";
 
 import { Toaster } from "react-hot-toast";
@@ -15,6 +14,7 @@ import { useDubbingState } from "@/hooks/useDubbingState";
 import { useBackgroundAudio } from "@/hooks/useBackgroundAudio";
 import DubbingListenModal from "@/components/result/DubbingListenModal";
 import Sidebar from "@/components/ui/Sidebar";
+import { useDubbingRecorder } from '@/hooks/useDubbingRecorder';
 
 
 interface DubbingContainerProps {
@@ -82,13 +82,53 @@ const DubbingContainer = ({
   } = dubbingState;
 
   const videoPlayerRef = useRef<VideoPlayerRef | null>(null);
-  const pitchRef = useRef<{ handleExternalStop: () => void, stopLooping?: () => void, handleMicClick: () => void } | null>(null);
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const { cleanupMic } = useAudioStream();
 
   // zustand에서 multiJobIds 읽기
   const multiJobIds = useJobIdsStore((state) => state.multiJobIds);
   const setMultiJobIds = useJobIdsStore((state) => state.setMultiJobIds);
+
+  // 녹음 기능 구현
+  const {
+    recording: recorderRecording,
+    recordedScripts,
+    uploading,
+    startScriptRecording,
+    stopScriptRecording,
+    getAllBlobs,
+  } = useDubbingRecorder({
+    captions: front_data.captions,
+    tokenId: id,
+    scripts: tokenData?.scripts,
+    onUploadComplete: (success: boolean, jobIds: string[]) => {
+      console.log(`[🔄 DubbingContainer] onUploadComplete 콜백 호출됨`);
+      console.log(`[📊 결과] success: ${success}, jobIds: ${JSON.stringify(jobIds)}`);
+      
+      if (success && Array.isArray(jobIds)) {
+        // 새로운 분석 시작 시에만 초기화 (기존 결과 유지)
+        if (multiJobIds.length === 0) {
+          console.log('[DEBUG] 새로운 분석 시작 - 상태 초기화');
+          setFinalResults({});
+          setLatestResultByScript({});
+        }
+        // jobId와 문장 인덱스 매핑 콘솔 출력
+        jobIds.forEach((jobId, idx) => {
+          const script = front_data.captions[idx]?.script;
+          console.log(`[분석 요청] jobId: ${jobId}, 문장 인덱스: ${idx}, script: "${script}"`);
+        });
+        // 새 jobIds로 세팅
+        setMultiJobIds(jobIds);
+        // 분석 시작 상태 설정
+        setIsAnalyzing(true);
+      }
+    },
+  });
+
+  // 녹음 상태 동기화
+  useEffect(() => {
+    setRecording(recorderRecording);
+  }, [recorderRecording, setRecording]);
 
   // 🆕 분석 결과 수신 상태 추가
   const [hasAnalysisResults, setHasAnalysisResults] = useState(false);
@@ -381,12 +421,43 @@ useEffect(() => {
     handlePause();
   };
 
-  // 문장 클릭 시 녹음 중지, 영상 이동 및 정지, 인덱스 변경
-  const customHandleScriptSelect = (index: number) => {
-    // 1. 녹음 중이면 PitchComparison의 녹음 중지 핸들 호출
-    pitchRef.current?.handleExternalStop();
+  // 마이크 버튼 클릭 핸들러
+  const handleMicClick = () => {
+    if (videoPlayerRef?.current && front_data.captions[currentScriptIndex]) {
+      const currentScript = front_data.captions[currentScriptIndex];
+      
+      videoPlayerRef.current.seekTo(currentScript.start_time);
+      videoPlayerRef.current.playVideo();
+      
+      // 영상이 실제로 재생되기 시작할 때까지 대기
+      const checkVideoPlaying = () => {
+        if (!videoPlayerRef?.current) return;
+        
+        const currentTime = videoPlayerRef.current.getCurrentTime();
+        const targetTime = currentScript.start_time;
+        
+        // 영상이 목표 시간에 도달했는지 확인 (0.1초 허용 오차)
+        if (Math.abs(currentTime - targetTime) < 0.1) {
+          startScriptRecording(currentScriptIndex);
+        } else {
+          // 아직 재생되지 않았으면 다시 체크
+          setTimeout(checkVideoPlaying, 50);
+        }
+      };
+      
+      // 100ms 후부터 체크 시작 (브라우저 렉 고려)
+      setTimeout(checkVideoPlaying, 100);
+    }
+  };
 
-    // 2. 영상 해당 시점으로 이동 및 정지
+  // 문장 클릭 시 영상 이동 및 정지, 인덱스 변경
+  const customHandleScriptSelect = (index: number) => {
+    // 녹음 중이면 중지
+    if (recording) {
+      stopScriptRecording(currentScriptIndex);
+    }
+    
+    // 영상 해당 시점으로 이동 및 정지
     const startTime = front_data.captions[index]?.start_time ?? 0;
     videoPlayerRef.current?.seekTo(startTime);
     videoPlayerRef.current?.pauseVideo();
@@ -517,8 +588,8 @@ useEffect(() => {
         }`}
       >
         <div className="grid grid-cols-12 gap-2">
-          {/* Left Column - Video */}
-          <div className="col-span-8">
+          {/* Video - 전체 너비 사용 */}
+          <div className="col-span-12">
             <VideoPlayer
               videoId={front_data.movie.youtube_url.split("v=")[1]}
               onTimeUpdate={handleTimeUpdate}
@@ -527,61 +598,14 @@ useEffect(() => {
               disableAutoPause={true}
               ref={videoPlayerRef}
               onEndTimeReached={() => {
-                // 녹음 중일 때만 handleExternalStop 호출
+                // 녹음 중일 때 처리 로직
                 if (recording) {
-                  pitchRef.current?.handleExternalStop?.();
+                  stopScriptRecording(currentScriptIndex);
                 }
               }}
               onPlay={customHandlePlay}
               onPause={customHandlePause}
-            />
-          </div>
-  
-          {/* Right Column - PitchComparison */}
-          <div className="col-span-4">
-            <PitchComparison
-              ref={pitchRef}
-              currentScriptIndex={currentScriptIndex}
-              captions={front_data.captions}
-              tokenId={id}
-              serverPitchData={serverPitchData}
-              videoPlayerRef={videoPlayerRef}
-              onNextScript={setCurrentScriptIndex}
-              onPlay={customHandlePlay}
-              onPause={customHandlePause}
-              isVideoPlaying={isVideoPlaying}
-              scripts={tokenData?.scripts}
-              onUploadComplete={(success, jobIds) => {
-                console.log(`[🔄 DubbingContainer] onUploadComplete 콜백 호출됨`);
-                console.log(`[📊 결과] success: ${success}, jobIds: ${JSON.stringify(jobIds)}`);
-                
-                if (success && Array.isArray(jobIds)) {
-                  // 새로운 분석 시작 시에만 초기화 (기존 결과 유지)
-                  if (multiJobIds.length === 0) {
-                    console.log('[DEBUG] 새로운 분석 시작 - 상태 초기화');
-                    setFinalResults({});
-                    setLatestResultByScript({});
-                  }
-                  // 2. jobId와 문장 인덱스 매핑 콘솔 출력
-                  jobIds.forEach((jobId, idx) => {
-                    const script = front_data.captions[idx]?.script;
-                    console.log(`[분석 요청] jobId: ${jobId}, 문장 인덱스: ${idx}, script: "${script}"`);
-                  });
-                  // 3. 새 jobIds로 세팅
-                  setMultiJobIds(jobIds);
-                  // 4. 분석 시작 상태 설정
-                  setIsAnalyzing(true);
-                }
-              }}
-              onRecordingChange={setRecording}
-              handleRecordingComplete={handleRecordingComplete}
-              showAnalysisResult={showAnalysisResult}
-              recordingCompleted={recordingCompleted}
-              onRecordingPlaybackChange={setIsRecordingPlayback}
               onOpenSidebar={() => setIsSidebarOpen(true)}
-              onShowResults={handleViewResults}
-              onOpenDubbingListenModal={() => setIsDubbingListenModalOpen(true)}
-              latestResultByScript={latestResultByScript || {}}
             />
           </div>
         </div>
@@ -599,14 +623,13 @@ useEffect(() => {
             recording={recording}
             recordingCompleted={recordingCompleted}
             isAnalyzing={isAnalyzing}
-            onStopLooping={() => pitchRef.current?.stopLooping?.()}
             showAnalysisResult={showAnalysisResult}
             analysisResult={analysisResult}
             // 추가된 props
             isVideoPlaying={isVideoPlaying}
             onPlay={customHandlePlay}
             onPause={customHandlePause}
-            onMicClick={() => pitchRef.current?.handleMicClick ? pitchRef.current.handleMicClick() : null}
+            onMicClick={handleMicClick}
             isLooping={isLooping}
             onLoopToggle={() => {
               // 구간 반복 상태 토글
@@ -685,7 +708,6 @@ useEffect(() => {
         analyzedCount={12}
         totalCount={191}
         recording={recording}
-        onStopLooping={() => pitchRef.current?.stopLooping?.()}
         recordedScripts={recordingCompleted ? Array(front_data.captions.length).fill(false).map((_, i) => i === currentScriptIndex) : []}
         latestResultByScript={latestResultByScript}
         recordingCompleted={recordingCompleted}

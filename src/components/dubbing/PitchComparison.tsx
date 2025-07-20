@@ -391,25 +391,6 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void; stopLooping
     <div className="bg-gradient-to-br from-gray-900 to-gray-950 rounded-xl p-2 h-auto relative border border-gray-800 shadow-lg">
       <div className="flex justify-between items-center mb-1">
         <h3 className="text-xs font-semibold text-white">Pitch Comparison</h3>
-        {onOpenSidebar && (
-          <button
-            onClick={onOpenSidebar}
-            className="flex items-center justify-center w-6 h-6 bg-gray-800 text-gray-400 rounded-md hover:bg-gray-700 hover:text-white transition-all duration-200"
-            title="스크립트 목록"
-            style={{ padding: 0 }}
-          >
-            <svg width="16" height="16" viewBox="0 0 28 28" fill="none">
-              <g stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="5,8 8,11 13,6" />
-                <line x1="16" y1="8" x2="23" y2="8" />
-                <polyline points="5,16 8,19 13,14" />
-                <line x1="16" y1="16" x2="23" y2="16" />
-                <polyline points="5,24 8,27 13,22" />
-                <line x1="16" y1="24" x2="23" y2="24" />
-              </g>
-            </svg>
-          </button>
-        )}
       </div>
       <div className="space-y-1">
         <div className="w-full h-16 flex justify-start items-center">
