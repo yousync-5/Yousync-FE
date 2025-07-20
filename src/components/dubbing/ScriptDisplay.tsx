@@ -547,7 +547,17 @@ export default function ScriptDisplay({
                 transition: disableTransition ? 'none' : 'background 0.3s ease-out'
               }}
             >
-             {isAnalyzing ? (
+              {showAnalysisResult && analysisResult ? (
+                <PronunciationTimingGuide
+                  captions={captions}
+                  currentScriptIndex={currentScriptIndex}
+                  currentVideoTime={currentVideoTime}
+                  currentWords={currentWords}
+                  showAnalysisResult={showAnalysisResult}
+                  analysisResult={analysisResult}
+                  recording={recording}
+                />
+              ) : isAnalyzing ? (
                 <div className="relative w-full h-full flex items-center justify-center">
                   {renderScriptWithWords()}
                   {/* 분석 중 로딩 오버레이 (사이드바 스타일 적용) */}
