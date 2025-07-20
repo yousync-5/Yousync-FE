@@ -109,77 +109,77 @@ export default function Sidebar({
   return (
     <motion.div
       ref={sidebarRef}
-      initial={{ x: 320 }}
-      animate={{ x: isOpen ? 0 : 320 }}
+      initial={{ x: 280 }}
+      animate={{ x: isOpen ? 0 : 280 }}
       transition={{ type: "tween", duration: 0.3 }}
-      className="fixed top-0 right-0 h-full w-[320px] z-50 shadow-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-l border-gray-700 text-gray-100 overflow-y-auto custom-scrollbar"
-      style={{ boxShadow: 'rgba(0,0,0,0.25) -8px 0 24px' }}
+      className="fixed top-0 right-0 h-full w-[280px] z-50 shadow-2xl bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 backdrop-blur-sm border-l border-gray-700 text-gray-100 overflow-y-auto custom-scrollbar"
+      style={{ boxShadow: 'rgba(0,0,0,0.3) -5px 0 20px' }}
     >
-      <div className="flex justify-between items-center px-6 py-4 border-b border-gray-700 bg-gray-900/80 sticky top-0 z-10">
-        <span className="font-bold text-lg tracking-tight text-emerald-400 select-none">📑 스크립트 목록</span>
+      <div className="flex justify-between items-center px-3 py-2 border-b border-gray-700 bg-gray-900/90 sticky top-0 z-10">
+        <span className="font-bold text-sm tracking-tight text-emerald-400 select-none">📑 스크립트 목록</span>
         <button
           onClick={onClose}
-          className="ml-2 p-1 rounded-full text-gray-400 hover:text-emerald-400 hover:bg-gray-800 transition text-base focus:outline-none focus:ring-2 focus:ring-emerald-400"
+          className="ml-1 p-1 rounded-full text-gray-400 hover:text-emerald-400 hover:bg-gray-800 transition text-base focus:outline-none focus:ring-2 focus:ring-emerald-400"
           aria-label="사이드바 닫기"
         >
           <span className="text-xl">×</span>
         </button>
       </div>
       {/* 상단 정보 박스 */}
-      <div className="px-6 py-4 border-b border-gray-800 bg-gray-900/80 flex flex-col gap-2">
-        <div className="flex items-center gap-2 text-sm text-gray-300">
+      <div className="px-3 py-2 border-b border-gray-800 bg-gray-900/90 flex flex-col gap-1">
+        <div className="flex items-center gap-1 text-xs text-gray-300">
           <span className="font-semibold text-emerald-400">배우명</span>
           <span className="truncate">{actorName}</span>
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-300">
+        <div className="flex items-center gap-1 text-xs text-gray-300">
           <span className="font-semibold text-emerald-400">영화명</span>
           <span className="truncate">{movieTitle}</span>
         </div>
 
         {/* 문장 진행률 게이지 */}
-        <div className="mt-2">
-          <div className="flex justify-between text-xs text-gray-400 mb-1">
+        <div className="mt-1">
+          <div className="flex justify-between text-[10px] text-gray-400 mb-1">
             <span>문장 진행률</span>
             <span>{currentScriptIndex + 1} / {totalCount}</span>
           </div>
-          <div className="w-full h-2 bg-gray-700 rounded">
+          <div className="w-full h-1 bg-gray-700 rounded">
             <div
-              className="h-2 bg-emerald-400 rounded"
+              className="h-1 bg-emerald-400 rounded"
               style={{ width: `${((currentScriptIndex + 1) / totalCount) * 100}%` }}
             />
           </div>
         </div>
         {/* 분석 완료 게이지 */}
-        <div className="mt-2">
-          <div className="flex justify-between text-xs text-gray-400 mb-1">
+        <div className="mt-1">
+          <div className="flex justify-between text-[10px] text-gray-400 mb-1">
             <span>분석 완료</span>
             <span>{analyzedCount} / {totalCount}</span>
           </div>
-          <div className="w-full h-2 bg-gray-700 rounded">
+          <div className="w-full h-1 bg-gray-700 rounded">
             <div
-              className="h-2 bg-blue-400 rounded"
+              className="h-1 bg-blue-400 rounded"
               style={{ width: `${(analyzedCount / totalCount) * 100}%` }}
             />
           </div>
         </div>
       </div>
       {/* 범례 */}
-      <div className="flex items-center justify-center space-x-4 text-xs text-gray-400 mt-2">
+      <div className="flex items-center justify-center space-x-2 text-[10px] text-gray-400 mt-1 px-1">
         <div className="flex items-center space-x-1">
-          <div className="w-3 h-3 bg-gray-600 rounded"></div>
+          <div className="w-1.5 h-1.5 bg-gray-600 rounded"></div>
           <span>미완료</span>
         </div>
         <div className="flex items-center space-x-1">
-          <div className="w-3 h-3 bg-green-400 rounded"></div>
+          <div className="w-1.5 h-1.5 bg-green-400 rounded"></div>
           <span>분석중</span>
         </div>
         <div className="flex items-center space-x-1">
-          <div className="w-3 h-3 bg-blue-400 rounded"></div>
+          <div className="w-1.5 h-1.5 bg-blue-400 rounded"></div>
           <span>분석완료</span>
         </div>
       </div>
 
-      <ul ref={listRef} className="px-4 py-6 pb-32">
+      <ul ref={listRef} className="px-2 py-2 pb-32">
         {captions.map((caption, index) => {
           const scriptKey = normalizeScript(caption.script);
           const isAnalyzed = !!latestResultByScript[scriptKey];
@@ -193,11 +193,11 @@ export default function Sidebar({
                 if (onStopLooping) onStopLooping();
                 onScriptSelect(index);
               }}
-              className={`cursor-pointer px-4 py-4 transition-all duration-150 select-none relative
+              className={`cursor-pointer px-2 py-2 transition-all duration-150 select-none relative rounded-md mb-1 text-xs
                 ${isSelected
-                  ? "border-2 border-emerald-400 scale-[1.03] bg-transparent text-white shadow-md z-10"
+                  ? "border border-emerald-400 scale-[1.02] bg-transparent text-white shadow-md z-10"
                   : isAnalyzed
-                  ? "border-2 border-emerald-400 bg-transparent text-white"
+                  ? "border border-emerald-400/50 bg-transparent text-white"
                   : "hover:bg-gray-800/50 hover:text-emerald-300 text-gray-200"}
                 ${isSelected ? "transition-transform" : ""}
               `}
@@ -211,36 +211,36 @@ export default function Sidebar({
               )}
               <div className="flex items-start">
                 {/* 아이콘 + 번호 */}
-                <span className="flex items-center mr-3 mt-1 select-none" style={{ zIndex: 2 }}>
+                <span className="flex items-center mr-1 mt-0.5 select-none" style={{ zIndex: 2 }}>
                   {isSelected ? (
                     // 빙빙 도는 아이콘 (SVG)
-                    <svg className="w-4 h-4 mr-1 text-emerald-300 animate-spin" viewBox="0 0 20 20" fill="none" aria-label="재생 중">
+                    <svg className="w-2 h-2 mr-1 text-emerald-300 animate-spin" viewBox="0 0 20 20" fill="none" aria-label="재생 중">
                       <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" strokeDasharray="20 10" />
                     </svg>
                   ) : isAnalyzed ? (
                     // 체크 아이콘 (SVG) - 분석 완료
-                    <svg className="w-4 h-4 mr-1 text-emerald-400" viewBox="0 0 20 20" fill="currentColor" aria-label="분석 완료">
+                    <svg className="w-2 h-2 mr-1 text-emerald-400" viewBox="0 0 20 20" fill="currentColor" aria-label="분석 완료">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   ) : (
                     // 플레이 아이콘 (SVG)
-                    <svg className="w-4 h-4 mr-1 text-gray-400 group-hover:text-emerald-300 transition-colors" viewBox="0 0 20 20" fill="currentColor" aria-label="플레이">
+                    <svg className="w-2 h-2 mr-1 text-gray-400 group-hover:text-emerald-300 transition-colors" viewBox="0 0 20 20" fill="currentColor" aria-label="플레이">
                       <polygon points="6,4 16,10 6,16" />
                     </svg>
                   )}
                 </span>
-                <span className="flex-1 leading-relaxed">
+                <span className="flex-1 leading-relaxed text-xs">
                   {caption.script}
                 </span>
               </div>
               {/* 타임라인 */}
               {typeof (caption as any).start_time === 'number' && typeof (caption as any).end_time === 'number' && (
-                <div className={`text-xs mt-1 ml-8 font-mono transition-colors duration-150 ${isSelected ? 'text-white' : 'text-gray-400'}`}>
+                <div className={`text-[9px] mt-1 ml-3 font-mono transition-colors duration-150 ${isSelected ? 'text-white' : 'text-gray-400'}`}>
                   {formatTime((caption as any).start_time)} ~ {formatTime((caption as any).end_time)}
                 </div>
               )}
               {index < captions.length - 1 && (
-                <div className="absolute bottom-0 left-4 right-4 h-px"
+                <div className="absolute bottom-0 left-2 right-2 h-px"
                   style={{ background: isSelected ? '#34d399' : '#a3a3a3', opacity: isSelected ? 0.7 : 0.4, zIndex: 0 }}
                 />
               )}
@@ -251,11 +251,11 @@ export default function Sidebar({
       {/* 세부 정보 모달/패널 (분석 완료 문장 클릭 시) */}
       {detailIndex !== null && latestResultByScript[normalizeScript(captions[detailIndex].script)] && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40" onClick={() => setDetailIndex(null)}>
-          <div className="bg-gray-900 rounded-lg p-6 min-w-[320px] max-w-[90vw] shadow-2xl relative" onClick={e => e.stopPropagation()}>
-            <button className="absolute top-2 right-2 text-gray-400 hover:text-white" onClick={() => setDetailIndex(null)}>×</button>
-            <div className="font-bold text-lg mb-2 text-emerald-300">문장 {detailIndex + 1} 분석 세부 정보</div>
-            <div className="mb-2 text-gray-200">{captions[detailIndex].script}</div>
-            <div className="space-y-1 text-sm">
+          <div className="bg-gray-900 rounded-lg p-4 min-w-[280px] max-w-[90vw] shadow-2xl relative" onClick={e => e.stopPropagation()}>
+            <button className="absolute top-1 right-1 text-gray-400 hover:text-white" onClick={() => setDetailIndex(null)}>×</button>
+            <div className="font-bold text-base mb-2 text-emerald-300">문장 {detailIndex + 1} 분석 세부 정보</div>
+            <div className="mb-2 text-gray-200 text-xs">{captions[detailIndex].script}</div>
+            <div className="space-y-1 text-xs">
               {Object.entries(latestResultByScript[normalizeScript(captions[detailIndex].script)]).map(([k, v]) => (
                 <div key={k}><span className="text-emerald-300">{k}</span>: {typeof v === 'object' ? JSON.stringify(v, null, 2) : String(v)}</div>
               ))}
@@ -265,11 +265,11 @@ export default function Sidebar({
       )}
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
-          width: 7px;
+          width: 3px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
           background: #2d3748;
-          border-radius: 4px;
+          border-radius: 3px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
           background: transparent;

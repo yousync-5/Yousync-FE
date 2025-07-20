@@ -239,18 +239,6 @@ useEffect(() => {
   }
 }, [latestResultByScript, multiJobIds.length, front_data.captions.length]);
 
-// 분석 완료 시 토스트 해제
-// useEffect(() => {
-//   const totalCount = front_data.captions.length;
-//   const resultCount = Object.keys(latestResultByScript).length;
-  
-//   if (resultCount > 0 && resultCount < totalCount) {
-//     // 분석 결과가 추가되었을 때 토스트 해제
-//     setTimeout(() => {
-//       toast.dismiss("analysis-loading-toast");
-//     }, 100);
-//   }
-// }, [latestResultByScript, front_data.captions.length]);
 
 // ✅ 새로운 분석 시작 시 연결 목록 초기화
 useEffect(() => {
@@ -291,84 +279,7 @@ useEffect(() => {
     return "Poor";
   };
 
-  // 결과 진행상황 토스트 (완전 재작성)
-  // useEffect(() => {
-  //   const toastId = "analysis-loading-toast";
-
-  //   const totalCount = front_data.captions.length;
-  //   const resultCount = Object.keys(latestResultByScript).length;
-  //   const hasAnyJob = multiJobIds.length > 0;
-    
-  //   console.log('[토스트 로직] totalCount:', totalCount, 'resultCount:', resultCount, 'hasAnyJob:', hasAnyJob, 'showCompleted:', showCompleted);
-    
-  //   // 먼저 기존 토스트를 완전히 제거
-  //   toast.dismiss(toastId);
-    
-  //   // 분석 중이 아니면 토스트 표시하지 않음
-  //   if (!hasAnyJob || resultCount >= totalCount || showCompleted) {
-  //     console.log('[토스트 로직] 토스트 표시 안함 - 분석 중 아님');
-  //     return;
-  //   }
-    
-  //   // 분석 중일 때만 토스트 표시 (단일 문장 분석 중)
-  //   if (hasAnyJob && resultCount < totalCount) {
-  //     console.log('[토스트 로직] 토스트 표시 - 분석 중');
-  //     const analyzingText = `분석중인 문장: ${currentScriptIndex + 1}번`;
-  //     toast.loading(
-  //       <div className="flex items-center gap-4 p-2">
-  //         <div className="animate-spin w-16 h-16 border-5 border-green-400 border-t-transparent rounded-full" />
-  //         <div className="flex flex-col">
-  //           <span className="text-blue-300 text-2xl font-semibold">{analyzingText}</span>
-  //         </div>
-  //       </div>, 
-  //       {
-  //         id: toastId,
-  //         icon: null,
-  //         position: "bottom-right",
-  //         duration: 3000, // 3초 후 자동 해제
-  //         style: {
-  //           background: 'linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%)',
-  //           border: '2px solid #22c55e',
-  //           borderRadius: '12px',
-  //           boxShadow: '0 8px 32px rgba(34, 197, 94, 0.2)',
-  //           minWidth: '500px',
-  //           padding: '32px 36px',
-  //         },
-  //       }
-  //     );
-  //   }
-    
-  //   return () => {
-  //     toast.dismiss(toastId);
-  //   }
-  // }, [showCompleted, latestResultByScript, multiJobIds.length, currentScriptIndex, front_data.captions.length]);
-
-  // 분석 완료 시 토스트 해제
-  // useEffect(() => {
-  //   const totalCount = front_data.captions.length;
-  //   const resultCount = Object.keys(latestResultByScript).length;
-    
-  //   if (resultCount > 0 && resultCount < totalCount) {
-  //     // 분석 결과가 추가되었을 때 토스트 해제
-  //     setTimeout(() => {
-  //       toast.dismiss("analysis-loading-toast");
-  //     }, 100);
-  //   }
-  // }, [latestResultByScript, front_data.captions.length]);
-
-  // 분석 완료 시 토스트 해제
-  // useEffect(() => {
-  //   const totalCount = front_data.captions.length;
-  //   const resultCount = Object.keys(latestResultByScript).length;
-    
-  //   if (resultCount > 0 && resultCount < totalCount) {
-  //     // 분석 결과가 추가되었을 때 토스트 해제
-  //     setTimeout(() => {
-  //       toast.dismiss("analysis-loading-toast");
-  //     }, 100);
-  //   }
-  // }, [latestResultByScript, front_data.captions.length]);
-
+  
   // 결과 보기 버튼 클릭 시 결과 섹션으로 스크롤
   const showResultsSection = useCallback(() => {
     setShowResults(true);
@@ -575,11 +486,15 @@ useEffect(() => {
         actorName={front_data.captions[0]?.actor?.name || ""}
       />
   
-      {/* 본문 - 항상 중앙 */}
-      <div className="w-full mx-auto px-2 sm:px-4 md:px-6 py-4 md:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
-          {/* Left Column - Video & Script */}
-          <div className="lg:col-span-2 space-y-4 md:space-y-6">
+      {/* 본문 - 사이드바 열릴 때 크기 조절 */}
+      <div 
+        className={`w-full mx-auto px-2 py-2 transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? 'pr-[280px]' : 'pr-2'
+        }`}
+      >
+        <div className="grid grid-cols-12 gap-2">
+          {/* Left Column - Video */}
+          <div className="col-span-8">
             <VideoPlayer
               videoId={front_data.movie.youtube_url.split("v=")[1]}
               onTimeUpdate={handleTimeUpdate}
@@ -593,26 +508,10 @@ useEffect(() => {
               onPlay={customHandlePlay}
               onPause={customHandlePause}
             />
-            <ScriptDisplay
-              captions={front_data.captions}
-              currentScriptIndex={currentScriptIndex}
-              onScriptChange={setCurrentScriptIndex}
-              currentVideoTime={currentVideoTime}
-              playbackRange={getCurrentScriptPlaybackRange()}
-              videoPlayerRef={videoPlayerRef}
-              currentWords={currentWords}
-              recording={recording}
-              recordingCompleted={recordingCompleted}
-              isAnalyzing={isAnalyzing}
-              onStopLooping={() => pitchRef.current?.stopLooping?.()}
-              showAnalysisResult={showAnalysisResult}
-              analysisResult={analysisResult}
-            />
           </div>
   
-          {/* Right Column */}
-          <div className="space-y-6">
-            {/* latestResultByScript 값 확인용 로그 (렌더링 중이 아닌 useEffect에서 출력) */}
+          {/* Right Column - PitchComparison */}
+          <div className="col-span-4">
             <PitchComparison
               ref={pitchRef}
               currentScriptIndex={currentScriptIndex}
@@ -659,10 +558,29 @@ useEffect(() => {
             />
           </div>
         </div>
+
+        {/* Script Display - 전체 너비 사용 */}
+        <div className="mt-2 col-span-12">
+          <ScriptDisplay
+            captions={front_data.captions}
+            currentScriptIndex={currentScriptIndex}
+            onScriptChange={setCurrentScriptIndex}
+            currentVideoTime={currentVideoTime}
+            playbackRange={getCurrentScriptPlaybackRange()}
+            videoPlayerRef={videoPlayerRef}
+            currentWords={currentWords}
+            recording={recording}
+            recordingCompleted={recordingCompleted}
+            isAnalyzing={isAnalyzing}
+            onStopLooping={() => pitchRef.current?.stopLooping?.()}
+            showAnalysisResult={showAnalysisResult}
+            analysisResult={analysisResult}
+          />
+        </div>
   
-        {/* 🆕 결과 섹션을 기존 레이아웃 안에 통합 */}
+        {/* 결과 섹션을 기존 레이아웃 안에 통합 */}
         {showResults && (
-          <div ref={resultsRef} className="result-container mt-8">
+          <div ref={resultsRef} className="result-container mt-2">
             <div className="animate-fade-in-up">
               <ResultContainer
                 finalResults={finalResults}
@@ -675,12 +593,8 @@ useEffect(() => {
             </div>
           </div>
         )}
-
-        {/* 🆕 분석 결과 조회 버튼 - 항상 렌더링 */}
-        {/* ResultViewBtn 완전히 제거 */}
-
-
       </div>
+      
       {/* Sidebar - 오른쪽 고정 */}
       <Sidebar
         isOpen={isSidebarOpen}

@@ -132,7 +132,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
 
 
     return (
-      <div className="bg-black rounded-xl overflow-hidden w-full">
+      <div className="bg-black rounded-xl overflow-hidden w-full border border-gray-800 shadow-lg shadow-black/50">
         <div className="relative w-full pt-[56.25%]">
           <YouTube
             videoId={videoId}
@@ -158,7 +158,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
           {/* 상단 오버레이 (텍스트/공유/타이틀 등 가림) */}
           <div
             className="absolute top-0 left-0 w-full z-20 pointer-events-none"
-            style={{ height: 80, background: '#000' }}
+            style={{ height: 80, background: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.7) 70%, rgba(0,0,0,0) 100%)' }}
           />
         </div>
       </div>
