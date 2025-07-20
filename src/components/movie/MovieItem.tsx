@@ -23,16 +23,25 @@ export default function MovieItem({
 
   // 컴포넌트 마운트 시 북마크 상태 확인
   useEffect(() => {
-    // 로그인 상태일 때만 북마크 상태 확인
-    if (isLoggedIn) {
-      // 캐시된 데이터를 사용하여 북마크 상태 확인 (API 요청 없음)
-      setBookmarked(isBookmarked(Number(video.videoId)));
-    } else {
-      // 로그인되지 않은 경우 북마크 상태 초기화
-      setBookmarked(false);
-    }
-    // 의존성 배열에서 isBookmarked 제거 (함수 참조가 변경될 수 있음)
-  }, [video.videoId, isLoggedIn]);
+    const checkBookmarkStatus = async () => {
+      // 로그인 상태일 때만 북마크 상태 확인
+      if (isLoggedIn) {
+        try {
+          const bookmarks = await getBookmarks();
+          const isBookmarked = bookmarks.some(bookmark => bookmark.token_id === Number(video.videoId));
+          setBookmarked(isBookmarked);
+        } catch (error) {
+          console.error('북마크 상태 확인 실패:', error);
+          setBookmarked(false);
+        }
+      } else {
+        // 로그인되지 않은 경우 북마크 상태 초기화
+        setBookmarked(false);
+      }
+    };
+
+    checkBookmarkStatus();
+  }, [video.videoId, isLoggedIn, getBookmarks]);
 
   const handleBookmarkClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
