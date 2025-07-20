@@ -13,6 +13,10 @@ interface ScriptDisplayProps {
     translation: string;
     start_time: number;
     end_time: number;
+    actor?: {  // 화자 정보 추가
+      name: string;
+      id: number;
+    };
   }>;
   currentScriptIndex: number;
   onScriptChange: (index: number) => void;
@@ -43,6 +47,9 @@ interface ScriptDisplayProps {
   onMicClick?: () => void;
   isLooping?: boolean;
   onLoopToggle?: () => void;
+  // 듀엣 모드 관련 props
+  isDuet?: boolean;
+  isMyLine?: boolean;
   // 더빙본 들어보기와 결과보기 버튼 관련 props
   showCompletedButtons?: boolean;
   onOpenDubbingListenModal?: () => void;
@@ -74,6 +81,9 @@ export default function ScriptDisplay({
   showCompletedButtons = false,
   onOpenDubbingListenModal,
   onShowResults,
+  // 듀엣 모드 관련 props
+  isDuet = false,
+  isMyLine = true,
 }: ScriptDisplayProps) {
 
   const [animatedProgress, setAnimatedProgress] = useState(0);
@@ -378,13 +388,18 @@ export default function ScriptDisplay({
   };
 
   return (
-    <div className="bg-gray-900/80 backdrop-blur-sm rounded-xl p-1 w-full flex flex-col relative border border-gray-800 shadow-lg ">
-      <div className="bg-gradient-to-br from-[#0f172a] to-[#1e293b] rounded-xl p-1 shadow-xl text-white border border-gray-700/50 space-y-1 ">
+    <div className={`bg-gray-900/80 backdrop-blur-sm rounded-xl p-1 w-full flex flex-col relative border ${isDuet && !isMyLine ? 'border-blue-800' : 'border-gray-800'} shadow-lg`}>
+      <div className={`bg-gradient-to-br ${isDuet && !isMyLine ? 'from-[#0f1a2a] to-[#1e2b3b]' : 'from-[#0f172a] to-[#1e293b]'} rounded-xl p-1 shadow-xl text-white border ${isDuet && !isMyLine ? 'border-blue-700/50' : 'border-gray-700/50'} space-y-1`}>
         {/* 진행 정보 + 시간 정보 */}
         <div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 gap-1 py-2">
             {/* 왼쪽에 스크립트 번호 표시 */}
-            <div className="text-base sm:text-2xl font-semibold text-white">
+            <div className="text-base sm:text-2xl font-semibold text-white flex items-center">
+              {isDuet && (
+                <span className={`mr-2 px-2 py-1 rounded ${isMyLine ? 'bg-green-600 text-white' : 'bg-blue-600 text-white'}`}>
+                  {isMyLine ? '내 대사' : '상대방'}
+                </span>
+              )}
               &nbsp;&nbsp;Script&nbsp; <span className="text-teal-300">{currentScriptIndex + 1}</span> / {captions.length}
             </div>
             
@@ -435,9 +450,16 @@ export default function ScriptDisplay({
               {/* 마이크(녹음) 버튼 */}
               <button
                 onClick={onMicClick}
-                disabled={recording || recordingCompleted}
-                className={`ml-3 w-13 h-13 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border border-white/10 ${recording ? 'bg-green-500 animate-pulse-mic' : 'bg-gradient-to-r from-red-600 to-pink-500 hover:from-red-700 hover:to-pink-600 text-white'}`}
+                disabled={recording || recordingCompleted || (isDuet && !isMyLine)} // 듀엣 모드에서 상대방 대사일 때 비활성화
+                className={`ml-3 w-13 h-13 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border border-white/10 ${
+                  recording 
+                    ? 'bg-green-500 animate-pulse-mic' 
+                    : isDuet && !isMyLine 
+                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed' // 상대방 대사일 때 비활성화 스타일
+                      : 'bg-gradient-to-r from-red-600 to-pink-500 hover:from-red-700 hover:to-pink-600 text-white'
+                }`}
                 style={recording ? { boxShadow: '0 0 0 3px rgba(34,197,94,0.4)' } : undefined}
+                title={isDuet && !isMyLine ? '상대방 대사는 녹음할 수 없습니다' : '녹음하기'}
               >
                 {recording && (
                   <span className="absolute w-12 h-12 rounded-full border-2 border-green-400 opacity-60 animate-ping-mic z-0"></span>
