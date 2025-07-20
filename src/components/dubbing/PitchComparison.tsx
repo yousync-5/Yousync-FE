@@ -390,7 +390,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void; stopLooping
   return (
     <div className="bg-gradient-to-br from-gray-900 to-gray-950 rounded-xl p-2 h-auto relative border border-gray-800 shadow-lg">
       <div className="flex justify-between items-center mb-1">
-        <h3 className="text-xs font-semibold text-white">Pitch Comparison</h3>
+        <h3 className="text-xs font-semibold text-white">Controller</h3>
       </div>
       <div className="space-y-1">
         <div className="w-full h-16 flex justify-start items-center">

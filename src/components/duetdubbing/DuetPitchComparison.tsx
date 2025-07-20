@@ -396,6 +396,12 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
     }
   };
 
+  // 문자열 정규화 함수
+  function normalizeScript(str: any) {
+    if (!str || typeof str !== 'string') return '';
+    return str.toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
   // 더빙본 들어보기 모달 상태 및 핸들러
   const [isListenModalOpen, setIsListenModalOpen] = useState(false);
   const [listenModalId, setListenModalId] = useState<string | undefined>(undefined);
@@ -410,7 +416,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   return (
     <div className="bg-gray-900 rounded-xl p-6 h-auto min-h-[28em] relative max-w-xl ml-0 mr-auto">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">Pitch Comparison</h3>
+        <h3 className="text-lg font-semibold">Controller</h3>
         {onOpenSidebar && (
           <button
             onClick={onOpenSidebar}
@@ -458,7 +464,25 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
             }
             return null;
           })()} */}
-          <div className="w-full flex flex-row justify-center gap-4 my-4 z-10 mt-6">
+          {(() => {
+            // 내 대사만 필터링
+            const myCaptions = captions.filter(caption => caption.actor?.name === "나");
+            const myAnalyzedCount = myCaptions.filter(c => {
+              const scriptKey = normalizeScript(c.script);
+              return !!latestResultByScript?.[scriptKey];
+            }).length;
+            const isAllAnalyzed = myCaptions.length > 0 && myAnalyzedCount === myCaptions.length;
+            
+            console.log('[DEBUG] 버튼 표시 조건 체크:', {
+              myCaptionsLength: myCaptions.length,
+              myAnalyzedCount,
+              isAllAnalyzed,
+              latestResultByScriptKeys: Object.keys(latestResultByScript || {})
+            });
+            
+            if (isAllAnalyzed && onOpenSidebar && myAnalyzedCount > 0) {
+              return (
+                <div className="w-full flex flex-row justify-center gap-4 my-4 z-10 mt-6">
                   <button 
                     className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow transition"
                     onClick={handleOpenDubbingListenModal}
@@ -471,7 +495,11 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
                   >
                     결과보기
                   </button>
-          </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
         
         </div>
         

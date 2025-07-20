@@ -697,120 +697,163 @@ export default function DubbingContainer({
         actorName={front_data.captions[0]?.actor?.name || ""}
       />
   
-      {/* 본문 - 개별더빙과 같은 레이아웃 */}
-      <div 
-        className={`w-full mx-auto px-2 py-1 transition-all duration-300 ease-in-out ${
-          isSidebarOpen ? 'pr-[280px]' : 'pr-2'
-        }`}
-      >
-        <div className="grid grid-cols-12 gap-2">
-          {/* Video - 전체 너비 사용 */}
-          <div className="col-span-12">
-            <VideoPlayer
-              videoId={front_data.movie.youtube_url.split("v=")[1]}
-              onTimeUpdate={handleTimeUpdate}
-              startTime={getCurrentScriptPlaybackRange().startTime}
-              endTime={getCurrentScriptPlaybackRange().endTime}
-              disableAutoPause={true}
-              ref={videoPlayerRef}
-              onEndTimeReached={() => {
-                const nextIndex = currentScriptIndex + 1;
-                const nextScript = front_data.captions[nextIndex];
-                const isCurrentMyLine = front_data.captions[currentScriptIndex]?.actor?.name === "나";
-                const isNextMyLine = nextScript?.actor?.name === "나";
-              
-                console.log("🔚 EndTime Reached");
-                console.log("현재 인덱스:", currentScriptIndex);
-                console.log("다음 인덱스:", nextIndex);
-                console.log("현재 대사: ", front_data.captions[currentScriptIndex]);
-                console.log("다음 대사: ", nextScript);
-                console.log("현재 내 대사인가?", isCurrentMyLine);
-                console.log("다음이 내 대사인가?", isNextMyLine);
-                console.log("녹음 중?", recording);
-                console.log("분석 중?", isAnalyzing);
-                console.log("분석 결과 표시 중?", showAnalysisResult);
-              
-                // 1. 녹음 중이거나, 분석 중/분석 결과 표시 중이면 자동 이동 금지
-                if (
-                  recording ||           // 녹음 중
-                  isAnalyzing ||         // 분석 중
-                  showAnalysisResult ||  // 분석 결과 표시 중
-                  recordingCompleted     // 녹음이 막 끝난 상태
-                ) {
-                  console.log("⛔ 자동 이동 차단 (녹음 또는 분석 중)");
-                  
-                  // 내 대사라면 녹음 정지만
-                  if (isCurrentMyLine && pitchRef.current) {
-                    console.log("🛑 내 대사 → 녹음 강제 정지");
-                    pitchRef.current.handleExternalStop();
+      {/* 본문 - 네비게이션 바 높이만큼 상단 마진 추가하여 가운데 정렬 */}
+      <div className="max-w-7xl mx-auto px-6 mt-20 flex-1 flex items-center justify-center">
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left Column - Video & Script */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="w-full aspect-video overflow-hidden rounded-lg">
+              <VideoPlayer
+                videoId={front_data.movie.youtube_url.split("v=")[1]}
+                onTimeUpdate={handleTimeUpdate}
+                startTime={getCurrentScriptPlaybackRange().startTime}
+                endTime={getCurrentScriptPlaybackRange().endTime}
+                disableAutoPause={true}
+                ref={videoPlayerRef}
+                onEndTimeReached={() => {
+                  const nextIndex = currentScriptIndex + 1;
+                  const nextScript = front_data.captions[nextIndex];
+                  const isCurrentMyLine = front_data.captions[currentScriptIndex]?.actor?.name === "나";
+                  const isNextMyLine = nextScript?.actor?.name === "나";
+                
+                  console.log("🔚 EndTime Reached");
+                  console.log("현재 인덱스:", currentScriptIndex);
+                  console.log("다음 인덱스:", nextIndex);
+                  console.log("현재 대사: ", front_data.captions[currentScriptIndex]);
+                  console.log("다음 대사: ", nextScript);
+                  console.log("현재 내 대사인가?", isCurrentMyLine);
+                  console.log("다음이 내 대사인가?", isNextMyLine);
+                  console.log("녹음 중?", recording);
+                  console.log("분석 중?", isAnalyzing);
+                  console.log("분석 결과 표시 중?", showAnalysisResult);
+                
+                  // 1. 녹음 중이거나, 분석 중/분석 결과 표시 중이면 자동 이동 금지
+                  if (
+                    recording ||           // 녹음 중
+                    isAnalyzing ||         // 분석 중
+                    showAnalysisResult ||  // 분석 결과 표시 중
+                    recordingCompleted     // 녹음이 막 끝난 상태
+                  ) {
+                    console.log("⛔ 자동 이동 차단 (녹음 또는 분석 중)");
+                    
+                    // 내 대사라면 녹음 정지만
+                    if (isCurrentMyLine && pitchRef.current) {
+                      console.log("🛑 내 대사 → 녹음 강제 정지");
+                      pitchRef.current.handleExternalStop();
+                    }
+                    return; // 자동 이동/재생 금지
                   }
-                  return; // 자동 이동/재생 금지
-                }
-                // 1. 내 대사가 끝난경우 : 머무르게 하도록
-                if(isCurrentMyLine){
-                  return;
-                }
-              
-                // 2. 상대 → 내 대사로 넘어갈 때 자동 이동/재생
-                if (!isCurrentMyLine && isNextMyLine) {
-                  console.log("➡️ 상대 → 내 대사, 자동 이동 및 재생");
-                  console.log("[DEBUG] nextScript:", nextScript);
-                  console.log("[DEBUG] nextScript.actor:", nextScript?.actor);
-                  console.log("[DEBUG] nextScript.actor.name:", nextScript?.actor?.name);
-                  console.log("[DEBUG] typeof nextScript.actor.name:", typeof nextScript?.actor?.name);
-                  console.log("[DEBUG] nextScript.actor.name === '나':", nextScript?.actor?.name === "나");
-                  // setCurrentScriptIndex(nextIndex);// 이걸 남기라고?
-                  // videoPlayerRef.current?.seekTo(nextScript.start_time);
-                  // videoPlayerRef.current?.playVideo();
-                  return;
-                }
-              
-                // 3. 상대 → 상대 대사인 경우 자동 이동하지 않음 (연속 재생을 위해)
-                if (!isCurrentMyLine && !isNextMyLine && nextScript) {
-                  console.log("➡️ 상대 → 상대 대사, 연속 재생 (자동 이동 안함)");
-                  console.log("[DEBUG] nextScript:", nextScript);
-                  console.log("[DEBUG] nextScript.actor:", nextScript?.actor);
-                  console.log("[DEBUG] nextScript.actor.name:", nextScript?.actor?.name);
-                  console.log("[DEBUG] typeof nextScript.actor.name:", typeof nextScript?.actor?.name);
-                  console.log("[DEBUG] nextScript.actor.name === '나':", nextScript?.actor?.name === "나");
-                  // setCurrentScriptIndex(nextIndex); // 제거
-                  // videoPlayerRef.current?.seekTo(nextScript.start_time); // 제거
-                  // videoPlayerRef.current?.playVideo(); // 제거
-                  return;
-                }
-               
-              
-                // 추가 예외 처리 로그
-                if (!nextScript) {
-                  console.log("📄 더 이상 다음 대사가 없습니다.");
-                }
-              }}
-              onPlay={customHandlePlay}
-              onPause={customHandlePause}
-              onOpenSidebar={() => setIsSidebarOpen(true)}
+                  // 1. 내 대사가 끝난경우 : 머무르게 하도록
+                  if(isCurrentMyLine){
+                    return;
+                  }
+                
+                  // 2. 상대 → 내 대사로 넘어갈 때 자동 이동/재생
+                  if (!isCurrentMyLine && isNextMyLine) {
+                    console.log("➡️ 상대 → 내 대사, 자동 이동 및 재생");
+                    console.log("[DEBUG] nextScript:", nextScript);
+                    console.log("[DEBUG] nextScript.actor:", nextScript?.actor);
+                    console.log("[DEBUG] nextScript.actor.name:", nextScript?.actor?.name);
+                    console.log("[DEBUG] typeof nextScript.actor.name:", typeof nextScript?.actor?.name);
+                    console.log("[DEBUG] nextScript.actor.name === '나':", nextScript?.actor?.name === "나");
+                    // setCurrentScriptIndex(nextIndex);// 이걸 남기라고?
+                    // videoPlayerRef.current?.seekTo(nextScript.start_time);
+                    // videoPlayerRef.current?.playVideo();
+                    return;
+                  }
+                
+                  // 3. 상대 → 상대 대사인 경우 자동 이동하지 않음 (연속 재생을 위해)
+                  if (!isCurrentMyLine && !isNextMyLine && nextScript) {
+                    console.log("➡️ 상대 → 상대 대사, 연속 재생 (자동 이동 안함)");
+                    console.log("[DEBUG] nextScript:", nextScript);
+                    console.log("[DEBUG] nextScript.actor:", nextScript?.actor);
+                    console.log("[DEBUG] nextScript.actor.name:", nextScript?.actor?.name);
+                    console.log("[DEBUG] typeof nextScript.actor.name:", typeof nextScript?.actor?.name);
+                    console.log("[DEBUG] nextScript.actor.name === '나':", nextScript?.actor?.name === "나");
+                    // setCurrentScriptIndex(nextIndex); // 제거
+                    // videoPlayerRef.current?.seekTo(nextScript.start_time); // 제거
+                    // videoPlayerRef.current?.playVideo(); // 제거
+                    return;
+                  }
+                 
+                
+                  // 추가 예외 처리 로그
+                  if (!nextScript) {
+                    console.log("📄 더 이상 다음 대사가 없습니다.");
+                  }
+                }}
+
+                onPlay={customHandlePlay}
+                onPause={customHandlePause}
+              />
+            </div>
+            
+            <DuetScriptDisplay
+              captions={front_data.captions}
+              currentScriptIndex={currentScriptIndex}
+              onScriptChange={setCurrentScriptIndex}
+              currentVideoTime={currentVideoTime}
+              playbackRange={getCurrentScriptPlaybackRange()}
+              videoPlayerRef={videoPlayerRef}
+              currentWords={currentWords}
+              recording={recording}
+              recordingCompleted={recordingCompleted}
+              isAnalyzing={isAnalyzing}
+              onStopLooping={() => pitchRef.current?.stopLooping?.()}
+              showAnalysisResult={showAnalysisResult}
+              analysisResult={analysisResult}
+              videoStartTime={tokenData.start_time}
+              videoEndTime={getDuetEndTime()}
             />
           </div>
-        </div>
-
-        {/* Script Display - 마진 축소 */}
-        <div className="mt-1 col-span-12">
-          <DuetScriptDisplay
-            captions={front_data.captions}
-            currentScriptIndex={currentScriptIndex}
-            onScriptChange={setCurrentScriptIndex}
-            currentVideoTime={currentVideoTime}
-            playbackRange={getCurrentScriptPlaybackRange()}
-            videoPlayerRef={videoPlayerRef}
-            currentWords={currentWords}
-            recording={recording}
-            recordingCompleted={recordingCompleted}
-            isAnalyzing={isAnalyzing}
-            onStopLooping={() => pitchRef.current?.stopLooping?.()}
-            showAnalysisResult={showAnalysisResult}
-            analysisResult={analysisResult}
-            videoStartTime={tokenData.start_time}
-            videoEndTime={getDuetEndTime()}
-          />
+  
+          {/* Right Column */}
+          <div className="space-y-6">
+            <DuetPitchComparison
+              ref={pitchRef}
+              currentScriptIndex={currentScriptIndex}
+              captions={front_data.captions}
+              tokenId={id}
+              serverPitchData={serverPitchData}
+              videoPlayerRef={videoPlayerRef}
+              onNextScript={setCurrentScriptIndex}
+              onPlay={customHandlePlay}
+              onPause={customHandlePause}
+              isVideoPlaying={isVideoPlaying}
+              scripts={tokenData?.scripts}
+              onUploadComplete={(success, jobIds) => {
+                console.log(`[🔄 DubbingContainer] onUploadComplete 콜백 호출됨`);
+                console.log(`[📊 결과] success: ${success}, jobIds: ${JSON.stringify(jobIds)}`);
+                
+                if (success && Array.isArray(jobIds)) {
+                  // 새로운 분석 시작 시에만 초기화 (기존 결과 유지)
+                  if (multiJobIds.length === 0) {
+                    console.log('[DEBUG] 새로운 분석 시작 - 상태 초기화');
+                    setFinalResults({});
+                    setLatestResultByScript({});
+                  }
+                  // 2. jobId와 문장 인덱스 매핑 콘솔 출력
+                  jobIds.forEach((jobId, idx) => {
+                    const script = front_data.captions[idx]?.script;
+                    console.log(`[분석 요청] jobId: ${jobId}, 문장 인덱스: ${idx}, script: "${script}"`);
+                  });
+                  // 3. 새 jobIds로 세팅
+                  setMultiJobIds(jobIds);
+                  // 4. 분석 시작 상태 설정
+                  setIsAnalyzing(true);
+                }
+              }}
+              onRecordingChange={setRecording}
+              handleRecordingComplete={handleRecordingComplete}
+              showAnalysisResult={showAnalysisResult}
+              recordingCompleted={recordingCompleted}
+              onRecordingPlaybackChange={setIsRecordingPlayback}
+              onOpenSidebar={() => setIsSidebarOpen(true)}
+              onShowResults={handleViewResults}
+              onRecordingStart={handleRecordingStart}
+              latestResultByScript={latestResultByScript}
+            />
+          </div>
         </div>
       </div>
       
