@@ -892,58 +892,6 @@ export default function DubbingContainer({
         latestResultByScript={latestResultByScript}
         recordingCompleted={recordingCompleted}
       />
-
-      {/* Pitch Comparison - 사이드바에 포함 */}
-      {isSidebarOpen && (
-        <div className="fixed right-0 top-0 h-full w-[280px] bg-neutral-900 border-l border-neutral-800 z-40 overflow-y-auto">
-          <div className="p-4">
-            <DuetPitchComparison
-              ref={pitchRef}
-              currentScriptIndex={currentScriptIndex}
-              captions={front_data.captions}
-              tokenId={id}
-              serverPitchData={serverPitchData}
-              videoPlayerRef={videoPlayerRef}
-              onNextScript={setCurrentScriptIndex}
-              onPlay={customHandlePlay}
-              onPause={customHandlePause}
-              isVideoPlaying={isVideoPlaying}
-              scripts={tokenData?.scripts}
-              onUploadComplete={(success, jobIds) => {
-                console.log(`[🔄 DubbingContainer] onUploadComplete 콜백 호출됨`);
-                console.log(`[📊 결과] success: ${success}, jobIds: ${JSON.stringify(jobIds)}`);
-                
-                if (success && Array.isArray(jobIds)) {
-                  // 새로운 분석 시작 시에만 초기화 (기존 결과 유지)
-                  if (multiJobIds.length === 0) {
-                    console.log('[DEBUG] 새로운 분석 시작 - 상태 초기화');
-                    setFinalResults({});
-                    setLatestResultByScript({});
-                  }
-                  // 2. jobId와 문장 인덱스 매핑 콘솔 출력
-                  jobIds.forEach((jobId, idx) => {
-                    const script = front_data.captions[idx]?.script;
-                    console.log(`[분석 요청] jobId: ${jobId}, 문장 인덱스: ${idx}, script: "${script}"`);
-                  });
-                  // 3. 새 jobIds로 세팅
-                  setMultiJobIds(jobIds);
-                  // 4. 분석 시작 상태 설정
-                  setIsAnalyzing(true);
-                }
-              }}
-              onRecordingChange={setRecording}
-              handleRecordingComplete={handleRecordingComplete}
-              showAnalysisResult={showAnalysisResult}
-              recordingCompleted={recordingCompleted}
-              onRecordingPlaybackChange={setIsRecordingPlayback}
-              onOpenSidebar={() => setIsSidebarOpen(true)}
-              onShowResults={handleViewResults}
-              onRecordingStart={handleRecordingStart}
-              latestResultByScript={latestResultByScript}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

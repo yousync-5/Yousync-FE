@@ -150,7 +150,7 @@ export function useDubbingState(
   }
 ): DubbingState & DubbingActions {
   // UI 상태
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
   const [showResults, setShowResults] = useState(false);
   

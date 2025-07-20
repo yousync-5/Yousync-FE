@@ -85,7 +85,6 @@ export default function Sidebar({
   // captions에서 정보 추출 (존재하지 않으면 '-')
   const actorName = (captions[0] && (captions[0] as any).actor && (captions[0] as any).actor.name) ? (captions[0] as any).actor.name : '-';
   const movieTitle = (captions[0] && (captions[0] as any).movie_name) ? (captions[0] as any).movie_name : '-';
-  const youtubeUrl = (captions[0] && (captions[0] as any).youtube_url) ? (captions[0] as any).youtube_url : '-';
 
 
   // 시간 포맷 함수
@@ -128,6 +127,23 @@ export default function Sidebar({
     }
   }
 
+  // 바깥 클릭 감지
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isOpen && sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
+
   return (
     <motion.div
       ref={sidebarRef}
@@ -139,13 +155,6 @@ export default function Sidebar({
     >
       <div className="flex justify-between items-center px-6 py-4 border-b border-gray-700 bg-gray-900/80 sticky top-0 z-10">
         <span className="font-bold text-lg tracking-tight text-emerald-400 select-none">📑 스크립트 목록</span>
-        <button
-          onClick={onClose}
-          className="ml-2 p-1 rounded-full text-gray-400 hover:text-emerald-400 hover:bg-gray-800 transition text-base focus:outline-none focus:ring-2 focus:ring-emerald-400"
-          aria-label="사이드바 닫기"
-        >
-          <span className="text-xl">×</span>
-        </button>
       </div>
       {/* 상단 정보 박스 */}
       <div className="px-6 py-4 border-b border-gray-800 bg-gray-900/80 flex flex-col gap-2">
@@ -171,10 +180,6 @@ export default function Sidebar({
         <div className="flex items-center gap-2 text-sm text-gray-300">
           <span className="font-semibold text-emerald-400">영화명</span>
           <span className="truncate">{movieTitle}</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-gray-300">
-          <span className="font-semibold text-emerald-400">유튜브 URL</span>
-          <span className="truncate text-gray-400">{youtubeUrl}</span>
         </div>
 
         {/* 문장 진행률 게이지 */}
