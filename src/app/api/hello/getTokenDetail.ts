@@ -38,6 +38,7 @@ export async function getTokenDetail(tokenId: string) {
       url: null,
       actor_pitch_values: [],
       background_audio_url: token.bgvoice_url || "",
+      youtube_url: token.youtube_url,
       actor: {
         name: token.actor_name,
         id: 1

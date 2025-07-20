@@ -34,6 +34,7 @@ const captions1 = token1.scripts?.map((script) => ({
   url: null,
   actor_pitch_values: [],
   background_audio_url: token1.bgvoice_url || "",
+  youtube_url: token1.youtube_url,
   actor: {
     name: isToken1Me ? "나" : token1.actor_name,
     id: isToken1Me ? 1 : 2,
@@ -54,6 +55,7 @@ const captions2 = token2.scripts?.map((script) => ({
   url: null,
   actor_pitch_values: [],
   background_audio_url: token2.bgvoice_url || "",
+  youtube_url: token2.youtube_url,
   actor: {
     name: !isToken1Me ? "나" : token2.actor_name,
     id: !isToken1Me ? 1 : 2,

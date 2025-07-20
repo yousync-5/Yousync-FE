@@ -85,6 +85,7 @@ export default function Sidebar({
   // captions에서 정보 추출 (존재하지 않으면 '-')
   const actorName = (captions[0] && (captions[0] as any).actor && (captions[0] as any).actor.name) ? (captions[0] as any).actor.name : '-';
   const movieTitle = (captions[0] && (captions[0] as any).movie_name) ? (captions[0] as any).movie_name : '-';
+  const youtubeUrl = (captions[0] && (captions[0] as any).youtube_url) ? (captions[0] as any).youtube_url : '-';
 
 
   // 시간 포맷 함수
@@ -170,6 +171,10 @@ export default function Sidebar({
         <div className="flex items-center gap-2 text-sm text-gray-300">
           <span className="font-semibold text-emerald-400">영화명</span>
           <span className="truncate">{movieTitle}</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-gray-300">
+          <span className="font-semibold text-emerald-400">유튜브 URL</span>
+          <span className="truncate text-gray-400">{youtubeUrl}</span>
         </div>
 
         {/* 문장 진행률 게이지 */}
