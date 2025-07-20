@@ -82,7 +82,7 @@ const DubbingContainer = ({
   } = dubbingState;
 
   const videoPlayerRef = useRef<VideoPlayerRef | null>(null);
-  const pitchRef = useRef<{ handleExternalStop: () => void, stopLooping?: () => void } | null>(null);
+  const pitchRef = useRef<{ handleExternalStop: () => void, stopLooping?: () => void, handleMicClick: () => void } | null>(null);
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const { cleanupMic } = useAudioStream();
 
@@ -95,6 +95,30 @@ const DubbingContainer = ({
 
   // 🆕 더빙본 들어보기 모달 상태
   const [isDubbingListenModalOpen, setIsDubbingListenModalOpen] = useState(false);
+  
+  // 구간 반복 상태 추가
+  const [isLooping, setIsLooping] = useState(false);
+
+  // 컴포넌트가 언마운트될 때 구간 반복 인터벌 정리
+  useEffect(() => {
+    return () => {
+      if (window.loopIntervalId) {
+        clearInterval(window.loopIntervalId);
+        window.loopIntervalId = undefined;
+      }
+    };
+  }, []);
+
+  // 문장이 변경될 때 구간 반복 중지
+  useEffect(() => {
+    if (isLooping) {
+      setIsLooping(false);
+      if (window.loopIntervalId) {
+        clearInterval(window.loopIntervalId);
+        window.loopIntervalId = undefined;
+      }
+    }
+  }, [currentScriptIndex]);
 
   // 🆕 hasAnalysisResults 상태 디버깅
   useEffect(() => {
@@ -503,7 +527,10 @@ useEffect(() => {
               disableAutoPause={true}
               ref={videoPlayerRef}
               onEndTimeReached={() => {
-                pitchRef.current?.handleExternalStop?.();
+                // 녹음 중일 때만 handleExternalStop 호출
+                if (recording) {
+                  pitchRef.current?.handleExternalStop?.();
+                }
               }}
               onPlay={customHandlePlay}
               onPause={customHandlePause}
@@ -575,6 +602,57 @@ useEffect(() => {
             onStopLooping={() => pitchRef.current?.stopLooping?.()}
             showAnalysisResult={showAnalysisResult}
             analysisResult={analysisResult}
+            // 추가된 props
+            isVideoPlaying={isVideoPlaying}
+            onPlay={customHandlePlay}
+            onPause={customHandlePause}
+            onMicClick={() => pitchRef.current?.handleMicClick ? pitchRef.current.handleMicClick() : null}
+            isLooping={isLooping}
+            onLoopToggle={() => {
+              // 구간 반복 상태 토글
+              setIsLooping(!isLooping);
+              
+              if (!isLooping) {
+                // 구간 반복 시작
+                if (videoPlayerRef?.current && front_data.captions[currentScriptIndex]) {
+                  const startTime = front_data.captions[currentScriptIndex].start_time;
+                  const endTime = front_data.captions[currentScriptIndex].end_time;
+                  
+                  // 현재 시간이 구간 밖이면 시작 지점으로 이동
+                  const currentTime = videoPlayerRef.current.getCurrentTime();
+                  if (currentTime < startTime || currentTime >= endTime) {
+                    videoPlayerRef.current.seekTo(startTime);
+                  }
+                  
+                  // 재생 시작
+                  videoPlayerRef.current.playVideo();
+                  
+                  // 구간 반복 감시 시작 - 전역 변수로 저장하여 나중에 정리할 수 있도록 함
+                  window.loopIntervalId = setInterval(() => {
+                    if (!videoPlayerRef.current) {
+                      clearInterval(window.loopIntervalId);
+                      return;
+                    }
+                    
+                    const currentTime = videoPlayerRef.current.getCurrentTime();
+                    if (currentTime >= endTime - 0.1) {
+                      videoPlayerRef.current.seekTo(startTime);
+                      videoPlayerRef.current.playVideo();
+                    }
+                  }, 200);
+                }
+              } else {
+                // 구간 반복 중지
+                if (window.loopIntervalId) {
+                  clearInterval(window.loopIntervalId);
+                  window.loopIntervalId = undefined;
+                }
+              }
+            }}
+            // 더빙본 들어보기와 결과보기 버튼 관련 props
+            showCompletedButtons={Object.keys(latestResultByScript || {}).length === front_data.captions.length && front_data.captions.length > 0}
+            onOpenDubbingListenModal={() => setIsDubbingListenModalOpen(true)}
+            onShowResults={handleViewResults}
           />
         </div>
   

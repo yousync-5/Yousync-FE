@@ -34,7 +34,7 @@ interface PitchComparisonProps {
   latestResultByScript?: { [key: string]: { overall_score: number } };
 }
 
-const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComparisonProps>(function PitchComparison({ 
+const PitchComparison = forwardRef<{ handleExternalStop: () => void; stopLooping?: () => void; handleMicClick: () => void }, PitchComparisonProps>(function PitchComparison({ 
   currentScriptIndex, 
   captions, 
   tokenId, 
@@ -229,6 +229,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
       stopScriptRecording(currentScriptIndex);
     },
     stopLooping,
+    handleMicClick, // 마이크 버튼 클릭 함수 추가
   }));
 
   // 녹음 상태 변경 감지하여 완료 시 handleRecordingComplete 호출
@@ -413,137 +414,6 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
       <div className="space-y-1">
         <div className="w-full h-16 flex justify-start items-center">
           <LiquidGauge value={percent} size={50} />
-        </div>
-        <div>
-          {/* 모든 문장 분석 완료 시 버튼 표시 */}
-          {(() => {
-            const total = captions.length;
-            const analyzed = Object.values(recordedScripts).filter(Boolean).length;
-            if (analyzed === total && total > 0) {
-              return (
-                <div className="w-full flex flex-row justify-center gap-1 my-1 z-10">
-                  <button 
-                    className="px-2 py-1 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white text-xs font-semibold shadow-md shadow-emerald-700/20 transition-all duration-200"
-                    onClick={onOpenDubbingListenModal}
-                  >
-                    더빙본 들어보기
-                  </button>
-                  <button
-                    className="px-2 py-1 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-xs font-semibold shadow-md shadow-blue-700/20 transition-all duration-200"
-                    onClick={onShowResults}
-                  >
-                    결과보기
-                  </button>
-                </div>
-              );
-            }
-            return null;
-          })()}
-        </div>
-        
-        <div className="w-full flex flex-col items-center space-y-1 mt-1">
-          {/* 상단: 이전, 재생/정지, 마이크, 다음 버튼 한 줄 */}
-          <div className="flex flex-row justify-center space-x-1">
-            {/* 이전 버튼 */}
-            <button
-              onClick={() => {
-                if (isLooping) stopLooping();
-                handlePrevScript();
-              }}
-              className={`w-10 h-10 ${recording ? 'bg-gradient-to-r from-gray-600 to-gray-700' : 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700'} text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-105 shadow-lg shadow-blue-900/30 border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed`}
-              title="이전 문장으로 이동"
-              disabled={currentScriptIndex === 0 || recording || recordingCompleted}
-            >
-              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10 5l-7 5 7 5V5zM17 5h-2v10h2V5z" />
-              </svg>
-            </button>
-            {/* 재생/정지 토글 버튼 */}
-            <button
-              onClick={() => {
-                if (isVideoPlaying || recording) {
-                  videoPlayerRef?.current?.pauseVideo();
-                  stopScriptRecording(currentScriptIndex);
-                } else {
-                  if (isVideoEnded) {
-                    const startTime = captions[currentScriptIndex]?.start_time || 0;
-                    videoPlayerRef?.current?.seekTo(startTime);
-                  }
-                  videoPlayerRef?.current?.playVideo();
-                }
-              }}
-              className={`w-10 h-10 ${recording ? 'bg-gradient-to-r from-gray-600 to-gray-700' : 'bg-gradient-to-r from-green-600 to-lime-500 hover:from-green-700 hover:to-lime-600'} text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-105 shadow-lg shadow-green-900/30 border border-white/10 play-btn disabled:opacity-60 disabled:cursor-not-allowed`}
-              title={isVideoPlaying || recording ? '정지' : '실행'}
-              disabled={!videoPlayerRef?.current}
-            >
-              {isVideoPlaying || recording ? (
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <rect x="5" y="5" width="10" height="10" rx="2" />
-                </svg>
-              ) : (
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <polygon points="6,4 16,10 6,16" />
-                </svg>
-              )}
-            </button>
-            {/* 마이크(녹음) 버튼 */}
-            <button
-              onClick={() => {
-                if (isLooping) stopLooping();
-                handleMicClick();
-              }}
-              disabled={recording || recordingCompleted}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-105 shadow-lg border border-white/10 ${recording ? 'bg-green-500 animate-pulse-mic' : 'bg-gradient-to-r from-red-600 to-pink-500 hover:from-red-700 hover:to-pink-600 text-white shadow-red-900/30'}`}
-              style={recording ? { boxShadow: '0 0 0 3px rgba(34,197,94,0.4), 0 0 0 6px rgba(34,197,94,0.2)' } : undefined}
-            >
-              {recording && (
-                <span className="absolute w-12 h-12 rounded-full border-2 border-green-400 opacity-60 animate-ping-mic z-0"></span>
-              )}
-              <svg 
-                className="w-3 h-3 relative z-10" 
-                fill="currentColor" 
-                viewBox="0 0 20 20"
-              >
-                <path 
-                  fillRule="evenodd" 
-                  d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" 
-                  clipRule="evenodd" 
-                />
-              </svg>
-            </button>
-            {/* 다음 버튼 */}
-            <button
-              onClick={() => {
-                if (isLooping) stopLooping();
-                handleNextScript();
-              }}
-              className={`w-10 h-10 ${recording ? 'bg-gradient-to-r from-gray-600 to-gray-700' : 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700'} text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-105 shadow-lg shadow-blue-900/30 border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed`}
-              title="다음 문장으로 이동"
-              disabled={recording || recordingCompleted}
-            >
-              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10 5l7 5-7 5V5zM3 5h2v10H3V5z" />
-              </svg>
-            </button>
-          </div>
-          {/* 하단: 구간반복 버튼만 단독 배치 */}
-          <div className="flex flex-row justify-center">
-            <button
-              onClick={() => {
-                handleLoopToggle();
-              }}
-              className={`w-10 h-10 ${isLooping ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-gray-600 to-gray-700'} hover:from-yellow-600 hover:to-orange-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-105 shadow-lg shadow-orange-900/20 border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed`}
-              title={isLooping ? '구간반복 해제' : '구간반복'}
-              disabled={recording || recordingCompleted}
-            >
-              <svg viewBox="0 0 48 48" fill="none" className={`w-4 h-4 ${isLooping ? 'animate-spin' : ''}`} stroke="currentColor" strokeWidth="4">
-                <path d="M8 24c0-8.837 7.163-16 16-16 4.418 0 8.418 1.79 11.314 4.686" strokeLinecap="round"/>
-                <path d="M40 8v8h-8" strokeLinecap="round"/>
-                <path d="M40 24c0 8.837-7.163 16-16 16-4.418 0-8.418-1.79-11.314-4.686" strokeLinecap="round"/>
-                <path d="M8 40v-8h8" strokeLinecap="round"/>
-              </svg>
-            </button>
-          </div>
         </div>
       </div>
     </div>

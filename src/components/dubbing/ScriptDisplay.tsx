@@ -36,6 +36,17 @@ interface ScriptDisplayProps {
   onStopLooping?: () => void;
   showAnalysisResult?: boolean;
   analysisResult?: any;
+  // 추가된 props
+  isVideoPlaying?: boolean;
+  onPlay?: () => void;
+  onPause?: () => void;
+  onMicClick?: () => void;
+  isLooping?: boolean;
+  onLoopToggle?: () => void;
+  // 더빙본 들어보기와 결과보기 버튼 관련 props
+  showCompletedButtons?: boolean;
+  onOpenDubbingListenModal?: () => void;
+  onShowResults?: () => void;
 }
 
 export default function ScriptDisplay({ 
@@ -52,6 +63,17 @@ export default function ScriptDisplay({
   onStopLooping,
   showAnalysisResult = false,
   analysisResult = null,
+  // 추가된 props
+  isVideoPlaying = false,
+  onPlay,
+  onPause,
+  onMicClick,
+  isLooping = false,
+  onLoopToggle,
+  // 더빙본 들어보기와 결과보기 버튼 관련 props
+  showCompletedButtons = false,
+  onOpenDubbingListenModal,
+  onShowResults,
 }: ScriptDisplayProps) {
 
   const [animatedProgress, setAnimatedProgress] = useState(0);
@@ -361,8 +383,106 @@ export default function ScriptDisplay({
         {/* 진행 정보 + 시간 정보 */}
         <div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 gap-1 py-2">
-            <div className="text-base sm:text-2xl font-semibold text-white">
+            <div className="text-base sm:text-2xl font-semibold text-white flex items-center">
               &nbsp;&nbsp;Script&nbsp; <span className="text-teal-300">{currentScriptIndex + 1}</span> / {captions.length}
+              
+              {/* 재생/정지 버튼 */}
+              <button
+                onClick={() => {
+                  if (isVideoPlaying) {
+                    // 재생 중이면 일시정지
+                    videoPlayerRef?.current?.pauseVideo();
+                    if (onPause) onPause();
+                  } else {
+                    // 일시정지 중이면 재생
+                    if (videoPlayerRef?.current) {
+                      // 현재 문장의 시작 시간과 끝 시간 가져오기
+                      const currentScript = captions[currentScriptIndex];
+                      const startTime = currentScript?.start_time || 0;
+                      const endTime = currentScript?.end_time || 0;
+                      
+                      // 현재 시간이 문장 범위를 벗어났으면 시작 시간으로 이동
+                      const currentTime = videoPlayerRef.current.getCurrentTime();
+                      if (currentTime < startTime || currentTime >= endTime) {
+                        videoPlayerRef.current.seekTo(startTime);
+                      }
+                      
+                      // 재생 시작
+                      videoPlayerRef.current.playVideo();
+                      if (onPlay) onPlay();
+                    }
+                  }
+                }}
+                className={`ml-4 w-10 h-10 ${recording ? 'bg-gradient-to-r from-gray-600 to-gray-700' : 'bg-gradient-to-r from-green-600 to-lime-500 hover:from-green-700 hover:to-lime-600'} text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed`}
+                title={isVideoPlaying ? '정지' : '실행'}
+                disabled={!videoPlayerRef?.current}
+              >
+                {isVideoPlaying || recording ? (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <rect x="5" y="5" width="10" height="10" rx="2" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <polygon points="6,4 16,10 6,16" />
+                  </svg>
+                )}
+              </button>
+              
+              {/* 마이크(녹음) 버튼 */}
+              <button
+                onClick={onMicClick}
+                disabled={recording || recordingCompleted}
+                className={`ml-3 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border border-white/10 ${recording ? 'bg-green-500 animate-pulse-mic' : 'bg-gradient-to-r from-red-600 to-pink-500 hover:from-red-700 hover:to-pink-600 text-white'}`}
+                style={recording ? { boxShadow: '0 0 0 3px rgba(34,197,94,0.4)' } : undefined}
+              >
+                {recording && (
+                  <span className="absolute w-12 h-12 rounded-full border-2 border-green-400 opacity-60 animate-ping-mic z-0"></span>
+                )}
+                <svg 
+                  className="w-4 h-4 relative z-10" 
+                  fill="currentColor" 
+                  viewBox="0 0 20 20"
+                >
+                  <path 
+                    fillRule="evenodd" 
+                    d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" 
+                    clipRule="evenodd" 
+                  />
+                </svg>
+              </button>
+              
+              {/* 구간반복 버튼 */}
+              <button
+                onClick={onLoopToggle}
+                className={`ml-3 w-10 h-10 ${isLooping ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-gray-600 to-gray-700'} hover:from-yellow-600 hover:to-orange-600 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed`}
+                title={isLooping ? '구간반복 해제' : '구간반복'}
+                disabled={recording || recordingCompleted || !videoPlayerRef?.current}
+              >
+                <svg viewBox="0 0 48 48" fill="none" className={`w-4 h-4 ${isLooping ? 'animate-spin' : ''}`} stroke="currentColor" strokeWidth="4">
+                  <path d="M8 24c0-8.837 7.163-16 16-16 4.418 0 8.418 1.79 11.314 4.686" strokeLinecap="round"/>
+                  <path d="M40 8v8h-8" strokeLinecap="round"/>
+                  <path d="M40 24c0 8.837-7.163 16-16 16-4.418 0-8.418-1.79-11.314-4.686" strokeLinecap="round"/>
+                  <path d="M8 40v-8h8" strokeLinecap="round"/>
+                </svg>
+              </button>
+              
+              {/* 더빙본 들어보기와 결과보기 버튼 */}
+              {showCompletedButtons && (
+                <>
+                  <button 
+                    className="ml-3 px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white text-xs font-semibold shadow-md shadow-emerald-700/20 transition-all duration-200"
+                    onClick={onOpenDubbingListenModal}
+                  >
+                    더빙본 들어보기
+                  </button>
+                  <button
+                    className="ml-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-xs font-semibold shadow-md shadow-blue-700/20 transition-all duration-200"
+                    onClick={onShowResults}
+                  >
+                    결과보기
+                  </button>
+                </>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-1 text-m">
               {playbackRange && (

@@ -17,6 +17,8 @@ interface VideoPlayerProps {
   onPlay?: () => void;
   overlayType?: 'full' | 'header'; // 오버레이 타입
   overlayHeight?: number; // header 오버레이 높이(px)
+  // 스크립트 목록 버튼 관련 props
+  onOpenSidebar?: () => void;
 }
 
 export interface VideoPlayerRef {
