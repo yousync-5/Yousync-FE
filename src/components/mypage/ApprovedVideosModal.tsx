@@ -8,7 +8,7 @@ const approvedVideos = [
     id: 1,
     title: "에스파 - Next Level",
     member: "카리나",
-    completionRate: 95,
+    requestDate: "2025.01.15",
     youtubeUrl: "https://www.youtube.com/watch?v=4m1EFMoRFvY",
     thumbnail: "https://img.youtube.com/vi/4m1EFMoRFvY/mqdefault.jpg",
     description: "에스파의 대표곡 Next Level 더빙 완료"
@@ -17,7 +17,7 @@ const approvedVideos = [
     id: 2,
     title: "에스파 - Savage",
     member: "윈터",
-    completionRate: 88,
+    requestDate: "2025.01.10",
     youtubeUrl: "https://www.youtube.com/watch?v=WmXWHcnI0PI",
     thumbnail: "https://img.youtube.com/vi/WmXWHcnI0PI/mqdefault.jpg",
     description: "에스파의 Savage 더빙 완료"
@@ -26,7 +26,7 @@ const approvedVideos = [
     id: 3,
     title: "에스파 - Girls",
     member: "지젤",
-    completionRate: 92,
+    requestDate: "2025.01.05",
     youtubeUrl: "https://www.youtube.com/watch?v=3bqTKVd2dCI",
     thumbnail: "https://img.youtube.com/vi/3bqTKVd2dCI/mqdefault.jpg",
     description: "에스파의 Girls 더빙 완료"
@@ -47,14 +47,14 @@ const ApprovedVideosModal: React.FC<ApprovedVideosModalProps> = ({ isOpen, onClo
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-neutral-900 rounded-2xl p-6 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-neutral-900 rounded-2xl p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-white">
               {selectedVideo ? selectedVideo.title : '승인된 영상'}
             </h2>
             <p className="text-gray-400">
-              {selectedVideo ? `${selectedVideo.member} - 완료율 ${selectedVideo.completionRate}%` : '완료율 80% 이상의 더빙 영상들을 확인하세요'}
+              {selectedVideo ? `요청일: ${selectedVideo.requestDate}` : '완료율 80% 이상의 더빙 영상들을 확인하세요'}
             </p>
           </div>
           <button
