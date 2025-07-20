@@ -26,7 +26,9 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
   const searchParams = useSearchParams();
   let urlTokenId: string | undefined = undefined;
   if (pathname.startsWith('/duetdubbing')) {
-    urlTokenId = searchParams.get('selected') || undefined;
+    if (typeof window !== 'undefined' && searchParams) {
+      urlTokenId = searchParams.get('selected') || undefined;
+    }
   } else {
     // /dubbing/72?modalId=... → ['', 'dubbing', '72']
     const parts = pathname.split('/');

@@ -24,7 +24,7 @@ const ConditionalNavBar: React.FC = () => {
     return null;
   }
 
-  return <NavBar animateOnMount={true} />;
+  return <NavBar />;
 };
 
 export default ConditionalNavBar; 

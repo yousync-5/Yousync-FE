@@ -34,12 +34,16 @@ export default function HomeClient() {
   useEffect(() => {
     window.scrollTo(0, 0);
     if (tokens.length === 0) return;
-    if (searchParams.get('modalId')) {
-      const modalId = searchParams.get('modalId') as string;
-      setTimeout(() => {
-        openModal(modalId);
-        router.replace('/home');
-      }, 500);
+    
+    // searchParams가 있을 때만 실행
+    if (typeof window !== 'undefined' && searchParams) {
+      const modalId = searchParams.get('modalId');
+      if (modalId) {
+        setTimeout(() => {
+          openModal(modalId);
+          router.replace('/home');
+        }, 500);
+      }
     }
   }, [searchParams, router, tokens.length, openModal]);
 

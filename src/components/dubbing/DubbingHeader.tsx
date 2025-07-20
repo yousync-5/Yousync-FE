@@ -14,15 +14,17 @@ export default function DubbingHeader({ title, category, actorName }: DubbingHea
   const searchParams = useSearchParams();
 
   const handleBackClick = () => {
-    // 쿼리 파라미터에서 modalId 확인
-    const modalId = searchParams.get('modalId');
-    if (modalId) {
-      // modalId가 있으면 sessionStorage에 저장하고 홈페이지로 이동
-      sessionStorage.setItem('modalId', modalId);
-      router.replace('/');
-    } else {
-      router.back();
+    // 쿼리 파라미터에서 modalId 확인 (클라이언트 사이드에서만)
+    if (typeof window !== 'undefined' && searchParams) {
+      const modalId = searchParams.get('modalId');
+      if (modalId) {
+        // modalId가 있으면 sessionStorage에 저장하고 홈페이지로 이동
+        sessionStorage.setItem('modalId', modalId);
+        router.replace('/');
+        return;
+      }
     }
+    router.back();
   };
 
   return (

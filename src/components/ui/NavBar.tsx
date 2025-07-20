@@ -13,8 +13,9 @@ interface Actor {
   id: number;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface NavBarProps {
-  // animateOnMount prop 제거
+  // 현재는 props가 없지만 향후 확장을 위해 인터페이스 유지
 }
 
 export const NavBar: React.FC<NavBarProps> = () => {
@@ -52,10 +53,12 @@ export const NavBar: React.FC<NavBarProps> = () => {
         if (storedUrl) {
           return storedUrl;
         }
-        // URL 파라미터에서도 확인
-        const youtubeUrl = searchParams.get('youtubeUrl');
-        if (youtubeUrl) {
-          return youtubeUrl;
+        // URL 파라미터에서도 확인 (클라이언트 사이드에서만)
+        if (typeof window !== 'undefined' && searchParams) {
+          const youtubeUrl = searchParams.get('youtubeUrl');
+          if (youtubeUrl) {
+            return youtubeUrl;
+          }
         }
         return "";
       }
@@ -66,19 +69,23 @@ export const NavBar: React.FC<NavBarProps> = () => {
         if (storedUrl) {
           return storedUrl;
         }
-        // URL 파라미터에서도 확인
-        const youtubeUrl = searchParams.get('youtubeUrl');
-        if (youtubeUrl) {
-          return youtubeUrl;
+        // URL 파라미터에서도 확인 (클라이언트 사이드에서만)
+        if (typeof window !== 'undefined' && searchParams) {
+          const youtubeUrl = searchParams.get('youtubeUrl');
+          if (youtubeUrl) {
+            return youtubeUrl;
+          }
         }
         return "";
       }
       
       // /urlsearch 페이지인 경우
       if (pathname.startsWith('/urlsearch')) {
-        const videoId = searchParams.get('videoId');
-        if (videoId) {
-          return `https://www.youtube.com/watch?v=${videoId}`;
+        if (typeof window !== 'undefined' && searchParams) {
+          const videoId = searchParams.get('videoId');
+          if (videoId) {
+            return `https://www.youtube.com/watch?v=${videoId}`;
+          }
         }
       }
       

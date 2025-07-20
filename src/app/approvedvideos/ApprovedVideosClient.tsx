@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 
 // 승인된 영상 더미 데이터 - 게시판 MY탭과 통일
 const approvedVideos = [
@@ -33,9 +34,11 @@ const approvedVideos = [
   }
 ];
 
-const ApprovedVideosPage = () => {
+const ApprovedVideosClient = () => {
+  const router = useRouter();
+
   const handleVideoClick = (videoId: number) => {
-    window.location.href = `/approvedvideos/${videoId}`;
+    router.push(`/approvedvideos/${videoId}`);
   };
 
   return (
@@ -85,4 +88,4 @@ const ApprovedVideosPage = () => {
   );
 };
 
-export default ApprovedVideosPage; 
+export default ApprovedVideosClient; 

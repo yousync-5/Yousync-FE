@@ -19,7 +19,7 @@ interface AnalysisResponse {
 
 export default function ResultPageContent() {
   const searchParams = useSearchParams();
-  const tokenId = searchParams.get('token_id');
+  const tokenId = typeof window !== 'undefined' && searchParams ? searchParams.get('token_id') : null;
   const [resultData, setResultData] = useState<AnalysisResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
