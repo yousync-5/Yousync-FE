@@ -3,9 +3,8 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import Loader from "../ui/Loader";
-import { checkAllAnalyzedDuetResult } from '@/utils/checkAllAnalyzedDuetResult';
-import isMyLine from "@/utils/isMyLine";
-import DuetResult from "@/utils/DuetResult";
+import isMyLine from '@/utils/isMyLine';
+
 
 interface SidebarProps {
   isOpen: boolean;
@@ -86,13 +85,7 @@ export default function Sidebar({
   // captions에서 정보 추출 (존재하지 않으면 '-')
   const actorName = (captions[0] && (captions[0] as any).actor && (captions[0] as any).actor.name) ? (captions[0] as any).actor.name : '-';
   const movieTitle = (captions[0] && (captions[0] as any).movie_name) ? (captions[0] as any).movie_name : '-';
-  const totalCount = captions.length;
-  const analyzedCount = captions.filter(c => {
-    const scriptKey = normalizeScript(c.script);
-    return !!latestResultByScript[scriptKey];
-  }).length;
-  // 분석 완료 여부 유틸 함수로 판별 (기존 코드 삭제)
-  // const isAllAnalyzed = checkAllAnalyzedDuetResult(captions.length, Object.values(latestResultByScript));
+
 
   // 시간 포맷 함수
   function formatTime(sec?: number) {
@@ -110,8 +103,6 @@ export default function Sidebar({
     if(!selectedElement) return;
 
     // 사이드바의 높이와 스크롤 위치 계산
-    const sidebarHeight = sidebarRef.current.clientHeight;
-    const listTop = listRef.current.offsetTop;
     const itemTop = selectedElement.offsetTop;
     const itemHeight = selectedElement.clientHeight;
 
@@ -120,10 +111,9 @@ export default function Sidebar({
    
     // 아이템이 보이는 영역 계산
     const itemVisibleTop = itemTop - currentScrollTop;
-    const itemVisibleBottom = itemVisibleTop + itemHeight;
 
     // 목표 위치 (6번째 위치)
-    const targetVisibleTop =5 * itemHeight;
+    const targetVisibleTop = 5 * itemHeight;
 
     // 아이템이 목표 위치보다 아래에 있으면 스크롤 조정
     if(itemVisibleTop > targetVisibleTop) {
@@ -186,12 +176,12 @@ export default function Sidebar({
         <div className="mt-2">
           <div className="flex justify-between text-xs text-gray-400 mb-1">
             <span>문장 진행률</span>
-            <span>{myCaptions.length} / {captions.length}</span>
+            <span>{currentScriptIndex + 1} / {captions.length}</span>
           </div>
           <div className="w-full h-2 bg-gray-700 rounded">
             <div
               className="h-2 bg-emerald-400 rounded"
-              style={{ width: `${(myCaptions.length / captions.length) * 100}%` }}
+              style={{ width: `${((currentScriptIndex + 1) / captions.length) * 100}%` }}
             />
           </div>
         </div>
@@ -226,40 +216,48 @@ export default function Sidebar({
       </div>
 
       <ul ref={listRef} className="px-4 py-6 pb-32">
-        {captions.map((caption, index) => {
-          const scriptKey = normalizeScript(caption.script);
-          const isAnalyzed = !!latestResultByScript[scriptKey];
-          const originalIndex = index;
-          const isSelected = currentScriptIndex === originalIndex;
-          const isMine = isMyLine(caption.actor);
-          
-          return (
-            <li
-              key={index}
-              data-index={originalIndex}
-              onClick={() => {
-                if (recording) return;
-                if (onStopLooping) onStopLooping();
-                onScriptSelect(originalIndex);
-              }}
-              className={`cursor-pointer px-4 py-4 transition-all duration-150 select-none relative
-                ${isSelected
-                  ? isMine
-                    ? "border-2 border-emerald-400 scale-[1.03] bg-transparent text-white shadow-md z-10"
-                    : "border-2 border-blue-400 scale-[1.03] bg-transparent text-white shadow-md z-10"
-                  : isAnalyzed
-                  ? "border-2 border-emerald-400 bg-transparent text-white"
-                  : "hover:bg-gray-800/50 hover:text-emerald-300 text-gray-200"}
-                ${isMine && !isSelected && !isAnalyzed
-                  ? "bg-emerald-900/30 border-l-4 border-emerald-400 shadow-lg" 
-                  : ""}
-                ${!isMine && !isSelected && !isAnalyzed
-                  ? "bg-blue-900/30 border-l-4 border-blue-400 shadow-lg" 
-                  : ""}
-                ${isSelected ? "transition-transform" : ""}
-              `}
-              style={{ wordBreak: 'break-word', zIndex: isSelected ? 10 : 1 }}
-            >
+        {captions
+          .filter((caption, index) => {
+            // 내 대사만 보기 토글이 켜져있으면 내 대사만 필터링
+            if (showMyLinesOnly) {
+              return isMyLine(caption.actor);
+            }
+            return true; // 토글이 꺼져있으면 모든 대사 표시
+          })
+          .map((caption, index) => {
+            const scriptKey = normalizeScript(caption.script);
+            const isAnalyzed = !!latestResultByScript[scriptKey];
+            const originalIndex = captions.indexOf(caption); // 원본 인덱스 유지
+            const isSelected = currentScriptIndex === originalIndex;
+            const isMine = isMyLine(caption.actor);
+            
+            return (
+              <li
+                key={originalIndex}
+                data-index={originalIndex}
+                onClick={() => {
+                  if (recording) return;
+                  if (onStopLooping) onStopLooping();
+                  onScriptSelect(originalIndex);
+                }}
+                className={`cursor-pointer px-4 py-4 transition-all duration-150 select-none relative
+                  ${isSelected
+                    ? isMine
+                      ? "border-2 border-emerald-400 scale-[1.03] bg-transparent text-white shadow-md z-10"
+                      : "border-2 border-blue-400 scale-[1.03] bg-transparent text-white shadow-md z-10"
+                    : isAnalyzed
+                    ? "border-2 border-emerald-400 bg-transparent text-white"
+                    : "hover:bg-gray-800/50 hover:text-emerald-300 text-gray-200"}
+                  ${isMine && !isSelected && !isAnalyzed
+                    ? "bg-emerald-900/30 border-l-4 border-emerald-400 shadow-lg" 
+                    : ""}
+                  ${!isMine && !isSelected && !isAnalyzed
+                    ? "bg-blue-900/30 border-l-4 border-blue-400 shadow-lg" 
+                    : ""}
+                  ${isSelected ? "transition-transform" : ""}
+                `}
+                style={{ wordBreak: 'break-word', zIndex: isSelected ? 10 : 1 }}
+              >
               {/* Loader 오버레이 - 현재 선택된 문장에서만 표시 */}
               {isSelected && !isMine && !recording && recordingCompleted && null}
               {isSelected && isMine && !recording && recordingCompleted && (

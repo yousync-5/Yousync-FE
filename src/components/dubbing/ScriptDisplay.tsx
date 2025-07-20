@@ -36,6 +36,17 @@ interface ScriptDisplayProps {
   onStopLooping?: () => void;
   showAnalysisResult?: boolean;
   analysisResult?: any;
+  // 추가된 props
+  isVideoPlaying?: boolean;
+  onPlay?: () => void;
+  onPause?: () => void;
+  onMicClick?: () => void;
+  isLooping?: boolean;
+  onLoopToggle?: () => void;
+  // 더빙본 들어보기와 결과보기 버튼 관련 props
+  showCompletedButtons?: boolean;
+  onOpenDubbingListenModal?: () => void;
+  onShowResults?: () => void;
 }
 
 export default function ScriptDisplay({ 
@@ -52,6 +63,17 @@ export default function ScriptDisplay({
   onStopLooping,
   showAnalysisResult = false,
   analysisResult = null,
+  // 추가된 props
+  isVideoPlaying = false,
+  onPlay,
+  onPause,
+  onMicClick,
+  isLooping = false,
+  onLoopToggle,
+  // 더빙본 들어보기와 결과보기 버튼 관련 props
+  showCompletedButtons = false,
+  onOpenDubbingListenModal,
+  onShowResults,
 }: ScriptDisplayProps) {
 
   const [animatedProgress, setAnimatedProgress] = useState(0);
@@ -318,14 +340,14 @@ export default function ScriptDisplay({
     if (!currentWords || currentWords.length === 0) {
       // word 데이터가 없으면 기존 방식으로 렌더링
       return (
-        <div className="text-white text-base sm:text-xl md:text-2xl font-bold text-center leading-tight">
+        <div className="text-white text-lg sm:text-2xl md:text-3xl font-bold text-center leading-tight">
           &quot;{decodeHtmlEntities(captions[currentScriptIndex]?.script || '')}&quot;
         </div>
       );
     }
 
     return (
-      <div className="text-white text-base sm:text-xl md:text-2xl font-bold text-center leading-tight">
+      <div className="text-white text-lg sm:text-2xl md:text-3xl font-bold text-center leading-tight">
         &quot;{currentWords.map((word, index) => {
           const isCurrent = currentVideoTime >= word.start_time && currentVideoTime <= word.end_time;
           const animatedScore = animatedScores[word.word] || 0;
@@ -356,99 +378,202 @@ export default function ScriptDisplay({
   };
 
   return (
-    <div className="bg-gray-900 rounded-xl p-3 sm:p-4 md:p-6 w-full flex flex-col relative">
-      <div className="bg-gradient-to-br from-[#0f172a] to-[#1e293b] rounded-2xl p-3 sm:p-4 md:p-6 shadow-xl text-white mb-4 md:mb-6 border border-gray-700 space-y-4 md:space-y-6">
-        
+    <div className="bg-gray-900/80 backdrop-blur-sm rounded-xl p-1 w-full flex flex-col relative border border-gray-800 shadow-lg ">
+      <div className="bg-gradient-to-br from-[#0f172a] to-[#1e293b] rounded-xl p-1 shadow-xl text-white border border-gray-700/50 space-y-1 ">
         {/* 진행 정보 + 시간 정보 */}
         <div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-2">
-            <div className="text-base sm:text-lg font-semibold text-white">
-              🎬 Script <span className="text-teal-300">{currentScriptIndex + 1}</span> / {captions.length}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 gap-1 py-2">
+            {/* 왼쪽에 스크립트 번호 표시 */}
+            <div className="text-base sm:text-2xl font-semibold text-white">
+              &nbsp;&nbsp;Script&nbsp; <span className="text-teal-300">{currentScriptIndex + 1}</span> / {captions.length}
             </div>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm">
-              <span className="text-yellow-300 font-semibold">
-                {String(Math.floor(captions[currentScriptIndex]?.start_time / 60)).padStart(2, "0")}:
-                {String(Math.floor(captions[currentScriptIndex]?.start_time % 60)).padStart(2, "0")} -
-                {String(Math.floor(captions[currentScriptIndex]?.end_time / 60)).padStart(2, "0")}:
-                {String(Math.floor(captions[currentScriptIndex]?.end_time % 60)).padStart(2, "0")}
-              </span>
-              <span className="text-blue-300 font-semibold">
-                ⏱ {formatTime(currentVideoTime)}
-              </span>
+            
+            {/* 중앙에 버튼들 배치 */}
+            <div className="flex items-center justify-center mx-auto">
+              {/* 재생/정지 버튼 */}
+              <button
+                onClick={() => {
+                  if (isVideoPlaying) {
+                    // 재생 중이면 일시정지
+                    videoPlayerRef?.current?.pauseVideo();
+                    if (onPause) onPause();
+                  } else {
+                    // 일시정지 중이면 재생
+                    if (videoPlayerRef?.current) {
+                      // 현재 문장의 시작 시간과 끝 시간 가져오기
+                      const currentScript = captions[currentScriptIndex];
+                      const startTime = currentScript?.start_time || 0;
+                      const endTime = currentScript?.end_time || 0;
+                      
+                      // 현재 시간이 문장 범위를 벗어났으면 시작 시간으로 이동
+                      const currentTime = videoPlayerRef.current.getCurrentTime();
+                      if (currentTime < startTime || currentTime >= endTime) {
+                        videoPlayerRef.current.seekTo(startTime);
+                      }
+                      
+                      // 재생 시작
+                      videoPlayerRef.current.playVideo();
+                      if (onPlay) onPlay();
+                    }
+                  }
+                }}
+                className={`w-10 h-10 ${recording ? 'bg-gradient-to-r from-gray-600 to-gray-700' : 'bg-gradient-to-r from-green-600 to-lime-500 hover:from-green-700 hover:to-lime-600'} text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed`}
+                title={isVideoPlaying ? '정지' : '실행'}
+                disabled={!videoPlayerRef?.current}
+              >
+                {isVideoPlaying || recording ? (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <rect x="5" y="5" width="10" height="10" rx="2" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <polygon points="6,4 16,10 6,16" />
+                  </svg>
+                )}
+              </button>
+              
+              {/* 마이크(녹음) 버튼 */}
+              <button
+                onClick={onMicClick}
+                disabled={recording || recordingCompleted}
+                className={`ml-3 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border border-white/10 ${recording ? 'bg-green-500 animate-pulse-mic' : 'bg-gradient-to-r from-red-600 to-pink-500 hover:from-red-700 hover:to-pink-600 text-white'}`}
+                style={recording ? { boxShadow: '0 0 0 3px rgba(34,197,94,0.4)' } : undefined}
+              >
+                {recording && (
+                  <span className="absolute w-12 h-12 rounded-full border-2 border-green-400 opacity-60 animate-ping-mic z-0"></span>
+                )}
+                <svg 
+                  className="w-4 h-4 relative z-10" 
+                  fill="currentColor" 
+                  viewBox="0 0 20 20"
+                >
+                  <path 
+                    fillRule="evenodd" 
+                    d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" 
+                    clipRule="evenodd" 
+                  />
+                </svg>
+              </button>
+              
+              {/* 구간반복 버튼 */}
+              <button
+                onClick={onLoopToggle}
+                className={`ml-3 w-10 h-10 ${isLooping ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-gray-600 to-gray-700'} hover:from-yellow-600 hover:to-orange-600 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed`}
+                title={isLooping ? '구간반복 해제' : '구간반복'}
+                disabled={recording || recordingCompleted || !videoPlayerRef?.current}
+              >
+                <svg viewBox="0 0 48 48" fill="none" className={`w-4 h-4 ${isLooping ? 'animate-spin' : ''}`} stroke="currentColor" strokeWidth="4">
+                  <path d="M8 24c0-8.837 7.163-16 16-16 4.418 0 8.418 1.79 11.314 4.686" strokeLinecap="round"/>
+                  <path d="M40 8v8h-8" strokeLinecap="round"/>
+                  <path d="M40 24c0 8.837-7.163 16-16 16-4.418 0-8.418-1.79-11.314-4.686" strokeLinecap="round"/>
+                  <path d="M8 40v-8h8" strokeLinecap="round"/>
+                </svg>
+              </button>
+              
+              {/* 더빙본 들어보기와 결과보기 버튼 */}
+              {showCompletedButtons && (
+                <>
+                  <button 
+                    className="ml-3 px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white text-xs font-semibold shadow-md shadow-emerald-700/20 transition-all duration-200"
+                    onClick={onOpenDubbingListenModal}
+                  >
+                    더빙본 들어보기
+                  </button>
+                  <button
+                    className="ml-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-xs font-semibold shadow-md shadow-blue-700/20 transition-all duration-200"
+                    onClick={onShowResults}
+                  >
+                    결과보기
+                  </button>
+                </>
+              )}
+            </div>
+            
+            {/* 오른쪽에 시간 정보 */}
+            <div className="flex flex-wrap items-center gap-1 text-m">
               {playbackRange && (
                 <span className="text-gray-300 font-medium hidden sm:inline">
                   🎧 {formatTime(playbackRange.startTime)} ~ {playbackRange.endTime ? formatTime(playbackRange.endTime) : '끝'}
                 </span>
               )}
               {recordingCompleted && !analysisResult ? (
-                <div className="flex items-center space-x-2 font-medium text-blue-400">
-                  <div className="animate-spin w-3 h-3 sm:w-4 sm:h-4 border-2 border-blue-400 border-t-transparent rounded-full"></div>
+                <div className="flex items-center space-x-1 font-medium text-blue-400">
+                  <div className="animate-spin w-2 h-2 border-2 border-blue-400 border-t-transparent rounded-full"></div>
                   <span>분석 중</span>
                 </div>
               ) : (
-                <div className="font-medium text-green-400">
-                  {Math.round(((currentScriptIndex + 1) / captions.length) * 100)}% 완료
+                <div>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="relative w-full h-2 sm:h-3 bg-gray-800 rounded-full overflow-hidden shadow-inner">
+          <div className="relative w-full h-4 bg-gray-800/80 rounded-full overflow-hidden shadow-inner">
             <div
-              className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-400 to-emerald-500 transition-all duration-500 ease-out"
+              className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-500 ease-out"
               style={{ width: `${((currentScriptIndex + 1) / captions.length) * 100}%` }}
             >
-              <span className="absolute right-1 sm:right-2 text-[8px] sm:text-[10px] font-bold text-white drop-shadow-sm">
+              <span className="absolute right-1 text-[12px] font-bold text-white drop-shadow-sm">
                 {Math.round(((currentScriptIndex + 1) / captions.length) * 100)}%
               </span>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col items-center space-y-3">
+        <div className="flex flex-col items-center space-y-2">
           {/* 스크립트 본문 + 내비게이션 */}
-          <div className="flex items-center space-x-2 sm:space-x-4 w-full">
+          <div className="flex items-center space-x-1 w-full">
             <button
               onClick={() => {
                 if (onStopLooping) onStopLooping();
                 handleScriptChange(Math.max(0, currentScriptIndex - 1));
               }}
               disabled={currentScriptIndex === 0 || recording || recordingCompleted}
-              className={`p-1 sm:p-2 rounded-full transition-all duration-200 ${
+              className={`p-2 rounded-full transition-all duration-200  ${
                 currentScriptIndex === 0 
-                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
-                  : 'bg-gray-700 text-green-400 hover:bg-gray-600 hover:text-green-300'
+                  ? 'bg-gray-800/50 text-gray-500 cursor-not-allowed' 
+                  : 'bg-gray-800 text-green-400 hover:bg-gray-700 hover:text-green-300'
               }`}
             >
-              <ChevronLeftIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+              <ChevronLeftIcon className="w-6 h-6" />
             </button>
 
             <div 
-              className="bg-gray-800 rounded-lg p-2 sm:p-4 flex-1 shadow-inner border border-gray-700 flex items-center justify-center min-h-[80px] sm:min-h-[100px] relative overflow-hidden"
+              className="bg-gray-800/80 rounded-lg p-2 flex-1 shadow-inner border border-gray-700/50 flex items-center justify-center min-h-[100px] relative overflow-hidden"
               style={{
                 background: isAnalyzing 
-                  ? 'rgba(31, 41, 55, 1)' // 분석 중일 때는 회색
-                  : `linear-gradient(to right, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.15) ${animatedProgress * 100}%, rgba(31, 41, 55, 1) ${animatedProgress * 100}%, rgba(31, 41, 55, 1) 100%)`, // 그 외에는 초록색 그라데이션
+                  ? 'rgba(31, 41, 55, 0.8)' // 분석 중일 때는 회색
+                  : `linear-gradient(to right, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.15) ${animatedProgress * 100}%, rgba(31, 41, 55, 0.8) ${animatedProgress * 100}%, rgba(31, 41, 55, 0.8) 100%)`, // 그 외에는 초록색 그라데이션
                 transition: disableTransition ? 'none' : 'background 0.3s ease-out'
               }}
             >
-             {isAnalyzing ? (
+              {showAnalysisResult && analysisResult ? (
+                <PronunciationTimingGuide
+                  captions={captions}
+                  currentScriptIndex={currentScriptIndex}
+                  currentVideoTime={currentVideoTime}
+                  currentWords={currentWords}
+                  showAnalysisResult={showAnalysisResult}
+                  analysisResult={analysisResult}
+                  recording={recording}
+                />
+              ) : isAnalyzing ? (
                 <div className="relative w-full h-full flex items-center justify-center">
                   {renderScriptWithWords()}
                   {/* 분석 중 로딩 오버레이 (사이드바 스타일 적용) */}
                   <div className="absolute inset-0 bg-gray-900/30 backdrop-blur-[1px] flex items-center justify-center z-20 rounded pointer-events-none">
-                    <div className="flex flex-col items-center space-y-3">
+                    <div className="flex flex-col items-center space-y-1">
                       {/* 빙빙 도는 아이콘 */}
-                      <svg className="w-8 h-8 sm:w-12 sm:h-12 text-emerald-300 animate-spin" viewBox="0 0 20 20" fill="none" aria-label="분석 중">
+                      <svg className="w-5 h-5 text-emerald-300 animate-spin" viewBox="0 0 20 20" fill="none" aria-label="분석 중">
                         <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" strokeDasharray="20 10" />
                       </svg>
                       {/* 분석 중 텍스트 */}
-                      <span className="text-emerald-300 text-xs sm:text-sm font-medium">분석 중...</span>
+                      <span className="text-emerald-300 text-[10px] font-medium">분석 중...</span>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="text-white text-base sm:text-xl md:text-2xl font-bold text-center leading-tight">
+                <div className="text-white text-xs sm:text-sm font-bold text-center leading-tight px-1">
                   {renderScriptWithWords()}
                 </div>
               )}
@@ -460,39 +585,17 @@ export default function ScriptDisplay({
                 handleScriptChange(Math.min(captions.length - 1, currentScriptIndex + 1));
               }}
               disabled={currentScriptIndex === captions.length - 1 || recording || recordingCompleted}
-              className={`p-1 sm:p-2 rounded-full transition-all duration-200 ${
+              className={`p-2 rounded-full transition-all duration-200 ${
                 currentScriptIndex === captions.length - 1 
-                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
-                  : 'bg-gray-700 text-green-400 hover:bg-gray-600 hover:text-green-300'
+                  ? 'bg-gray-800/50 text-gray-500 cursor-not-allowed' 
+                  : 'bg-gray-800 text-green-400 hover:bg-gray-700 hover:text-green-300'
               }`}
             >
-              <ChevronRightIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+              <ChevronRightIcon className="w-6 h-6" />
             </button>
           </div>
-          {/* 🎯 직관적 타이밍 가이드 */}
-          {/* {showAnalysisResult ? (
-            <PronunciationTimingGuide
-              captions={captions}
-              currentScriptIndex={currentScriptIndex}
-              currentVideoTime={currentVideoTime}
-              currentWords={currentWords}
-              showAnalysisResult={showAnalysisResult}
-              analysisResult={analysisResult}
-              recording={recording}
-            />
-          ) : (
-            currentWords && currentWords.length > 0 && (
-              <PronunciationTimingGuide
-                captions={captions}
-                currentScriptIndex={currentScriptIndex}
-                currentVideoTime={currentVideoTime}
-                currentWords={currentWords}
-                recording={recording}
-              />
-            )
-          )} */}
         </div>
       </div>
     </div>
-  );
-} 
+  );}
+        

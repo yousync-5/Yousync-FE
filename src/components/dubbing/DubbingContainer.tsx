@@ -4,7 +4,6 @@ import React, { useRef, useCallback, useEffect, useState } from "react";
 import DubbingHeader from "@/components/dubbing/DubbingHeader";
 import VideoPlayer, { VideoPlayerRef } from "@/components/dubbing/VideoPlayer";
 import ScriptDisplay from "@/components/dubbing/ScriptDisplay";
-import PitchComparison from "@/components/dubbing/PitchComparison";
 import ResultContainer from "@/components/result/ResultComponent";
 
 import { Toaster } from "react-hot-toast";
@@ -16,6 +15,15 @@ import { useBackgroundAudio } from "@/hooks/useBackgroundAudio";
 import DubbingListenModal from "@/components/result/DubbingListenModal";
 import Sidebar from "@/components/ui/Sidebar";
 import { useTokenStore } from '@/store/useTokenStore';
+import { useDubbingRecorder } from '@/hooks/useDubbingRecorder';
+
+// 전역 타입 선언 (window 객체 확장)
+declare global {
+  interface Window {
+    loopIntervalId?: NodeJS.Timeout;
+  }
+}
+
 
 
 interface DubbingContainerProps {
@@ -82,7 +90,6 @@ const DubbingContainer = ({
   } = dubbingState;
 
   const videoPlayerRef = useRef<VideoPlayerRef | null>(null);
-  const pitchRef = useRef<{ handleExternalStop: () => void, stopLooping?: () => void } | null>(null);
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const { cleanupMic } = useAudioStream();
 
@@ -92,11 +99,76 @@ const DubbingContainer = ({
   const multiJobIds = useJobIdsStore((state) => state.multiJobIds);
   const setMultiJobIds = useJobIdsStore((state) => state.setMultiJobIds);
 
+  // 녹음 기능 구현
+  const {
+    recording: recorderRecording,
+    recordedScripts,
+    uploading,
+    startScriptRecording,
+    stopScriptRecording,
+    getAllBlobs,
+  } = useDubbingRecorder({
+    captions: front_data.captions,
+    tokenId: id,
+    scripts: tokenData?.scripts,
+    onUploadComplete: (success: boolean, jobIds: string[]) => {
+      console.log(`[🔄 DubbingContainer] onUploadComplete 콜백 호출됨`);
+      console.log(`[📊 결과] success: ${success}, jobIds: ${JSON.stringify(jobIds)}`);
+      
+      if (success && Array.isArray(jobIds)) {
+        // 새로운 분석 시작 시에만 초기화 (기존 결과 유지)
+        if (multiJobIds.length === 0) {
+          console.log('[DEBUG] 새로운 분석 시작 - 상태 초기화');
+          setFinalResults({});
+          setLatestResultByScript({});
+        }
+        // jobId와 문장 인덱스 매핑 콘솔 출력
+        jobIds.forEach((jobId, idx) => {
+          const script = front_data.captions[idx]?.script;
+          console.log(`[분석 요청] jobId: ${jobId}, 문장 인덱스: ${idx}, script: "${script}"`);
+        });
+        // 새 jobIds로 세팅
+        setMultiJobIds(jobIds);
+        // 분석 시작 상태 설정
+        setIsAnalyzing(true);
+      }
+    },
+  });
+
+  // 녹음 상태 동기화
+  useEffect(() => {
+    setRecording(recorderRecording);
+  }, [recorderRecording, setRecording]);
+
   // 🆕 분석 결과 수신 상태 추가
   const [hasAnalysisResults, setHasAnalysisResults] = useState(false);
 
   // 🆕 더빙본 들어보기 모달 상태
   const [isDubbingListenModalOpen, setIsDubbingListenModalOpen] = useState(false);
+  
+  // 구간 반복 상태 추가
+  const [isLooping, setIsLooping] = useState(false);
+
+  // 컴포넌트가 언마운트될 때 구간 반복 인터벌 정리
+  useEffect(() => {
+    return () => {
+      if (window.loopIntervalId) {
+        clearInterval(window.loopIntervalId);
+        window.loopIntervalId = undefined;
+      }
+    };
+  }, []);
+
+  // 문장이 변경될 때 구간 반복 중지
+  useEffect(() => {
+    if (isLooping) {
+      setIsLooping(false);
+      if (window.loopIntervalId) {
+        clearInterval(window.loopIntervalId);
+        window.loopIntervalId = undefined;
+      }
+    }
+  }, [currentScriptIndex]);
 
   // 🆕 hasAnalysisResults 상태 디버깅
   useEffect(() => {
@@ -218,7 +290,7 @@ useEffect(() => {
       sse.close();
     });
   };
-}, [multiJobIds]);
+}, [multiJobIds, setFinalResults, setLatestResultByScript, setRecordingCompleted, setIsAnalyzing, front_data.captions]);
 
 // ✅ 결과 개수로 전체 완료 감지
 useEffect(() => {
@@ -239,20 +311,8 @@ useEffect(() => {
   } else {
     setShowCompleted(false);
   }
-}, [latestResultByScript, multiJobIds.length, front_data.captions.length]);
+}, [latestResultByScript, multiJobIds.length, front_data.captions.length, setShowCompleted]);
 
-// 분석 완료 시 토스트 해제
-// useEffect(() => {
-//   const totalCount = front_data.captions.length;
-//   const resultCount = Object.keys(latestResultByScript).length;
-  
-//   if (resultCount > 0 && resultCount < totalCount) {
-//     // 분석 결과가 추가되었을 때 토스트 해제
-//     setTimeout(() => {
-//       toast.dismiss("analysis-loading-toast");
-//     }, 100);
-//   }
-// }, [latestResultByScript, front_data.captions.length]);
 
 // ✅ 새로운 분석 시작 시 연결 목록 초기화
 useEffect(() => {
@@ -277,7 +337,7 @@ useEffect(() => {
       console.log('📊 latestResultByScript 전체 내용:');
       console.log(JSON.stringify(latestResultByScript, null, 2));
     }
-  }, [latestResultByScript, front_data.captions]);
+  }, [latestResultByScript, front_data.captions.length]);
 
   // 점수 색상 헬퍼
   const getScoreColor = (score: number) => {
@@ -293,84 +353,7 @@ useEffect(() => {
     return "Poor";
   };
 
-  // 결과 진행상황 토스트 (완전 재작성)
-  // useEffect(() => {
-  //   const toastId = "analysis-loading-toast";
-
-  //   const totalCount = front_data.captions.length;
-  //   const resultCount = Object.keys(latestResultByScript).length;
-  //   const hasAnyJob = multiJobIds.length > 0;
-    
-  //   console.log('[토스트 로직] totalCount:', totalCount, 'resultCount:', resultCount, 'hasAnyJob:', hasAnyJob, 'showCompleted:', showCompleted);
-    
-  //   // 먼저 기존 토스트를 완전히 제거
-  //   toast.dismiss(toastId);
-    
-  //   // 분석 중이 아니면 토스트 표시하지 않음
-  //   if (!hasAnyJob || resultCount >= totalCount || showCompleted) {
-  //     console.log('[토스트 로직] 토스트 표시 안함 - 분석 중 아님');
-  //     return;
-  //   }
-    
-  //   // 분석 중일 때만 토스트 표시 (단일 문장 분석 중)
-  //   if (hasAnyJob && resultCount < totalCount) {
-  //     console.log('[토스트 로직] 토스트 표시 - 분석 중');
-  //     const analyzingText = `분석중인 문장: ${currentScriptIndex + 1}번`;
-  //     toast.loading(
-  //       <div className="flex items-center gap-4 p-2">
-  //         <div className="animate-spin w-16 h-16 border-5 border-green-400 border-t-transparent rounded-full" />
-  //         <div className="flex flex-col">
-  //           <span className="text-blue-300 text-2xl font-semibold">{analyzingText}</span>
-  //         </div>
-  //       </div>, 
-  //       {
-  //         id: toastId,
-  //         icon: null,
-  //         position: "bottom-right",
-  //         duration: 3000, // 3초 후 자동 해제
-  //         style: {
-  //           background: 'linear-gradient(135deg, #1a1a1a 0%, #0f0f0f 100%)',
-  //           border: '2px solid #22c55e',
-  //           borderRadius: '12px',
-  //           boxShadow: '0 8px 32px rgba(34, 197, 94, 0.2)',
-  //           minWidth: '500px',
-  //           padding: '32px 36px',
-  //         },
-  //       }
-  //     );
-  //   }
-    
-  //   return () => {
-  //     toast.dismiss(toastId);
-  //   }
-  // }, [showCompleted, latestResultByScript, multiJobIds.length, currentScriptIndex, front_data.captions.length]);
-
-  // 분석 완료 시 토스트 해제
-  // useEffect(() => {
-  //   const totalCount = front_data.captions.length;
-  //   const resultCount = Object.keys(latestResultByScript).length;
-    
-  //   if (resultCount > 0 && resultCount < totalCount) {
-  //     // 분석 결과가 추가되었을 때 토스트 해제
-  //     setTimeout(() => {
-  //       toast.dismiss("analysis-loading-toast");
-  //     }, 100);
-  //   }
-  // }, [latestResultByScript, front_data.captions.length]);
-
-  // 분석 완료 시 토스트 해제
-  // useEffect(() => {
-  //   const totalCount = front_data.captions.length;
-  //   const resultCount = Object.keys(latestResultByScript).length;
-    
-  //   if (resultCount > 0 && resultCount < totalCount) {
-  //     // 분석 결과가 추가되었을 때 토스트 해제
-  //     setTimeout(() => {
-  //       toast.dismiss("analysis-loading-toast");
-  //     }, 100);
-  //   }
-  // }, [latestResultByScript, front_data.captions.length]);
-
+  
   // 결과 보기 버튼 클릭 시 결과 섹션으로 스크롤
   const showResultsSection = useCallback(() => {
     setShowResults(true);
@@ -380,7 +363,7 @@ useEffect(() => {
         block: 'start'
       });
     }, 100);
-  }, []);
+  }, [setShowResults]);
 
   // 🆕 결과 조회 버튼 클릭 핸들러
   const handleViewResults = useCallback(() => {
@@ -392,7 +375,7 @@ useEffect(() => {
         block: 'start'
       });
     }, 100);
-  }, []);
+  }, [setShowResults]);
 
   // 데이터가 준비되지 않았으면 내부 로직 실행하지 않음
   const findScriptIndexByTime = useCallback((time: number) => {
@@ -415,7 +398,7 @@ useEffect(() => {
     if (newScriptIndex !== -1 && newScriptIndex !== currentScriptIndex) {
       setCurrentScriptIndex(newScriptIndex);
     }
-  }, [isReady, currentScriptIndex, findScriptIndexByTime, front_data?.captions]);
+  }, [isReady, currentScriptIndex, findScriptIndexByTime, front_data?.captions, setCurrentVideoTime, setCurrentScriptIndex]);
 
   const getCurrentScriptPlaybackRange = useCallback(() => {
     if (!isReady) return { startTime: 0, endTime: undefined };
@@ -437,7 +420,7 @@ useEffect(() => {
     if (front_data.captions && front_data.captions[currentScriptIndex]) {
       setCurrentVideoTime(front_data.captions[currentScriptIndex].start_time);
     }
-  }, [isReady, currentScriptIndex, front_data?.captions]);
+  }, [isReady, currentScriptIndex, front_data?.captions, setCurrentVideoTime]);
 
   // 기존 함수들을 훅의 함수로 대체
   const customHandlePlay = () => {
@@ -448,12 +431,43 @@ useEffect(() => {
     handlePause();
   };
 
-  // 문장 클릭 시 녹음 중지, 영상 이동 및 정지, 인덱스 변경
-  const customHandleScriptSelect = (index: number) => {
-    // 1. 녹음 중이면 PitchComparison의 녹음 중지 핸들 호출
-    pitchRef.current?.handleExternalStop();
+  // 마이크 버튼 클릭 핸들러
+  const handleMicClick = () => {
+    if (videoPlayerRef?.current && front_data.captions[currentScriptIndex]) {
+      const currentScript = front_data.captions[currentScriptIndex];
+      
+      videoPlayerRef.current.seekTo(currentScript.start_time);
+      videoPlayerRef.current.playVideo();
+      
+      // 영상이 실제로 재생되기 시작할 때까지 대기
+      const checkVideoPlaying = () => {
+        if (!videoPlayerRef?.current) return;
+        
+        const currentTime = videoPlayerRef.current.getCurrentTime();
+        const targetTime = currentScript.start_time;
+        
+        // 영상이 목표 시간에 도달했는지 확인 (0.1초 허용 오차)
+        if (Math.abs(currentTime - targetTime) < 0.1) {
+          startScriptRecording(currentScriptIndex);
+        } else {
+          // 아직 재생되지 않았으면 다시 체크
+          setTimeout(checkVideoPlaying, 50);
+        }
+      };
+      
+      // 100ms 후부터 체크 시작 (브라우저 렉 고려)
+      setTimeout(checkVideoPlaying, 100);
+    }
+  };
 
-    // 2. 영상 해당 시점으로 이동 및 정지
+  // 문장 클릭 시 영상 이동 및 정지, 인덱스 변경
+  const customHandleScriptSelect = (index: number) => {
+    // 녹음 중이면 중지
+    if (recording) {
+      stopScriptRecording(currentScriptIndex);
+    }
+    
+    // 영상 해당 시점으로 이동 및 정지
     const startTime = front_data.captions[index]?.start_time ?? 0;
     videoPlayerRef.current?.seekTo(startTime);
     videoPlayerRef.current?.pauseVideo();
@@ -506,7 +520,7 @@ useEffect(() => {
       console.log('[DubbingContainer] 분석 결과 도착');
       setShowAnalysisResult(true);
     }
-  }, [analysisResult]);
+  }, [analysisResult, setShowAnalysisResult]);
 
   // 녹음이 시작되면 분석 결과 표시 해제
   useEffect(() => {
@@ -514,7 +528,7 @@ useEffect(() => {
       console.log('[DubbingContainer] 녹음 시작 - 분석 결과 표시 해제');
       setShowAnalysisResult(false);
     }
-  }, [recording]);
+  }, [recording, setShowAnalysisResult]);
 
   // 자동재생 상태에 따라 분석 결과 표시 제어
   useEffect(() => {
@@ -525,7 +539,7 @@ useEffect(() => {
       console.log('[DubbingContainer] 자동재생 완료 - 분석 결과 다시 표시');
       setShowAnalysisResult(true);
     }
-  }, [isRecordingPlayback, analysisResult, recording]);
+  }, [isRecordingPlayback, analysisResult, recording, setShowAnalysisResult]);
   // Job ID 유효성 확인 함수
   const validateJobId = async (jobId: string): Promise<boolean> => {
     try {
@@ -591,11 +605,15 @@ useEffect(() => {
         actorName={front_data.captions[0]?.actor?.name || ""}
       />
   
-      {/* 본문 - 항상 중앙 */}
-      <div className="w-full mx-auto px-2 sm:px-4 md:px-6 py-4 md:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8">
-          {/* Left Column - Video & Script */}
-          <div className="lg:col-span-2 space-y-4 md:space-y-6">
+      {/* 본문 - 사이드바 열릴 때 크기 조절 */}
+      <div 
+        className={`w-full mx-auto px-2 py-1 transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? 'pr-[280px]' : 'pr-2'
+        }`}
+      >
+        <div className="grid grid-cols-12 gap-2">
+          {/* Video - 전체 너비 사용 */}
+          <div className="col-span-12">
             <VideoPlayer
               videoId={front_data.movie.youtube_url.split("v=")[1]}
               onTimeUpdate={handleTimeUpdate}
@@ -604,81 +622,90 @@ useEffect(() => {
               disableAutoPause={true}
               ref={videoPlayerRef}
               onEndTimeReached={() => {
-                pitchRef.current?.handleExternalStop?.();
-              }}
-              onPlay={customHandlePlay}
-              onPause={customHandlePause}
-            />
-            <ScriptDisplay
-              captions={front_data.captions}
-              currentScriptIndex={currentScriptIndex}
-              onScriptChange={setCurrentScriptIndex}
-              currentVideoTime={currentVideoTime}
-              playbackRange={getCurrentScriptPlaybackRange()}
-              videoPlayerRef={videoPlayerRef}
-              currentWords={currentWords}
-              recording={recording}
-              recordingCompleted={recordingCompleted}
-              isAnalyzing={isAnalyzing}
-              onStopLooping={() => pitchRef.current?.stopLooping?.()}
-              showAnalysisResult={showAnalysisResult}
-              analysisResult={analysisResult}
-            />
-          </div>
-  
-          {/* Right Column */}
-          <div className="space-y-6">
-            {/* latestResultByScript 값 확인용 로그 (렌더링 중이 아닌 useEffect에서 출력) */}
-            <PitchComparison
-              ref={pitchRef}
-              currentScriptIndex={currentScriptIndex}
-              captions={front_data.captions}
-              tokenId={id}
-              serverPitchData={serverPitchData}
-              videoPlayerRef={videoPlayerRef}
-              onNextScript={setCurrentScriptIndex}
-              onPlay={customHandlePlay}
-              onPause={customHandlePause}
-              isVideoPlaying={isVideoPlaying}
-              scripts={tokenData?.scripts}
-              onUploadComplete={(success, jobIds) => {
-                console.log(`[🔄 DubbingContainer] onUploadComplete 콜백 호출됨`);
-                console.log(`[📊 결과] success: ${success}, jobIds: ${JSON.stringify(jobIds)}`);
-                
-                if (success && Array.isArray(jobIds)) {
-                  // 새로운 분석 시작 시에만 초기화 (기존 결과 유지)
-                  if (multiJobIds.length === 0) {
-                    console.log('[DEBUG] 새로운 분석 시작 - 상태 초기화');
-                    setFinalResults({});
-                    setLatestResultByScript({});
-                  }
-                  // 2. jobId와 문장 인덱스 매핑 콘솔 출력
-                  jobIds.forEach((jobId, idx) => {
-                    const script = front_data.captions[idx]?.script;
-                    console.log(`[분석 요청] jobId: ${jobId}, 문장 인덱스: ${idx}, script: "${script}"`);
-                  });
-                  // 3. 새 jobIds로 세팅
-                  setMultiJobIds(jobIds);
-                  // 4. 분석 시작 상태 설정
-                  setIsAnalyzing(true);
+                // 녹음 중일 때 처리 로직
+                if (recording) {
+                  stopScriptRecording(currentScriptIndex);
                 }
               }}
-              onRecordingChange={setRecording}
-              handleRecordingComplete={handleRecordingComplete}
-              showAnalysisResult={showAnalysisResult}
-              recordingCompleted={recordingCompleted}
-              onRecordingPlaybackChange={setIsRecordingPlayback}
+              onPlay={customHandlePlay}
+              onPause={customHandlePause}
               onOpenSidebar={() => setIsSidebarOpen(true)}
-              onShowResults={handleViewResults}
-              onOpenDubbingListenModal={() => setIsDubbingListenModalOpen(true)}
-              latestResultByScript={latestResultByScript || {}}
             />
           </div>
         </div>
+
+        {/* Script Display - 마진 축소 */}
+        <div className="mt-1 col-span-12">
+          <ScriptDisplay
+            captions={front_data.captions}
+            currentScriptIndex={currentScriptIndex}
+            onScriptChange={setCurrentScriptIndex}
+            currentVideoTime={currentVideoTime}
+            playbackRange={getCurrentScriptPlaybackRange()}
+            videoPlayerRef={videoPlayerRef}
+            currentWords={currentWords}
+            recording={recording}
+            recordingCompleted={recordingCompleted}
+            isAnalyzing={isAnalyzing}
+            showAnalysisResult={showAnalysisResult}
+            analysisResult={analysisResult}
+            // 추가된 props
+            isVideoPlaying={isVideoPlaying}
+            onPlay={customHandlePlay}
+            onPause={customHandlePause}
+            onMicClick={handleMicClick}
+            isLooping={isLooping}
+            onLoopToggle={() => {
+              // 구간 반복 상태 토글
+              setIsLooping(!isLooping);
+              
+              if (!isLooping) {
+                // 구간 반복 시작
+                if (videoPlayerRef?.current && front_data.captions[currentScriptIndex]) {
+                  const startTime = front_data.captions[currentScriptIndex].start_time;
+                  const endTime = front_data.captions[currentScriptIndex].end_time;
+                  
+                  // 현재 시간이 구간 밖이면 시작 지점으로 이동
+                  const currentTime = videoPlayerRef.current.getCurrentTime();
+                  if (currentTime < startTime || currentTime >= endTime) {
+                    videoPlayerRef.current.seekTo(startTime);
+                  }
+                  
+                  // 재생 시작
+                  videoPlayerRef.current.playVideo();
+                  
+                  // 구간 반복 감시 시작 - 전역 변수로 저장하여 나중에 정리할 수 있도록 함
+                  window.loopIntervalId = setInterval(() => {
+                    if (!videoPlayerRef.current) {
+                      clearInterval(window.loopIntervalId);
+                      return;
+                    }
+                    
+                    const currentTime = videoPlayerRef.current.getCurrentTime();
+                    if (currentTime >= endTime - 0.1) {
+                      videoPlayerRef.current.seekTo(startTime);
+                      videoPlayerRef.current.playVideo();
+                    }
+                  }, 200);
+                }
+              } else {
+                // 구간 반복 중지
+                if (window.loopIntervalId) {
+                  clearInterval(window.loopIntervalId);
+                  window.loopIntervalId = undefined;
+                }
+              }
+            }}
+            // 더빙본 들어보기와 결과보기 버튼 관련 props
+            showCompletedButtons={Object.keys(latestResultByScript || {}).length === front_data.captions.length && front_data.captions.length > 0}
+            onOpenDubbingListenModal={() => setIsDubbingListenModalOpen(true)}
+            onShowResults={handleViewResults}
+          />
+        </div>
   
-        {/* 🆕 결과 섹션을 기존 레이아웃 안에 통합 */}
+        {/* 결과 섹션을 기존 레이아웃 안에 통합 */}
         {showResults && (
-          <div ref={resultsRef} className="result-container mt-8">
+          <div ref={resultsRef} className="result-container mt-2">
             <div className="animate-fade-in-up">
               <ResultContainer
                 finalResults={finalResults}
@@ -691,12 +718,8 @@ useEffect(() => {
             </div>
           </div>
         )}
-
-        {/* 🆕 분석 결과 조회 버튼 - 항상 렌더링 */}
-        {/* ResultViewBtn 완전히 제거 */}
-
-
       </div>
+      
       {/* Sidebar - 오른쪽 고정 */}
       <Sidebar
         isOpen={isSidebarOpen}
@@ -709,7 +732,6 @@ useEffect(() => {
         analyzedCount={12}
         totalCount={191}
         recording={recording}
-        onStopLooping={() => pitchRef.current?.stopLooping?.()}
         recordedScripts={recordingCompleted ? Array(front_data.captions.length).fill(false).map((_, i) => i === currentScriptIndex) : []}
         latestResultByScript={latestResultByScript}
         recordingCompleted={recordingCompleted}

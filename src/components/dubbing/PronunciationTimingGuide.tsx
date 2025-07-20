@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Loader from "../ui/Loader";
+import WordDetailModal from "./wordDetailModal";
 
 interface PronunciationTimingGuideProps {
   captions: Array<{
@@ -43,6 +44,10 @@ export default function PronunciationTimingGuide({
   // 부드러운 전환을 위한 상태
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showContent, setShowContent] = useState(false);
+
+  // 단어 클릭 시 WordDetailModal이 열리도록 useState로 모달 상태와 선택 단어 관리
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedWord, setSelectedWord] = useState<any>(null);
 
   // 분석 결과가 표시될 때 게이지 애니메이션 시작
   useEffect(() => {
@@ -137,47 +142,110 @@ export default function PronunciationTimingGuide({
 
   return (
     <div className="relative w-full h-full flex items-center justify-center">
-      
-      {/* 배우 뱃지 - 듀엣자막디스플레이와 동일한 위치 */}
-      <div className="absolute top-1/2 -translate-y-1/2 left-3 flex items-center gap-2 px-3 py-1 rounded-full text-xl font-semibold bg-emerald-600 text-white">
-        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-        </svg>
-        내 대사
-      </div>
-      {/* 자막 텍스트 - 듀엣자막디스플레이와 동일한 위치 */}
+      {/* 배우 뱃지 - 듀엣더빙이 아닐 때는 표시하지 않음 */}
+      {process.env.NEXT_PUBLIC_MODE === 'duet' && (
+        <div className="absolute top-1/2 -translate-y-1/2 left-3 flex items-center gap-2 px-3 py-1 rounded-full text-xl font-semibold bg-emerald-600 text-white">
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+          </svg>
+          내 대사
+        </div>
+      )}
+      {/* 자막 텍스트 - 단어 게이지를 여러 줄로 분할 */}
       <div className="text-center w-full">
         <div className="text-2xl font-bold leading-tight text-emerald-100">
           {showContent && analysisResult?.word_analysis && analysisResult.word_analysis.length > 0 ? (
             // 분석 결과가 있을 때만 표시
-            <div className={`transition-all duration-300 ease-out ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
-              <div className="flex flex-wrap justify-center items-center gap-4">
-                {words.map((word: any, idx: number) => {
-                  const animatedScore = animatedScores[word.word] || 0;
-                  return (
-                    <div 
-                      key={word.word + idx}
-                      className="flex flex-col items-center"
-                    >
-                      <span className="text-emerald-100 mb-2">
-                        {decodeHtmlEntities(word.word)}
-                      </span>
-                      {/* 단어별 정확도 게이지 */}
-                      <div className="w-20 h-2 bg-gray-700 rounded-full overflow-hidden">
+            <div className={`transition-all duration-300 ease-out ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}> 
+              <div className="flex flex-col items-center gap-2">
+                {/* 첫 줄 */}
+                <div className="flex flex-wrap justify-center items-center gap-4">
+                  {firstLine.map((word: any, idx: number) => {
+                    const animatedScore = animatedScores[word.word] || 0;
+                    return (
+                      <div
+                        key={word.word + idx}
+                        className="flex flex-col items-center cursor-pointer transition-transform duration-200 hover:scale-110 hover:bg-emerald-900/20 rounded-lg"
+                        onClick={() => {
+                          setSelectedWord(word);
+                          setIsModalOpen(true);
+                        }}
+                      >
+                        <span className="text-emerald-100 mb-2">{decodeHtmlEntities(word.word)}</span>
+                        <div className="w-20 h-2 bg-gray-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-full transition-all duration-300 ease-out"
+                            style={{
+                              width: `${Math.round(animatedScore * 100)}%`,
+                              backgroundColor: getGradientColor(animatedScore)
+                            }}
+                          />
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">{Math.round(animatedScore * 100)}%</div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* 두 번째 줄 */}
+                {secondLine.length > 0 && (
+                  <div className="flex flex-wrap justify-center items-center gap-4 mt-2">
+                    {secondLine.map((word: any, idx: number) => {
+                      const animatedScore = animatedScores[word.word] || 0;
+                      return (
                         <div
-                          className="h-full transition-all duration-300 ease-out"
-                          style={{
-                            width: `${Math.round(animatedScore * 100)}%`,
-                            backgroundColor: getGradientColor(animatedScore)
+                          key={word.word + idx}
+                          className="flex flex-col items-center cursor-pointer transition-transform duration-200 hover:scale-110 hover:bg-emerald-900/20 rounded-lg"
+                          onClick={() => {
+                            setSelectedWord(word);
+                            setIsModalOpen(true);
                           }}
-                        />
-                      </div>
-                      <div className="text-xs text-gray-400 mt-1">
-                        {Math.round(animatedScore * 100)}%
-                      </div>
-                    </div>
-                  );
-                })}
+                        >
+                          <span className="text-emerald-100 mb-2">{decodeHtmlEntities(word.word)}</span>
+                          <div className="w-20 h-2 bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                              className="h-full transition-all duration-300 ease-out"
+                              style={{
+                                width: `${Math.round(animatedScore * 100)}%`,
+                                backgroundColor: getGradientColor(animatedScore)
+                              }}
+                            />
+                          </div>
+                          <div className="text-xs text-gray-400 mt-1">{Math.round(animatedScore * 100)}%</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {/* 세 번째 줄 (있을 경우) */}
+                {thirdLine.length > 0 && (
+                  <div className="flex flex-wrap justify-center items-center gap-4 mt-2">
+                    {thirdLine.map((word: any, idx: number) => {
+                      const animatedScore = animatedScores[word.word] || 0;
+                      return (
+                        <div
+                          key={word.word + idx}
+                          className="flex flex-col items-center cursor-pointer transition-transform duration-200 hover:scale-110 hover:bg-emerald-900/20 rounded-lg"
+                          onClick={() => {
+                            setSelectedWord(word);
+                            setIsModalOpen(true);
+                          }}
+                        >
+                          <span className="text-emerald-100 mb-2">{decodeHtmlEntities(word.word)}</span>
+                          <div className="w-20 h-2 bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                              className="h-full transition-all duration-300 ease-out"
+                              style={{
+                                width: `${Math.round(animatedScore * 100)}%`,
+                                backgroundColor: getGradientColor(animatedScore)
+                              }}
+                            />
+                          </div>
+                          <div className="text-xs text-gray-400 mt-1">{Math.round(animatedScore * 100)}%</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -189,6 +257,12 @@ export default function PronunciationTimingGuide({
           )}
         </div>
       </div>
+      <WordDetailModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        word={selectedWord}
+        userSTT={undefined}
+      />
     </div>
   );
 } 

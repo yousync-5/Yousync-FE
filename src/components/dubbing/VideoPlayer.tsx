@@ -17,6 +17,8 @@ interface VideoPlayerProps {
   onPlay?: () => void;
   overlayType?: 'full' | 'header'; // 오버레이 타입
   overlayHeight?: number; // header 오버레이 높이(px)
+  // 스크립트 목록 버튼 관련 props
+  onOpenSidebar?: () => void;
 }
 
 export interface VideoPlayerRef {
@@ -27,7 +29,7 @@ export interface VideoPlayerRef {
 }
 
 const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
-  ({ videoId, onTimeUpdate, startTime = 0, endTime, disableAutoPause = false, onEndTimeReached, onPause, onPlay, overlayType = 'header', overlayHeight = 48 }, ref) => {
+  ({ videoId, onTimeUpdate, startTime = 0, endTime, disableAutoPause = false, onEndTimeReached, onPause, onPlay, overlayType = 'header', overlayHeight = 48, onOpenSidebar }, ref) => {
     const playerRef = useRef<{ seekTo: (time: number) => void; playVideo: () => void; pauseVideo: () => void; getCurrentTime: () => number } | null>(null);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const initialStartTimeRef = useRef(startTime);
@@ -132,8 +134,8 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
 
 
     return (
-      <div className="bg-black rounded-xl overflow-hidden w-full">
-        <div className="relative w-full pt-[56.25%]">
+      <div className="bg-black rounded-xl overflow-hidden w-full border border-gray-800 shadow-lg shadow-black/50 relative">
+        <div className="relative w-full pt-[40%]">
           <YouTube
             videoId={videoId}
             className="absolute top-0 left-0 w-full h-full"
@@ -158,9 +160,29 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
           {/* 상단 오버레이 (텍스트/공유/타이틀 등 가림) */}
           <div
             className="absolute top-0 left-0 w-full z-20 pointer-events-none"
-            style={{ height: 80, background: '#000' }}
+            style={{ height: 80, background: 'linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.7) 70%, rgba(0,0,0,0) 100%)' }}
           />
         </div>
+        
+        {/* 전체 스크립트 보기 버튼 - 오른쪽 상단에 위치 */}
+        {onOpenSidebar && (
+          <button
+            onClick={onOpenSidebar}
+            className="absolute top-2 right-2 flex items-center justify-center w-8 h-8 bg-gray-800/80 text-gray-300 rounded-md hover:bg-gray-700 hover:text-white transition-all duration-200 z-30"
+            title="전체 스크립트 보기"
+          >
+            <svg width="50" height="50" viewBox="0 2 28 28" fill="none">
+              <g stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="5,8 8,11 13,6" />
+                <line x1="16" y1="8" x2="23" y2="8" />
+                <polyline points="5,16 8,19 13,14" />
+                <line x1="16" y1="16" x2="23" y2="16" />
+                <polyline points="5,24 8,27 13,22" />
+                <line x1="16" y1="24" x2="23" y2="24" />
+              </g>
+            </svg>
+          </button>
+        )}
       </div>
     );
   }
