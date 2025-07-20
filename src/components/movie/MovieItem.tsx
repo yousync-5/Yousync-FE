@@ -1,6 +1,6 @@
 import { PlayIcon, SpeakerWaveIcon } from "@heroicons/react/24/outline";
 import type { MovieItemProps } from "@/types/video";
-import { useLocalBookmark } from '@/hooks/useLocalBookmark';
+import { useBookmark } from '@/hooks/useBookmark';
 import { BookmarkIcon } from '@heroicons/react/24/solid';
 import { useState, useEffect } from 'react';
 import { useUser } from '@/hooks/useUser';
@@ -15,7 +15,7 @@ export default function MovieItem({
   onStop,
 }: MovieItemProps) {
   // 북마크 훅 사용
-  const { isLoading, isSuccess, isError, addBookmark, removeBookmark, getBookmarks, isBookmarked } = useLocalBookmark();
+  const { isLoading, isSuccess, isError, addBookmark, removeBookmark, getBookmarks, isBookmarked } = useBookmark();
   // 북마크 상태를 로컬에서 관리 (true/false)
   const [bookmarked, setBookmarked] = useState(false);
   // 로그인 상태 확인
@@ -47,19 +47,9 @@ export default function MovieItem({
       if (!bookmarked) {
         // 북마크되지 않은 경우 추가
         console.log('📝 북마크 추가 시도...');
-        await addBookmark(
-          Number(video.videoId), 
-          `${video.actor_name} 더빙`, 
-          video.actor_name, 
-          '액션', // 기본 카테고리
-          video.youtubeId ? `https://www.youtube.com/watch?v=${video.youtubeId}` : undefined
-        );
+        await addBookmark(Number(video.videoId));
         setBookmarked(true);
         console.log(`✅ 북마크 추가 완료: ${video.actor_name} 더빙`);
-        
-        // 로컬스토리지 확인
-        const stored = localStorage.getItem('yousync_bookmarks');
-        console.log('💾 저장된 북마크 데이터:', stored ? JSON.parse(stored) : '없음');
       } else {
         // 이미 북마크된 경우 삭제
         console.log('🗑️ 북마크 제거 시도...');

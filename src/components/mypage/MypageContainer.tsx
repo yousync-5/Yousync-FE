@@ -2,27 +2,17 @@
 
 import React, { useState } from 'react';
 import { useMyPageOverview } from '@/hooks/useMyPageOverview';
-import { useLocalBookmark } from '@/hooks/useLocalBookmark';
 import { API_ENDPOINTS } from '@/lib/constants';
 import UserProfile from './UserProfile';
 import PageHeader from './PageHeader';
 import { extractYoutubeVideoId, getYoutubeThumbnail } from '@/utils/extractYoutubeVideoId';
-import { BookmarkIcon } from '@heroicons/react/24/solid';
 
 const MypageContainer: React.FC = () => {
   const { data, loading, error, refetch } = useMyPageOverview();
-  const { bookmarks, removeBookmark: removeLocalBookmark } = useLocalBookmark();
-  const [bookmarkPage, setBookmarkPage] = useState(1);
   const [dubbedPage, setDubbedPage] = useState(1);
-  const [isRemovingBookmark, setIsRemovingBookmark] = useState(false);
   const itemsPerPage = 6; // 페이지당 표시할 항목 수
 
-  // 디버깅: 북마크 데이터 확인
-  console.log('🔍 마이페이지 북마크 데이터:', {
-    bookmarksCount: bookmarks.length,
-    bookmarks: bookmarks,
-    localStorageData: typeof window !== 'undefined' ? localStorage.getItem('yousync_bookmarks') : 'SSR'
-  });
+
 
   // 디버깅: 서버 더빙 토큰 데이터 확인
   console.log('🎬 서버 더빙 토큰 데이터:', {
@@ -48,13 +38,7 @@ const MypageContainer: React.FC = () => {
     }))
   });
 
-  // 로컬 북마크 정렬 및 페이지네이션 계산
-  const sortedLocalBookmarks = [...bookmarks].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  const totalLocalBookmarkPages = Math.ceil(sortedLocalBookmarks.length / itemsPerPage);
-  const currentLocalBookmarks = sortedLocalBookmarks.slice(
-    (bookmarkPage - 1) * itemsPerPage,
-    bookmarkPage * itemsPerPage
-  );
+
 
   // 더빙한 토큰 정렬 및 페이지네이션 계산
   const sortedDubbedTokens = data ? [...data.recent_dubbed_tokens].sort((a, b) => b.token_id - a.token_id) : [];
@@ -85,25 +69,7 @@ const MypageContainer: React.FC = () => {
     return buttons;
   };
 
-  const handleRemoveLocalBookmark = async (tokenId: number) => {
-    setIsRemovingBookmark(true);
-    try {
-      const success = await removeLocalBookmark(tokenId);
-      if (success) {
-        console.log(`🗑️ 로컬 북마크 제거 완료: ${tokenId}`);
-        // 북마크 삭제 후 즉시 새로고침
-        // refreshBookmarks(); // 이 함수는 더 이상 사용되지 않으므로 제거
-        // 사용자에게 피드백 제공
-        console.log('✅ 북마크가 성공적으로 삭제되었습니다.');
-      }
-    } catch (error) {
-      console.error('북마크 삭제 실패:', error);
-      // 에러 시 사용자에게 알림
-      console.error('❌ 북마크 삭제에 실패했습니다.');
-    } finally {
-      setIsRemovingBookmark(false);
-    }
-  };
+
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

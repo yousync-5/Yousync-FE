@@ -15,6 +15,7 @@ import { useDubbingState } from "@/hooks/useDubbingState";
 import { useBackgroundAudio } from "@/hooks/useBackgroundAudio";
 import DubbingListenModal from "@/components/result/DubbingListenModal";
 import Sidebar from "@/components/ui/Sidebar";
+import { mypageService } from "@/services/mypage";
 
 
 interface DubbingContainerProps {
@@ -471,6 +472,82 @@ useEffect(() => {
     return new EventSource(`${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/analysis-progress/${jobId}`);
   };
 
+  // 🆕 녹음 시작 시 기존 분석 결과 삭제
+  const handleRecordingStart = useCallback(async (scriptIndex: number) => {
+    console.log('[DEBUG] handleRecordingStart 호출됨:', scriptIndex);
+    
+    // 로그인 상태 확인
+    const accessToken = localStorage.getItem('access_token');
+    const googleUser = localStorage.getItem('google_user');
+    
+    console.log('[DEBUG] 로그인 상태 확인:', {
+      hasAccessToken: !!accessToken,
+      hasGoogleUser: !!googleUser,
+      accessTokenLength: accessToken?.length || 0,
+      tokenId: id
+    });
+    
+    if (!accessToken) {
+      console.error('[재더빙] 로그인이 필요합니다.');
+      toast.error('재더빙을 위해서는 로그인이 필요합니다.');
+      return;
+    }
+    
+    // 재더빙 시 기존 분석 결과 삭제
+    try {
+      console.log('[재더빙] 기존 분석 결과 삭제 시작 - tokenId:', id);
+      console.log('[DEBUG] API 엔드포인트:', `/mypage/tokens/${id}/my-results`);
+      console.log('[DEBUG] Authorization 헤더:', `Bearer ${accessToken.substring(0, 20)}...`);
+      
+      await mypageService.deleteMyTokenResults(Number(id));
+      console.log('[재더빙] 기존 분석 결과 삭제 완료');
+      
+      // 삭제 후 상태 초기화
+      setFinalResults({});
+      setLatestResultByScript({});
+      setHasAnalysisResults(false);
+      setShowCompleted(false);
+      setShowResults(false);
+      
+      // SSE 연결 해제
+      if (sseRef.current) {
+        sseRef.current.close();
+        sseRef.current = null;
+      }
+      connectedJobIdsRef.current.clear();
+      setMultiJobIds([]);
+      
+    } catch (error: any) {
+      console.error('[재더빙] 기존 분석 결과 삭제 실패:', error);
+      console.error('[DEBUG] 에러 상세 정보:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message,
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          headers: error.config?.headers
+        }
+      });
+      
+      if (error.response?.status === 401) {
+        toast.error('로그인이 필요합니다. 다시 로그인해주세요.');
+      } else if (error.response?.status === 403) {
+        toast.error('접근 권한이 없습니다.');
+      } else if (error.response?.status === 404) {
+        toast.error('삭제할 분석 결과가 없습니다.');
+      } else if (error.response?.status === 422) {
+        toast.error('재더빙 중 오류가 발생했습니다.');
+      } else if (error.response?.status === 500) {
+        toast.error('서버 오류가 발생했습니다.');
+      } else {
+        toast.error('재더빙 중 오류가 발생했습니다.');
+      }
+      // 삭제 실패해도 계속 진행
+    }
+  }, [id, setFinalResults, setLatestResultByScript, setHasAnalysisResults, setShowCompleted, setShowResults, setMultiJobIds]);
+
   // --- 렌더링 ---
   if (!isReady) {
     return (
@@ -570,6 +647,7 @@ useEffect(() => {
               onOpenSidebar={() => setIsSidebarOpen(true)}
               onShowResults={handleViewResults}
               onOpenDubbingListenModal={() => setIsDubbingListenModalOpen(true)}
+              onRecordingStart={handleRecordingStart}
               latestResultByScript={latestResultByScript || {}}
             />
           </div>

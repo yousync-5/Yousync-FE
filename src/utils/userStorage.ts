@@ -104,7 +104,6 @@ export const clearUserAllData = (userId: string | number) => {
 
 // 사용 예시
 export const USER_STORAGE_KEYS = {
-  BOOKMARKS: 'yousync_bookmarks',
   SETTINGS: 'yousync_settings',
   HISTORY: 'yousync_history',
   PREFERENCES: 'yousync_preferences'

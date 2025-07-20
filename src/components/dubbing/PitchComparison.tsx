@@ -31,6 +31,7 @@ interface PitchComparisonProps {
   onOpenSidebar?: () => void;
   onShowResults?: () => void;
   onOpenDubbingListenModal?: () => void;
+  onRecordingStart?: (scriptIndex: number) => void;
   latestResultByScript?: { [key: string]: { overall_score: number } };
 }
 
@@ -54,6 +55,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
   onOpenSidebar,
   onShowResults,
   onOpenDubbingListenModal,
+  onRecordingStart,
   latestResultByScript,
 }: PitchComparisonProps, ref) {
 
@@ -194,8 +196,27 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
     if (videoPlayerRef?.current && captions[currentScriptIndex]) {
       const currentScript = captions[currentScriptIndex];
       
+      console.log('[TIMING] 마이크 버튼 클릭 - 영상 재생 시작');
       videoPlayerRef.current.seekTo(currentScript.start_time);
       videoPlayerRef.current.playVideo();
+      
+      // 로그인 상태 디버깅
+      const accessToken = localStorage.getItem('access_token');
+      const googleUser = localStorage.getItem('google_user');
+      console.log('[DEBUG] 로그인 상태 확인:', {
+        hasAccessToken: !!accessToken,
+        hasGoogleUser: !!googleUser,
+        accessTokenLength: accessToken?.length || 0
+      });
+      
+      // 녹음 시작 시 분석 결과 제거 콜백 호출
+      console.log('[DEBUG] 녹음 시작 콜백 호출 시도:', { currentScriptIndex, onRecordingStart: !!onRecordingStart });
+      if (onRecordingStart) {
+        console.log('[DEBUG] onRecordingStart 콜백 호출됨');
+        onRecordingStart(currentScriptIndex);
+      } else {
+        console.log('[DEBUG] onRecordingStart 콜백이 없음');
+      }
       
       // 영상이 실제로 재생되기 시작할 때까지 대기
       const checkVideoPlaying = () => {
@@ -206,6 +227,7 @@ const PitchComparison = forwardRef<{ handleExternalStop: () => void }, PitchComp
         
         // 영상이 목표 시간에 도달했는지 확인 (0.1초 허용 오차)
         if (Math.abs(currentTime - targetTime) < 0.1) {
+          console.log('[TIMING] 영상 재생 확인됨 - 녹음 시작');
           startScriptRecording(currentScriptIndex);
           
           if (typeof onNextScript === 'function') {

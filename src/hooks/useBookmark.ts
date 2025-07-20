@@ -7,6 +7,7 @@ interface UseBookmarkResult {
   isLoading: boolean;
   isSuccess: boolean;
   isError: boolean;
+  bookmarks: any[];
   addBookmark: (token_id: number) => Promise<void>;
   removeBookmark: (token_id: number) => Promise<boolean>;
   getBookmarks: () => Promise<any[]>;
@@ -53,6 +54,13 @@ export function useBookmark(): UseBookmarkResult {
       return;
     }
 
+    // 액세스 토큰 확인
+    const accessToken = localStorage.getItem('access_token');
+    if (!accessToken) {
+      console.warn('액세스 토큰이 없습니다. 북마크 추가를 건너뜁니다.');
+      return;
+    }
+
     // 이미 북마크된 경우 중복 요청 방지
     if (isBookmarked(token_id)) {
       return;
@@ -72,6 +80,15 @@ export function useBookmark(): UseBookmarkResult {
     setIsError(false);
     
     try {
+      // axios를 사용하여 POST 요청 보내기
+      const headers = { Authorization: `Bearer ${accessToken}` };
+      
+      console.log('📤 북마크 추가 API 요청:', { token_id, endpoint: '/mypage/bookmarks' });
+      await axios.post(`${API_ENDPOINTS.BASE_URL}/mypage/bookmarks`, { token_id }, {
+        headers,
+        timeout: 30000
+      });
+      console.log('✅ 북마크 추가 API 성공');
       // 백엔드 API 직접 호출 (API 문서에 맞게 엔드포인트 수정)
       await backendApi.post('/mypage/bookmarks', { token_id });
       setIsSuccess(true);
@@ -95,6 +112,13 @@ export function useBookmark(): UseBookmarkResult {
       return false;
     }
 
+    // 액세스 토큰 확인
+    const accessToken = localStorage.getItem('access_token');
+    if (!accessToken) {
+      console.warn('액세스 토큰이 없습니다. 북마크 삭제를 건너뜁니다.');
+      return false;
+    }
+
     // 북마크되지 않은 경우 중복 요청 방지
     if (!isBookmarked(token_id)) {
       return true;
@@ -114,8 +138,7 @@ export function useBookmark(): UseBookmarkResult {
     
     try {
       // 직접 axios를 사용하여 DELETE 요청 보내기
-      const accessToken = localStorage.getItem('access_token');
-      const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+      const headers = { Authorization: `Bearer ${accessToken}` };
       
       await axios.delete(`${API_ENDPOINTS.BASE_URL}/mypage/bookmarks/${token_id}`, { 
         headers,
@@ -144,16 +167,21 @@ export function useBookmark(): UseBookmarkResult {
       console.warn('로그인이 필요한 기능입니다.');
       return [];
     }
+    
+    // 액세스 토큰 확인
+    const accessToken = localStorage.getItem('access_token');
+    if (!accessToken) {
+      console.warn('액세스 토큰이 없습니다. 북마크 조회를 건너뜁니다.');
+      return [];
+    }
+    
     const now = Date.now();
     if (cachedBookmarks.length > 0 && (now - lastFetchTime) < CACHE_DURATION) {
-    
       return cachedBookmarks;
     }
     
-    
     try {
-      const accessToken = localStorage.getItem('access_token');
-      const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+      const headers = { Authorization: `Bearer ${accessToken}` };
       
       const response = await axios.get(`${API_ENDPOINTS.BASE_URL}/mypage/bookmarks`, {
         headers,
@@ -183,7 +211,8 @@ export function useBookmark(): UseBookmarkResult {
   // 북마크 상태 변경 감지를 위한 useEffect
   useEffect(() => {
     // 컴포넌트 마운트 시 초기 북마크 데이터 로드
-    if (isLoggedIn() && cachedBookmarks.length === 0) {
+    const accessToken = localStorage.getItem('access_token');
+    if (isLoggedIn() && accessToken && cachedBookmarks.length === 0) {
       getBookmarks().catch(err => {
         // 에러 발생 시 조용히 실패 (UI는 계속 작동)
         console.error('초기 북마크 로드 실패:', err);
@@ -195,6 +224,7 @@ export function useBookmark(): UseBookmarkResult {
     isLoading, 
     isSuccess, 
     isError, 
+    bookmarks,
     addBookmark, 
     removeBookmark, 
     getBookmarks, 
