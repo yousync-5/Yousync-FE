@@ -14,6 +14,7 @@ import { useDubbingState } from "@/hooks/useDubbingState";
 import { useBackgroundAudio } from "@/hooks/useBackgroundAudio";
 import DubbingListenModal from "@/components/result/DubbingListenModal";
 import Sidebar from "@/components/ui/Sidebar";
+import { useTokenStore } from '@/store/useTokenStore';
 import { useDubbingRecorder } from '@/hooks/useDubbingRecorder';
 
 // 전역 타입 선언 (window 객체 확장)
@@ -22,6 +23,7 @@ declare global {
     loopIntervalId?: NodeJS.Timeout;
   }
 }
+
 
 
 interface DubbingContainerProps {
@@ -41,7 +43,6 @@ const DubbingContainer = ({
 }: DubbingContainerProps) => {
   // 데이터 준비 여부 체크
   const isReady = !!(front_data && tokenData && serverPitchData);
-  
   // 기본 상태들을 훅으로 관리
   const dubbingState = useDubbingState(front_data?.captions?.length || 0, {
     onScriptChange: (index: number) => {
@@ -91,6 +92,8 @@ const DubbingContainer = ({
   const videoPlayerRef = useRef<VideoPlayerRef | null>(null);
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const { cleanupMic } = useAudioStream();
+
+  
 
   // zustand에서 multiJobIds 읽기
   const multiJobIds = useJobIdsStore((state) => state.multiJobIds);
@@ -568,6 +571,20 @@ useEffect(() => {
     console.log(`[SSE] Job ID ${jobId} 유효성 확인 완료, SSE 연결 시작`);
     return new EventSource(`${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/analysis-progress/${jobId}`);
   };
+
+  // tokenData 주요 정보 zustand에 저장
+  const setTokenInfo = useTokenStore((state) => state.setTokenInfo);
+  useEffect(() => {
+    if (tokenData && tokenData.id && tokenData.actor_name && tokenData.start_time !== undefined && tokenData.end_time !== undefined && tokenData.bgvoice_url) {
+      setTokenInfo({
+        id: tokenData.id,
+        actor_name: tokenData.actor_name,
+        start_time: tokenData.start_time,
+        end_time: tokenData.end_time,
+        bgvoice_url: tokenData.bgvoice_url,
+      });
+    }
+  }, [tokenData, setTokenInfo]);
 
   // --- 렌더링 ---
   if (!isReady) {
