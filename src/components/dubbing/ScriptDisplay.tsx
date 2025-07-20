@@ -417,7 +417,7 @@ export default function ScriptDisplay({
                     }
                   }
                 }}
-                className={`w-10 h-10 ${recording ? 'bg-gradient-to-r from-gray-600 to-gray-700' : 'bg-gradient-to-r from-green-600 to-lime-500 hover:from-green-700 hover:to-lime-600'} text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed`}
+                className={`w-13 h-13 ${recording ? 'bg-gradient-to-r from-gray-600 to-gray-700' : 'bg-gradient-to-r from-green-600 to-lime-500 hover:from-green-700 hover:to-lime-600'} text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed`}
                 title={isVideoPlaying ? '정지' : '실행'}
                 disabled={!videoPlayerRef?.current}
               >
@@ -436,7 +436,7 @@ export default function ScriptDisplay({
               <button
                 onClick={onMicClick}
                 disabled={recording || recordingCompleted}
-                className={`ml-3 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border border-white/10 ${recording ? 'bg-green-500 animate-pulse-mic' : 'bg-gradient-to-r from-red-600 to-pink-500 hover:from-red-700 hover:to-pink-600 text-white'}`}
+                className={`ml-3 w-13 h-13 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border border-white/10 ${recording ? 'bg-green-500 animate-pulse-mic' : 'bg-gradient-to-r from-red-600 to-pink-500 hover:from-red-700 hover:to-pink-600 text-white'}`}
                 style={recording ? { boxShadow: '0 0 0 3px rgba(34,197,94,0.4)' } : undefined}
               >
                 {recording && (
@@ -458,7 +458,7 @@ export default function ScriptDisplay({
               {/* 구간반복 버튼 */}
               <button
                 onClick={onLoopToggle}
-                className={`ml-3 w-10 h-10 ${isLooping ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-gray-600 to-gray-700'} hover:from-yellow-600 hover:to-orange-600 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed`}
+                className={`ml-3 w-13 h-13 ${isLooping ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-gray-600 to-gray-700'} hover:from-yellow-600 hover:to-orange-600 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed`}
                 title={isLooping ? '구간반복 해제' : '구간반복'}
                 disabled={recording || recordingCompleted || !videoPlayerRef?.current}
               >
@@ -474,13 +474,13 @@ export default function ScriptDisplay({
               {showCompletedButtons && (
                 <>
                   <button 
-                    className="ml-3 px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white text-xs font-semibold shadow-md shadow-emerald-700/20 transition-all duration-200"
+                    className="ml-10 px-4 py-3 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white text-m font-semibold shadow-md shadow-emerald-700/20 transition-all duration-200"
                     onClick={onOpenDubbingListenModal}
                   >
                     더빙본 들어보기
                   </button>
                   <button
-                    className="ml-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-xs font-semibold shadow-md shadow-blue-700/20 transition-all duration-200"
+                    className="ml-3 px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-m font-semibold shadow-md shadow-blue-700/20 transition-all duration-200"
                     onClick={onShowResults}
                   >
                     결과보기
@@ -564,11 +564,11 @@ export default function ScriptDisplay({
                   <div className="absolute inset-0 bg-gray-900/30 backdrop-blur-[1px] flex items-center justify-center z-20 rounded pointer-events-none">
                     <div className="flex flex-col items-center space-y-1">
                       {/* 빙빙 도는 아이콘 */}
-                      <svg className="w-5 h-5 text-emerald-300 animate-spin" viewBox="0 0 20 20" fill="none" aria-label="분석 중">
+                      <svg className="w-10 h-10 text-emerald-300 animate-spin" viewBox="0 0 20 20" fill="none" aria-label="분석 중">
                         <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" strokeDasharray="20 10" />
                       </svg>
                       {/* 분석 중 텍스트 */}
-                      <span className="text-emerald-300 text-[10px] font-medium">분석 중...</span>
+                      <span className="text-emerald-300 text-[20px] font-medium">분석 중...</span>
                     </div>
                   </div>
                 </div>
