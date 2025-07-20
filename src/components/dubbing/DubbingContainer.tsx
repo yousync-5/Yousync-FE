@@ -583,7 +583,7 @@ useEffect(() => {
   
       {/* 본문 - 사이드바 열릴 때 크기 조절 */}
       <div 
-        className={`w-full mx-auto px-2 py-2 transition-all duration-300 ease-in-out ${
+        className={`w-full mx-auto px-2 py-1 transition-all duration-300 ease-in-out ${
           isSidebarOpen ? 'pr-[280px]' : 'pr-2'
         }`}
       >
@@ -610,8 +610,8 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* Script Display - 전체 너비 사용 */}
-        <div className="mt-2 col-span-12">
+        {/* Script Display - 마진 축소 */}
+        <div className="mt-1 col-span-12">
           <ScriptDisplay
             captions={front_data.captions}
             currentScriptIndex={currentScriptIndex}

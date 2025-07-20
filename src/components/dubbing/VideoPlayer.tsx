@@ -135,7 +135,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
 
     return (
       <div className="bg-black rounded-xl overflow-hidden w-full border border-gray-800 shadow-lg shadow-black/50 relative">
-        <div className="relative w-full pt-[56.25%]">
+        <div className="relative w-full pt-[40%]">
           <YouTube
             videoId={videoId}
             className="absolute top-0 left-0 w-full h-full"

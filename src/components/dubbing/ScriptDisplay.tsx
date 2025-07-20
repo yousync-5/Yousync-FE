@@ -378,8 +378,8 @@ export default function ScriptDisplay({
   };
 
   return (
-    <div className="bg-gray-900/80 backdrop-blur-sm rounded-xl p-2 w-full flex flex-col relative border border-gray-800 shadow-lg ">
-      <div className="bg-gradient-to-br from-[#0f172a] to-[#1e293b] rounded-xl p-2 shadow-xl text-white border border-gray-700/50 space-y-2 ">
+    <div className="bg-gray-900/80 backdrop-blur-sm rounded-xl p-1 w-full flex flex-col relative border border-gray-800 shadow-lg ">
+      <div className="bg-gradient-to-br from-[#0f172a] to-[#1e293b] rounded-xl p-1 shadow-xl text-white border border-gray-700/50 space-y-1 ">
         {/* 진행 정보 + 시간 정보 */}
         <div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 gap-1 py-2">
