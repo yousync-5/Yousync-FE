@@ -18,6 +18,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import DuetDetailModal from "@/components/modal/DuetDetailModal";
+import { useUser } from "@/hooks/useUser";
 
 interface MovieProps {
   tokens: TokenDetailResponse[];
@@ -52,7 +53,16 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
       ? tokens.find((v) => String(v.id) === selectedTokenId)
       : undefined;
 
+  const { isLoggedIn, isLoading: userLoading } = useUser();
+
   const openModal = (tokenId: string) => {
+    // 로그인 체크를 모달 열기 전에 수행
+    if (!userLoading && !isLoggedIn) {
+      alert('더빙 기능은 로그인 후 이용 가능합니다.');
+      router.push('/login');
+      return;
+    }
+
     if (hoverTimeout) clearTimeout(hoverTimeout);
     setSelectedTokenId(tokenId);
     if (onOpenModal) {
@@ -331,6 +341,12 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                               className="relative bg-gray-900 border-2 border-gray-800 rounded-3xl overflow-hidden hover:border-blue-400 hover:shadow-2xl transition-all duration-300 cursor-pointer flex-shrink-0 transform hover:scale-105 aspect-video"
                               style={{ minWidth: "280px", maxWidth: "280px" }}
                               onClick={() => {
+                                // 로그인 체크를 모달 열기 전에 수행
+                                if (!userLoading && !isLoggedIn) {
+                                  alert('듀엣 더빙 기능은 로그인 후 이용 가능합니다.');
+                                  router.push('/login');
+                                  return;
+                                }
                                 setSelectedDuet({ scene, pair: scene.duet_pair[0] });
                               }}
                             >

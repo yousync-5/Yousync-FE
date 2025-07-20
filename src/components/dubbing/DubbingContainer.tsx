@@ -18,6 +18,7 @@ import Sidebar from "@/components/ui/Sidebar";
 import { mypageService } from "@/services/mypage";
 import { useUser } from "@/hooks/useUser";
 import { useRouter } from "next/navigation";
+import { useResultStore } from "@/store/useResultStore";
 
 
 interface DubbingContainerProps {
@@ -488,7 +489,7 @@ useEffect(() => {
     return new EventSource(`${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/analysis-progress/${jobId}`);
   };
 
-  // 🆕 녹음 시작 시 기존 분석 결과 삭제
+  // 🆕 녹음 시작 시 기존 분석 결과 삭제 (동일 스크립트 재녹음 시에만)
   const handleRecordingStart = useCallback(async (scriptIndex: number) => {
     console.log('[DEBUG] handleRecordingStart 호출됨:', scriptIndex);
     
@@ -509,60 +510,51 @@ useEffect(() => {
       return;
     }
     
-    // 재더빙 시 기존 분석 결과 삭제
-    try {
-      console.log('[재더빙] 기존 분석 결과 삭제 시작 - tokenId:', id);
-      console.log('[DEBUG] API 엔드포인트:', `/mypage/tokens/${id}/my-results`);
-      console.log('[DEBUG] Authorization 헤더:', `Bearer ${accessToken.substring(0, 20)}...`);
-      
-      await mypageService.deleteMyTokenResults(Number(id));
-      console.log('[재더빙] 기존 분석 결과 삭제 완료');
-      
-      // 삭제 후 상태 초기화
-      setFinalResults({});
-      setLatestResultByScript({});
-      setHasAnalysisResults(false);
-      setShowCompleted(false);
-      setShowResults(false);
-      
-      // SSE 연결 해제
-      if (sseRef.current) {
-        sseRef.current.close();
-        sseRef.current = null;
+    // 현재 스크립트 정보
+    const currentScript = front_data.captions[scriptIndex];
+    const currentScriptText = currentScript?.script || '';
+    
+    // Zustand store에서 기존 결과 확인
+    const { finalResults } = useResultStore.getState();
+    const hasExistingResults = finalResults && finalResults.length > 0;
+    
+    // 🆕 페이지 진입 시 이미 토큰 전체를 삭제하므로 개별 문장 재녹음 시에는 삭제하지 않음
+    console.log('[DEBUG] 녹음 시작 - 개별 문장 재녹음 시 삭제하지 않음');
+    console.log('[DEBUG] 현재 스크립트:', currentScriptText);
+    console.log('[DEBUG] 스크립트 인덱스:', scriptIndex);
+  }, [id, front_data.captions, latestResultByScript, recordingCompleted, setFinalResults, setLatestResultByScript, setHasAnalysisResults, setShowCompleted, setShowResults, setMultiJobIds]);
+
+  // 🆕 더빙 페이지 진입 시 기존 분석 결과 확인 (삭제하지 않음)
+  useEffect(() => {
+    const checkExistingResults = async () => {
+      // 로그인 상태 확인
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) {
+        console.log('[DEBUG] 로그인되지 않음 - 확인 건너뜀');
+        return;
       }
-      connectedJobIdsRef.current.clear();
-      setMultiJobIds([]);
-      
-    } catch (error: any) {
-      console.error('[재더빙] 기존 분석 결과 삭제 실패:', error);
-      console.error('[DEBUG] 에러 상세 정보:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-        config: {
-          url: error.config?.url,
-          method: error.config?.method,
-          headers: error.config?.headers
+
+      try {
+        // 기존 분석 결과 확인 (삭제하지 않음)
+        const response = await mypageService.getTokenAnalysisStatus(Number(id));
+        console.log('[DEBUG] 기존 분석 결과 확인:', response);
+        
+        if (response.has_analysis) {
+          console.log('[DEBUG] 기존 분석 결과 발견 - 삭제하지 않고 그대로 유지');
+          // 기존 결과가 있으면 상태에 로드
+          // 실제 삭제는 "다시 더빙하기" 버튼을 눌렀을 때만 수행
+        } else {
+          console.log('[DEBUG] 기존 분석 결과 없음');
         }
-      });
-      
-      if (error.response?.status === 401) {
-        toast.error('로그인이 필요합니다. 다시 로그인해주세요.');
-      } else if (error.response?.status === 403) {
-        toast.error('접근 권한이 없습니다.');
-      } else if (error.response?.status === 404) {
-        toast.error('삭제할 분석 결과가 없습니다.');
-      } else if (error.response?.status === 422) {
-        toast.error('재더빙 중 오류가 발생했습니다.');
-      } else if (error.response?.status === 500) {
-        toast.error('서버 오류가 발생했습니다.');
-      } else {
-        toast.error('재더빙 중 오류가 발생했습니다.');
+      } catch (error: any) {
+        console.error('[DEBUG] 기존 분석 결과 확인 실패:', error);
+        // 에러가 발생해도 더빙은 계속 진행
       }
-      // 삭제 실패해도 계속 진행
-    }
-  }, [id, setFinalResults, setLatestResultByScript, setHasAnalysisResults, setShowCompleted, setShowResults, setMultiJobIds]);
+    };
+
+    // 페이지 로드 시 한 번만 실행
+    checkExistingResults();
+  }, [id]); // id가 변경될 때만 실행
 
   // --- 렌더링 ---
   if (!isReady) {

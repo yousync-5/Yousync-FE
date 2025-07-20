@@ -6,7 +6,7 @@ import { FaMicrophone, FaUser, FaTag, FaClock } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import type { TokenDetailResponse } from "@/types/pitch";
 import { tokenApi } from "@/services/api";
-import { useUser } from "@/hooks/useUser";
+
 
 const YouTube = dynamic(() => import('react-youtube'), { ssr: false });
 
@@ -26,7 +26,7 @@ export default function MovieDetailModal({
   const router = useRouter();
   const playerRef = useRef<any>(null);
   const [isDubbingLoading, setIsDubbingLoading] = useState(false);
-  const { isLoggedIn, isLoading } = useUser();
+
 
   // tokenData가 있을 때만 접근
   const startTime = Number(tokenData?.start_time) || 0;
@@ -64,13 +64,6 @@ export default function MovieDetailModal({
   if (!isOpen || !youtubeId || !tokenData) return null;
 
   const handleDubbingClick = async () => {
-    // 로그인 상태 확인
-    if (!isLoading && !isLoggedIn) {
-      alert('더빙 기능은 로그인 후 이용 가능합니다.');
-      router.push('/login');
-      return;
-    }
-
     setIsDubbingLoading(true);
     console.log(">> ", tokenData.id, youtubeId);
     try {

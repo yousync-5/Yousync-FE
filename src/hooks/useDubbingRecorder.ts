@@ -133,6 +133,16 @@ export function useDubbingRecorder({
       }
     } catch (e) {
       console.error(`[❌ 업로드 실패] 문장 ${idx + 1}번 업로드 중 에러:`, e);
+      
+      // Axios 에러인 경우 더 자세한 정보 출력
+      if (e && typeof e === 'object' && 'response' in e) {
+        const axiosError = e as any;
+        console.error(`[❌ Axios 에러] 상태 코드: ${axiosError.response?.status}`);
+        console.error(`[❌ Axios 에러] 응답 데이터:`, axiosError.response?.data);
+        console.error(`[❌ Axios 에러] 요청 URL:`, axiosError.config?.url);
+        console.error(`[❌ Axios 에러] 요청 헤더:`, axiosError.config?.headers);
+      }
+      
       if (onUploadComplete) onUploadComplete(false, []);
     }
   };

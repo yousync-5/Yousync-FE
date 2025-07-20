@@ -219,13 +219,25 @@ const ResultComponent: React.FC<TestResultAnalysisSectionProps> = ({
           {/* 다시 더빙하기 버튼 추가 */}
           <div className="w-full flex justify-center px-2 md:px-0 mt-8 gap-4">
             <button
-              onClick={() => {
+              onClick={async () => {
                 // URL에서 token_id 파라미터 추출
                 const urlParams = new URLSearchParams(window.location.search);
                 const tokenId = urlParams.get('token_id');
                 if (tokenId) {
-                  // 더빙 페이지로 이동 (경로 형식: /dubbing/[id])
-                  window.location.href = `/dubbing/${tokenId}`;
+                  try {
+                    // 기존 분석 결과 삭제
+                    console.log('[DEBUG] 다시 더빙하기 - 기존 분석 결과 삭제 시작');
+                    const { mypageService } = await import('@/services/mypage');
+                    await mypageService.deleteMyTokenResults(Number(tokenId));
+                    console.log('[DEBUG] 다시 더빙하기 - 기존 분석 결과 삭제 완료');
+                    
+                    // 삭제 완료 후 더빙 페이지로 이동
+                    window.location.href = `/dubbing/${tokenId}`;
+                  } catch (error: any) {
+                    console.error('[DEBUG] 다시 더빙하기 - 삭제 실패:', error);
+                    // 삭제 실패해도 더빙 페이지로 이동
+                    window.location.href = `/dubbing/${tokenId}`;
+                  }
                 }
               }}
               className="w-full max-w-xs px-8 py-4 bg-gradient-to-r from-blue-500 to-green-500 text-white font-semibold rounded-lg shadow-lg hover:from-blue-600 hover:to-green-600 transition-all duration-300 transform hover:scale-105"

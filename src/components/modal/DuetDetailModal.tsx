@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { FaMicrophone, FaUser, FaTag, FaClock } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import type { TokenDetailResponse } from "@/types/pitch";
-import { useUser } from "@/hooks/useUser";
+
 
 const YouTube = dynamic(() => import('react-youtube'), { ssr: false });
 
@@ -28,7 +28,7 @@ export default function DuetDetailModal({
   const playerRef = useRef<any>(null);
   const [selectedActorId, setSelectedActorId] = useState<number | null>(null);
   const [isDubbingLoading, setIsDubbingLoading] = useState(false);
-  const { isLoggedIn, isLoading } = useUser();
+
 
   useEffect(() => {
     setSelectedActorId(null); // 모달 열릴 때마다 초기화
@@ -71,13 +71,6 @@ export default function DuetDetailModal({
   if (!isOpen || !youtubeId || !tokenData) return null;
 
   const handleDubbingClick = () => {
-    // 로그인 상태 확인
-    if (!isLoading && !isLoggedIn) {
-      alert('듀엣 더빙 기능은 로그인 후 이용 가능합니다.');
-      router.push('/login');
-      return;
-    }
-
     if (selectedActorId) {
       setIsDubbingLoading(true); // 더빙하기 버튼 클릭 시 로딩 상태 활성화
       router.push(`/duetdubbing/${youtubeId}?actor1=${duetPair[0].actor_id}&actor2=${duetPair[1].actor_id}&selected=${selectedActorId}`);
