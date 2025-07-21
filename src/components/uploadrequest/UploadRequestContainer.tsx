@@ -2,46 +2,19 @@
 import React, { useEffect, useState } from 'react'
 import { useUser } from '@/hooks/useUser';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
-interface UploadRequest {
-    id: string;
-    title: string;
+export interface UploadRequest {
+    actor: string;
     content: string;
     date: string;
+    id: number;
     status: "심사중" | "승인됨" | "거절됨";
     url: string;
     requester?: string;
 }
 
-const dummyData: UploadRequest[] = [
-    {
-      id: "1",
-      title: "인터스텔라 더빙 요청",
-      content: "이 장면은 꼭 더빙하고 싶어요!",
-      date: "2025.07.19",
-      status: "심사중",
-      url: "https://",
-      requester: "원산하"
-    },
-    {
-      id: "2",
-      title: "타이타닉 명장면 요청",
-      content: "감정 표현 연습용으로 요청합니다",
-      date: "2025.07.18",
-      status: "승인됨",
-      url: "https://",
-      requester: "최우석"
-    },
-    {
-      id: "3",
-      title: "드래곤볼 요청",
-      content: "애니메이션 더빙을 연습하고 싶습니다",
-      date: "2025.07.17",
-      status: "거절됨",
-      url: "https://",
-      requester: "윤정환"
-    },
-];
 
 const statusColors = {
   심사중: "bg-yellow-900/60 text-yellow-300 border-yellow-500/40",
@@ -55,34 +28,129 @@ const UploadRequestContainer = () => {
   const [content, setContent] = useState("");
   const [requester, setRequester] = useState("");
   const [url, setUrl] = useState("");
-  const [requests, setRequests] = useState<UploadRequest[]>(dummyData);
+  const [requests, setRequests] = useState<UploadRequest[]>([]);
   const [showForm, setShowForm] = useState(false);
   const {user, isLoading, isLoggedIn, logout} = useUser();
   const router = useRouter();
+
+  // 내가 작성한 '심사중' 요청이 있는지 체크
+  const hasMyPending = requests.some(
+    (req) => req.requester === user?.name && req.status === "심사중"
+  );
 
   useEffect(() => {
     if(!isLoading && !isLoggedIn){
       router.push('/login');
     }
   }, [isLoading, isLoggedIn])
-  const handleSubmit = () => {
+
+  const fetchAllRequests = async () => {
+    const accessToken = localStorage.getItem("access_token");
+    if (!accessToken) {
+      return;
+    }
+    const res = await axios.get<UploadRequest[]>(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/request/all`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    );
+    setRequests(res.data);
+  };
+  useEffect(() => {
+    try {
+      fetchAllRequests();
+
+    } catch (error) {
+      
+    }
+  }, [])
+  
+  const handleSubmit = async () => {
     if (!title || !content || !url) return;
 
-    const newRequest: UploadRequest = {
-      id: Date.now().toString(),
-      title,
-      content,
-      url,
-      date: new Date().toISOString().slice(0, 10).replace(/-/g, "."),
-      status: "심사중",
-      requester: user?.name,
-    };
+    // 1. 로컬 스토리지에서 access_token 가져오기
+    const accessToken = localStorage.getItem('access_token');
 
-    setRequests([newRequest, ...requests]);
-    setTitle("");
-    setContent("");
-    setUrl("");
-    setShowForm(false);
+    // 토큰이 없으면 요청을 보내지 않음 (혹은 로그인 페이지로 리디렉션)
+    if (!accessToken) {
+      console.error('Access token not found.');
+      // 예: alert('로그인이 필요합니다.');
+      return;
+    }
+    
+    // 2. 서버로 보낼 데이터 형식 구성
+    const requestData = {
+      actor: title,
+      content: content,
+      url: url,
+    }
+    try {
+      const response = await axios.post<{ id: number }>(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/request/`,
+        requestData,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        },
+      );
+
+      const newRequest: UploadRequest = {
+        id: response.data.id,
+        actor: title,
+        content,
+        url,
+        date: new Date().toISOString().slice(0, 10).replace(/-/g, "."),
+        status: "심사중",
+        requester: user?.name,
+      };
+
+      setRequests([newRequest, ...requests]);
+      setTitle("");
+      setContent("");
+      setUrl("");
+      setShowForm(false);
+
+    } catch (error) {
+      console.error("Failed to submit request:", error);
+      alert("요청 제출에 실패했습니다.");
+    }
+    
+  };
+
+  const handleDelete = async (id: number) => {
+    // if (!window.confirm("정말로 이 요청을 삭제하시겠습니까?")) {
+    //   return;
+    // }
+
+    const accessToken = localStorage.getItem("access_token");
+    if (!accessToken) {
+      alert("로그인이 필요합니다.");
+      router.push("/login");
+      return;
+    }
+
+    try {
+      await axios.delete(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/request/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        },
+      );
+
+      setRequests((prevRequests) =>
+        prevRequests.filter((request) => request.id !== id),
+      );
+      toast.success("요청이 삭제되었습니다.");
+    } catch (error) {
+      console.error("Failed to delete request:", error);
+      toast.error("삭제에 실패했습니다.");
+    }
   };
 
   const filteredData =
@@ -111,8 +179,9 @@ const UploadRequestContainer = () => {
       {/* 상단: 요청하기 버튼 */}
       <div className="flex justify-end w-full max-w-xl mb-4">
         <button
-          className="flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-emerald-400 via-green-500 to-emerald-400 text-black font-bold shadow-lg hover:scale-105 transition-all"
+          className="flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-emerald-400 via-green-500 to-emerald-400 text-black font-bold shadow-lg hover:scale-105 transition-all disabled:opacity-50"
           onClick={() => setShowForm((prev) => !prev)}
+          disabled={hasMyPending}
         >
           <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
             <rect x="10" y="4" width="4" height="16" rx="2" fill="currentColor" />
@@ -121,6 +190,11 @@ const UploadRequestContainer = () => {
           요청하기
         </button>
       </div>
+      {hasMyPending && (
+        <div className="text-green-400 text-xs mb-4 text-right w-full max-w-xl">
+          심사중인 요청이 이미 있습니다. 처리 후 추가 요청이 가능합니다.
+        </div>
+      )}
       {/* 입력 폼 (애니메이션) */}
       <div
         className={`overflow-hidden transition-all duration-300 ${
@@ -154,6 +228,7 @@ const UploadRequestContainer = () => {
               <button
                 onClick={handleSubmit}
                 className="px-5 py-2 bg-gradient-to-r from-emerald-400 via-green-500 to-emerald-400 text-black rounded-full font-bold shadow hover:scale-105 transition"
+                disabled={hasMyPending}
               >
                 등록
               </button>
@@ -189,23 +264,36 @@ const UploadRequestContainer = () => {
             key={item.id}
             className="bg-neutral-900 border border-emerald-500/20 rounded-xl p-4 shadow flex flex-col gap-2 hover:shadow-xl transition"
             onClick={() => {
-              if(selectedStatus == "MY"){
+              if(selectedStatus == "MY" && item.status == "승인됨"){
                 router.push("/mypage");
               }
             }}
           >
             <div className="flex justify-between items-center mb-1">
-              <h3 className="text-lg font-bold text-emerald-300">{item.title}</h3>
-              <span
-                className={`px-3 py-1 rounded-full border font-bold ${statusColors[item.status]}`}
-              >
-                {item.status}
-              </span>
+              <h3 className="text-lg font-bold text-emerald-300">{item.actor}</h3>
+              <div className="flex items-center">
+                <span
+                  className={`px-3 py-1 rounded-full border font-bold ${
+                    statusColors[item.status]
+                  }`}
+                >
+                  {item.status}
+                </span>
+                {user?.name === item.requester && item.status === "거절됨" && (
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    className="ml-4 text-red-500 hover:text-red-700 text-sm font-bold"
+                  >
+                    삭제
+                  </button>
+                )}
+              </div>
             </div>
-            <p className="mb-1 text-emerald-100">{item.content}</p>
+            <p className="text-gray-300 mb-2">{item.content}</p>
             <div className="flex justify-between items-center text-xs text-emerald-500">
-              <span>요청자: {item.requester}</span>
-              <span>{item.date}</span>
+              <span>{item.requester}</span>
+              {/* 날짜만 나오게 가공 */}
+              <span>{item.date.slice(0, 10).replace(/-/g, ".")}</span>
             </div>
           </div>
         ))}
@@ -213,5 +301,4 @@ const UploadRequestContainer = () => {
     </div>
   );
 };
-
 export default UploadRequestContainer;
