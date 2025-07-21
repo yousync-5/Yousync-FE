@@ -74,6 +74,12 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
   const [isPlayerReady, setIsPlayerReady] = useState(false);
   const [showThumbnail, setShowThumbnail] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
+  
+  // 마우스 호버 관련 상태 추가
+  const [isHovering, setIsHovering] = useState(false);
+  const [shouldPlay, setShouldPlay] = useState(false);
+  const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const videoContainerRef = useRef<HTMLDivElement>(null);
 
   const getSynthesizeAudio = async () => {
     try {
@@ -93,6 +99,7 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
     if (open) {
       setShowThumbnail(true);
       setIsPlaying(false);
+      setShouldPlay(false); // 마우스 호버 상태 초기화
       // 모달이 열릴 때 플레이어 준비 상태 초기화
       setIsPlayerReady(false); 
       if (urlTokenId) {
@@ -101,11 +108,49 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
     }
   }, [open, urlTokenId]);
 
+  // 마우스 호버 효과 처리
+  useEffect(() => {
+    if (isHovering) {
+      hoverTimerRef.current = setTimeout(() => {
+        setShouldPlay(true);
+        if (youtubePlayerRef.current && isPlayerReady) {
+          youtubePlayerRef.current.seekTo(finalStartTime, true);
+          youtubePlayerRef.current.playVideo();
+          setIsPlaying(true);
+          if (audioRef.current) {
+            audioRef.current.play().catch(err => console.error('오디오 재생 실패:', err));
+          }
+        }
+      }, 1500); // 1.5초 후 재생
+    } else {
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+        hoverTimerRef.current = null;
+      }
+      setShouldPlay(false);
+      if (youtubePlayerRef.current) {
+        youtubePlayerRef.current.pauseVideo();
+        youtubePlayerRef.current.seekTo(finalStartTime, true);
+        setIsPlaying(false);
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    }
+
+    return () => {
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+      }
+    };
+  }, [isHovering, finalStartTime, isPlayerReady]);
+
   const youtubeOpts = {
     width: 640,
     height: 360,
     playerVars: {
-      autoplay: 0,
+      autoplay: 0, // 자동 재생 비활성화
       mute: 1,
       controls: 0,
       modestbranding: 1,
@@ -199,6 +244,15 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
       }
     }
   };
+  
+  // 마우스 이벤트 핸들러
+  const handleMouseEnter = () => {
+    setIsHovering(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+  };
 
   if (!open) return null;
   return (
@@ -209,7 +263,13 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
         style={{ maxWidth: '800px', width: '90vw' }}
       >
         <div className="mb-6 flex justify-center" style={{ width: '640px', height: '360px' }}>
-          <div className="relative" style={{ width: '640px', height: '360px' }}>
+          <div 
+            ref={videoContainerRef}
+            className="relative" 
+            style={{ width: '640px', height: '360px' }}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
             {videoId && (
               <YouTube
                 videoId={videoId}
@@ -236,10 +296,20 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
                     target.src = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
                   }}
                 />
-                <div className="absolute inset-0 flex items-center justify-center" onClick={handlePlayPause}>
-                  <div className="w-16 h-16 bg-black/50 rounded-full flex items-center justify-center cursor-pointer">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-16 h-16 bg-black/50 rounded-full flex items-center justify-center">
                     <div className="w-0 h-0 border-l-[20px] border-l-white border-t-[12px] border-t-transparent border-b-[12px] border-b-transparent ml-1" />
                   </div>
+                </div>
+              </div>
+            )}
+            
+            {/* 재생 상태 표시 오버레이 */}
+            {!shouldPlay && !showThumbnail && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20 rounded-xl">
+                <div className="text-white text-center">
+                  <div className="text-5xl mb-2">▶️</div>
+                  <p className="text-lg">마우스를 1.5초간 올려두면 재생됩니다</p>
                 </div>
               </div>
             )}

@@ -79,10 +79,11 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
       const timer = setTimeout(() => setShowOverlay(false), 4000);
       return () => clearTimeout(timer);
     }, []);
-    // 오버레이가 사라지고, 플레이어가 준비된 경우 자동재생
+    // 자동 재생 비활성화 - 사용자가 직접 재생 버튼을 눌러야 재생됨
     useEffect(() => {
       if (!showOverlay && playerReady && playerRef.current) {
-        playerRef.current.playVideo();
+        // 자동 재생 비활성화 - 아무 동작 하지 않음
+        console.log('플레이어 준비됨 - 자동 재생 비활성화');
       }
     }, [showOverlay, playerReady]);
 
@@ -90,11 +91,22 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
       playerRef.current = event.target;
       setPlayerReady(true);
       
-      // 시작 시간이 설정되어 있으면 해당 시간부터 재생
+      // 시작 시간이 설정되어 있으면 해당 시간으로 이동
       if (startTime > 0) {
         event.target.seekTo(startTime);
         console.log('플레이어 시작 시간 설정:', startTime);
       }
+      
+      // 영상을 잠시 재생했다가 정지하여 첫 프레임이 보이도록 함
+      event.target.playVideo();
+      
+      // 약간의 지연 후에 정지 (첫 프레임이 로드될 시간을 줌)
+      setTimeout(() => {
+        if (playerRef.current) {
+          playerRef.current.pauseVideo();
+          console.log('영상 첫 프레임 로드 후 정지');
+        }
+      }, 300); // 300ms 지연으로 첫 프레임이 로드될 시간을 충분히 줌
       
       console.log('VideoPlayer onReady - disableAutoPause:', disableAutoPause);
     };
