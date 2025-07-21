@@ -557,7 +557,6 @@ export default function ScriptDisplay({
           <div className="flex items-center space-x-1 w-full">
             <button
               onClick={() => {
-                if (onStopLooping) onStopLooping();
                 handleScriptChange(Math.max(0, currentScriptIndex - 1));
               }}
               disabled={currentScriptIndex === 0 || recording || recordingCompleted}
@@ -616,7 +615,6 @@ export default function ScriptDisplay({
             
             <button
               onClick={() => {
-                if (onStopLooping) onStopLooping();
                 handleScriptChange(Math.min(captions.length - 1, currentScriptIndex + 1));
               }}
               disabled={currentScriptIndex === captions.length - 1 || recording || recordingCompleted}

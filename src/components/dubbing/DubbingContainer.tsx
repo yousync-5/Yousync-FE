@@ -162,7 +162,6 @@ const DubbingContainer = ({
     setRecording(recorderRecording);
   }, [recorderRecording, setRecording]);
 
-  // 🆕 분석 결과 수신 상태 추가
   const [hasAnalysisResults, setHasAnalysisResults] = useState(false);
 
   // 🆕 더빙본 들어보기 모달 상태
@@ -490,9 +489,23 @@ useEffect(() => {
   useEffect(() => {
     if (!isReady) return;
     if (front_data.captions && front_data.captions[currentScriptIndex]) {
+      // 현재 스크립트의 시작 시간으로 이동
       setCurrentVideoTime(front_data.captions[currentScriptIndex].start_time);
+      
+      // 영상을 해당 시점으로 이동하고 명시적으로 정지 상태 유지
+      if (videoPlayerRef?.current) {
+        videoPlayerRef.current.seekTo(front_data.captions[currentScriptIndex].start_time);
+        // 일반 더빙 모드에서는 항상 정지 상태 유지
+        if (!isDuet) {
+          videoPlayerRef.current.pauseVideo();
+        }
+        // 듀엣 모드에서 내 대사인 경우에도 정지 상태 유지
+        else if (isDuet && isMyLine(currentScriptIndex)) {
+          videoPlayerRef.current.pauseVideo();
+        }
+      }
     }
-  }, [isReady, currentScriptIndex, front_data?.captions, setCurrentVideoTime]);
+  }, [isReady, currentScriptIndex, front_data?.captions, setCurrentVideoTime, isDuet, isMyLine, videoPlayerRef]);
 
   // 기존 함수들을 훅의 함수로 대체
   const customHandlePlay = () => {
@@ -523,27 +536,44 @@ useEffect(() => {
     if (videoPlayerRef?.current && front_data.captions[currentScriptIndex]) {
       const currentScript = front_data.captions[currentScriptIndex];
 
-      videoPlayerRef.current.seekTo(currentScript.start_time);
-      videoPlayerRef.current.playVideo();
+      // 녹음 시작 전 카운트다운 표시
+      toast.success('2초 후 녹음이 시작됩니다...', {
+        id: 'recording-countdown',
+        duration: 2000,
+      });
 
-      // 영상이 실제로 재생되기 시작할 때까지 대기
-      const checkVideoPlaying = () => {
-        if (!videoPlayerRef?.current) return;
+      // 2초 후에 모든 동작 시작
+      setTimeout(() => {
+        // 영상을 해당 시점으로 이동
+        videoPlayerRef.current?.seekTo(currentScript.start_time);
+        
+        // 영상 재생 시작
+        videoPlayerRef.current?.playVideo();
 
-        const currentTime = videoPlayerRef.current.getCurrentTime();
-        const targetTime = currentScript.start_time;
+        // 영상이 실제로 재생되기 시작할 때까지 대기
+        const checkVideoPlaying = () => {
+          if (!videoPlayerRef?.current) return;
 
-        // 영상이 목표 시간에 도달했는지 확인 (0.1초 허용 오차)
-        if (Math.abs(currentTime - targetTime) < 0.1) {
-          startScriptRecording(currentScriptIndex);
-        } else {
-          // 아직 재생되지 않았으면 다시 체크
-          setTimeout(checkVideoPlaying, 50);
-        }
-      };
+          const currentTime = videoPlayerRef.current.getCurrentTime();
+          const targetTime = currentScript.start_time;
 
-      // 100ms 후부터 체크 시작 (브라우저 렉 고려)
-      setTimeout(checkVideoPlaying, 100);
+          // 영상이 목표 시간에 도달했는지 확인 (0.1초 허용 오차)
+          if (Math.abs(currentTime - targetTime) < 0.1) {
+            // 녹음 시작
+            startScriptRecording(currentScriptIndex);
+            toast.success('녹음이 시작되었습니다!', {
+              id: 'recording-started',
+              duration: 1000,
+            });
+          } else {
+            // 아직 재생되지 않았으면 다시 체크
+            setTimeout(checkVideoPlaying, 50);
+          }
+        };
+
+        // 영상 재생 시작 후 체크 시작 (브라우저 렉 고려)
+        setTimeout(checkVideoPlaying, 100);
+      }, 2000); // 2초(2000ms) 지연
     }
   };
 
@@ -579,13 +609,8 @@ useEffect(() => {
     const startTime = front_data.captions[index]?.start_time ?? 0;
     videoPlayerRef.current?.seekTo(startTime);
 
-    // 듀엣 모드에서 상대방 대사를 클릭했고, 현재 상대방 대사에서 다음 상대방 대사로 이동할 때만 자동 재생
-    if (isDuet && !isMyLine(index) && !isMyLine(currentScriptIndex) && index === currentScriptIndex + 1) {
-      videoPlayerRef.current?.playVideo();
-    } else {
-      // 그 외의 경우는 일시 정지
-      videoPlayerRef.current?.pauseVideo();
-    }
+    // 모든 경우에 일시 정지 상태 유지
+    videoPlayerRef.current?.pauseVideo();
 
     // 문장 인덱스 변경
     handleScriptSelect(index);
