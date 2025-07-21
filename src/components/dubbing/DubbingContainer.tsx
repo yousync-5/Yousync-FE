@@ -689,6 +689,9 @@ useEffect(() => {
 
   // tokenData 주요 정보 zustand에 저장
   const setTokenInfo = useTokenStore((state) => state.setTokenInfo);
+  const setDuetStartTime = useDuetTokenStore((state) => state.setStartTime);
+  const setDuetEndTime = useDuetTokenStore((state) => state.setEndTime);
+  
   useEffect(() => {
     if (tokenData && tokenData.id && tokenData.actor_name && tokenData.start_time !== undefined && tokenData.end_time !== undefined && tokenData.bgvoice_url) {
       setTokenInfo({
@@ -698,8 +701,15 @@ useEffect(() => {
         end_time: tokenData.end_time,
         bgvoice_url: tokenData.bgvoice_url,
       });
+      
+      // 듀엣 모드일 때 듀엣 토큰 스토어에도 시간 정보 저장
+      if (isDuet) {
+        console.log('[듀엣 모드] 시간 정보 설정:', tokenData.start_time, tokenData.end_time);
+        setDuetStartTime(tokenData.start_time);
+        setDuetEndTime(tokenData.end_time);
+      }
     }
-  }, [tokenData, setTokenInfo]);
+  }, [tokenData, setTokenInfo, isDuet, setDuetStartTime, setDuetEndTime]);
 
   // --- 렌더링 ---
   if (!isReady) {
