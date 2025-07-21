@@ -16,6 +16,10 @@ import DubbingListenModal from "@/components/result/DubbingListenModal";
 import Sidebar from "@/components/ui/Sidebar";
 import { useTokenStore } from '@/store/useTokenStore';
 import { useDubbingRecorder } from '@/hooks/useDubbingRecorder';
+import { useUser } from "@/hooks/useUser";
+import { useRouter } from "next/navigation";
+// 듀엣 모드에 필요한 컴포넌트 import
+import { useDuetTokenStore } from '@/store/useDuetTokenStore';
 
 // 전역 타입 선언 (window 객체 확장)
 declare global {
@@ -32,6 +36,8 @@ interface DubbingContainerProps {
   serverPitchData: any;
   id: string;
   modalId?: string;
+  isDuet?: boolean; // 듀엣 더빙 모드 여부
+  selectedActor?: string; // 선택한 배우 ID
 }
 
 const DubbingContainer = ({
@@ -40,9 +46,23 @@ const DubbingContainer = ({
   serverPitchData,
   id,
   modalId,
+  isDuet = false, // 기본값은 일반 더빙 모드
+  selectedActor,
 }: DubbingContainerProps) => {
+  // 듀엣 모드에서 자동 스크립트 전환 여부를 결정하는 플래그
+  const [allowAutoScriptChange, setAllowAutoScriptChange] = useState(false);
+  
   // 데이터 준비 여부 체크
   const isReady = !!(front_data && tokenData && serverPitchData);
+  
+  // 현재 대사가 '내 대사'인지 확인하는 함수 (듀엣 모드에서만 사용)
+  const isMyLine = useCallback((scriptIndex: number) => {
+    if (!isDuet || !front_data?.captions) return true; // 일반 모드에서는 항상 true
+    const currentScript = front_data.captions[scriptIndex];
+    // 듀엣 모드에서는 actor.id가 1인 대사가 '내 대사'
+    return currentScript?.actor?.id === 1;
+  }, [isDuet, front_data?.captions]);
+  
   // 기본 상태들을 훅으로 관리
   const dubbingState = useDubbingState(front_data?.captions?.length || 0, {
     onScriptChange: (index: number) => {
@@ -424,6 +444,10 @@ useEffect(() => {
 
   // 기존 함수들을 훅의 함수로 대체
   const customHandlePlay = () => {
+    // 듀엣 모드에서 재생 버튼을 클릭할 때는 자동 전환 비활성화
+    if (isDuet) {
+      setAllowAutoScriptChange(false);
+    }
     handlePlay();
   };
 
@@ -433,6 +457,17 @@ useEffect(() => {
 
   // 마이크 버튼 클릭 핸들러
   const handleMicClick = () => {
+    // 듀엣 모드에서 '내 대사'가 아니면 녹음 불가
+    if (isDuet && !isMyLine(currentScriptIndex)) {
+      toast.error('상대방 대사는 녹음할 수 없습니다.');
+      return;
+    }
+    
+    // 듀엣 모드에서 마이크 버튼을 클릭할 때는 자동 전환 비활성화
+    if (isDuet) {
+      setAllowAutoScriptChange(false);
+    }
+    
     if (videoPlayerRef?.current && front_data.captions[currentScriptIndex]) {
       const currentScript = front_data.captions[currentScriptIndex];
       
@@ -465,6 +500,13 @@ useEffect(() => {
     // 녹음 중이면 중지
     if (recording) {
       stopScriptRecording(currentScriptIndex);
+    }
+    
+    // 듀엣 모드에서 다음 스크립트로 이동할 때 자동 전환 허용
+    if (isDuet && index === currentScriptIndex + 1) {
+      setAllowAutoScriptChange(true);
+    } else {
+      setAllowAutoScriptChange(false);
     }
     
     // 영상 해당 시점으로 이동 및 정지
@@ -625,6 +667,36 @@ useEffect(() => {
                 // 녹음 중일 때 처리 로직
                 if (recording) {
                   stopScriptRecording(currentScriptIndex);
+                  return;
+                }
+                
+                // 듀엣 모드일 때 자동 재생 및 흐름 제어 로직
+                // allowAutoScriptChange가 true일 때만 자동 전환 허용
+                if (isDuet && allowAutoScriptChange && currentScriptIndex < front_data.captions.length - 1) {
+                  const nextScriptIndex = currentScriptIndex + 1;
+                  const isNextMyLine = isMyLine(nextScriptIndex);
+                  
+                  // 다음 대사로 이동
+                  setCurrentScriptIndex(nextScriptIndex);
+                  
+                  // 다음 대사가 내 대사면 멈추고, 상대방 대사면 자동 재생
+                  if (isNextMyLine) {
+                    // 내 대사일 때는 녹음 준비를 위해 멈춤
+                    setTimeout(() => {
+                      if (videoPlayerRef.current) {
+                        videoPlayerRef.current.pauseVideo();
+                      }
+                    }, 100);
+                  } else {
+                    // 상대방 대사일 때는 자동 재생
+                    setTimeout(() => {
+                      if (videoPlayerRef.current) {
+                        const nextScript = front_data.captions[nextScriptIndex];
+                        videoPlayerRef.current.seekTo(nextScript.start_time);
+                        videoPlayerRef.current.playVideo();
+                      }
+                    }, 100);
+                  }
                 }
               }}
               onPlay={customHandlePlay}
@@ -655,9 +727,17 @@ useEffect(() => {
             onPause={customHandlePause}
             onMicClick={handleMicClick}
             isLooping={isLooping}
+            // 듀엣 모드 관련 props
+            isDuet={isDuet}
+            isMyLine={isMyLine(currentScriptIndex)}
             onLoopToggle={() => {
               // 구간 반복 상태 토글
               setIsLooping(!isLooping);
+              
+              // 듀엣 모드에서 구간 반복 버튼을 클릭할 때는 자동 전환 비활성화
+              if (isDuet) {
+                setAllowAutoScriptChange(false);
+              }
               
               if (!isLooping) {
                 // 구간 반복 시작
@@ -728,14 +808,16 @@ useEffect(() => {
         captions={front_data.captions}
         currentScriptIndex={currentScriptIndex}
         onScriptSelect={customHandleScriptSelect}
-        actorName="톰 행크스"
-        movieTitle="포레스트 검프"
-        analyzedCount={12}
-        totalCount={191}
+        actorName={front_data.captions[0]?.actor?.name || ""}
+        movieTitle={front_data.movie.title}
+        analyzedCount={Object.keys(latestResultByScript || {}).length}
+        totalCount={front_data.captions.length}
         recording={recording}
         recordedScripts={recordingCompleted ? Array(front_data.captions.length).fill(false).map((_, i) => i === currentScriptIndex) : []}
         latestResultByScript={latestResultByScript}
         recordingCompleted={recordingCompleted}
+        isDuet={isDuet}
+        isMyLine={isMyLine}
       />
 
       {/* 더빙본 들어보기 모달 */}

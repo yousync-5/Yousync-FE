@@ -7,7 +7,13 @@ import Loader from './Loader';
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  captions: { script: string }[];
+  captions: { 
+    script: string;
+    actor?: {
+      name: string;
+      id: number;
+    };
+  }[];
   currentScriptIndex: number;
   onScriptSelect: (index: number) => void;
   actorName?: string;
@@ -19,6 +25,9 @@ interface SidebarProps {
   recordedScripts?: boolean[];
   latestResultByScript?: Record<string, any>; // 추가
   recordingCompleted?: boolean; // 추가
+  // 듀엣 모드 관련 props
+  isDuet?: boolean;
+  isMyLine?: (index: number) => boolean;
 }
 
 function normalizeScript(str: string) {
@@ -37,6 +46,8 @@ export default function Sidebar({
   recordedScripts = [],
   latestResultByScript = {},
   recordingCompleted = false,
+  isDuet = false,
+  isMyLine,
 }: SidebarProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [detailIndex, setDetailIndex] = useState<number | null>(null); // 클릭 시 세부 정보 표시용
@@ -184,6 +195,8 @@ export default function Sidebar({
           const scriptKey = normalizeScript(caption.script);
           const isAnalyzed = !!latestResultByScript[scriptKey];
           const isSelected = currentScriptIndex === index;
+          const isCurrentMyLine = isDuet && isMyLine ? isMyLine(index) : true;
+          
           return (
             <li
               key={index}
@@ -195,11 +208,12 @@ export default function Sidebar({
               }}
               className={`cursor-pointer px-2 py-2 transition-all duration-150 select-none relative rounded-md mb-1 text-xs
                 ${isSelected
-                  ? "border border-emerald-400 scale-[1.02] bg-transparent text-white shadow-md z-10"
+                  ? `border ${isCurrentMyLine ? 'border-emerald-400' : 'border-blue-400'} scale-[1.02] bg-transparent text-white shadow-md z-10`
                   : isAnalyzed
-                  ? "border border-emerald-400/50 bg-transparent text-white"
-                  : "hover:bg-gray-800/50 hover:text-emerald-300 text-gray-200"}
+                  ? `border ${isCurrentMyLine ? 'border-emerald-400/50' : 'border-blue-400/50'} bg-transparent text-white`
+                  : `hover:bg-gray-800/50 hover:text-${isCurrentMyLine ? 'emerald' : 'blue'}-300 text-gray-200`}
                 ${isSelected ? "transition-transform" : ""}
+                ${isDuet && !isCurrentMyLine ? 'bg-blue-900/10' : ''}
               `}
               style={{ wordBreak: 'break-word', zIndex: isSelected ? 10 : 1 }}
             >
@@ -214,22 +228,27 @@ export default function Sidebar({
                 <span className="flex items-center mr-1 mt-0.5 select-none" style={{ zIndex: 2 }}>
                   {isSelected ? (
                     // 빙빙 도는 아이콘 (SVG)
-                    <svg className="w-2 h-2 mr-1 text-emerald-300 animate-spin" viewBox="0 0 20 20" fill="none" aria-label="재생 중">
+                    <svg className={`w-2 h-2 mr-1 text-${isCurrentMyLine ? 'emerald' : 'blue'}-300 animate-spin`} viewBox="0 0 20 20" fill="none" aria-label="재생 중">
                       <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="3" strokeDasharray="20 10" />
                     </svg>
                   ) : isAnalyzed ? (
                     // 체크 아이콘 (SVG) - 분석 완료
-                    <svg className="w-2 h-2 mr-1 text-emerald-400" viewBox="0 0 20 20" fill="currentColor" aria-label="분석 완료">
+                    <svg className={`w-2 h-2 mr-1 text-${isCurrentMyLine ? 'emerald' : 'blue'}-400`} viewBox="0 0 20 20" fill="currentColor" aria-label="분석 완료">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   ) : (
                     // 플레이 아이콘 (SVG)
-                    <svg className="w-2 h-2 mr-1 text-gray-400 group-hover:text-emerald-300 transition-colors" viewBox="0 0 20 20" fill="currentColor" aria-label="플레이">
+                    <svg className={`w-2 h-2 mr-1 text-gray-400 group-hover:text-${isCurrentMyLine ? 'emerald' : 'blue'}-300 transition-colors`} viewBox="0 0 20 20" fill="currentColor" aria-label="플레이">
                       <polygon points="6,4 16,10 6,16" />
                     </svg>
                   )}
                 </span>
                 <span className="flex-1 leading-relaxed text-xs">
+                  {isDuet && (
+                    <span className={`inline-block px-1 py-0.5 rounded text-[9px] mr-1 ${isCurrentMyLine ? 'bg-green-900/30 text-green-300' : 'bg-blue-900/30 text-blue-300'}`}>
+                      {isCurrentMyLine ? '나' : '상대방'}
+                    </span>
+                  )}
                   {caption.script}
                 </span>
               </div>
