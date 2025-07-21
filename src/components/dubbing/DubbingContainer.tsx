@@ -380,19 +380,6 @@ useEffect(() => {
   const isLastScript = useCallback(() => {
     return currentScriptIndex === front_data.captions.length - 1;
   }, [currentScriptIndex, front_data.captions.length]);
-  
-  // 마지막 대사가 끝났는지 확인하는 상태
-  const [lastScriptFinished, setLastScriptFinished] = useState(false);
-  
-  // 마지막 대사가 끝났을 때 상태 업데이트
-  useEffect(() => {
-    if (isLastScript() && currentVideoTime > 0) {
-      const lastScript = front_data.captions[front_data.captions.length - 1];
-      if (lastScript && currentVideoTime >= lastScript.end_time) {
-        setLastScriptFinished(true);
-      }
-    }
-  }, [currentVideoTime, isLastScript, front_data.captions]);
 
   // 문장 개수만큼 분석 결과가 쌓이면 콘솔 출력
   useEffect(() => {
@@ -912,7 +899,7 @@ useEffect(() => {
               }
             }}
             // 더빙본 들어보기와 결과보기 버튼 관련 props
-            showCompletedButtons={shouldShowCompletedButtons() || lastScriptFinished}
+            showCompletedButtons={shouldShowCompletedButtons()}
             onOpenDubbingListenModal={() => setIsDubbingListenModalOpen(true)}
             onShowResults={handleViewResults}
             id={id} // 추가
