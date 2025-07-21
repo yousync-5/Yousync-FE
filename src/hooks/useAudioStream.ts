@@ -24,7 +24,7 @@ export function useAudioStream() {
       }
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
-          echoCancellation: true,
+          echoCancellation: false,
           noiseSuppression: true,
           autoGainControl: false,
           sampleRate: 48000,
