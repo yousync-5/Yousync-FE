@@ -172,7 +172,19 @@ export function useVoiceRecorder() {
     console.log(`[SCRIPT] 문장 ${scriptIndex}: ${startTime}s ~ ${endTime}s (예상 길이: ${endTime - startTime}s)`);
     console.log(`[OFFSET] 현재 동적 보정값: ${dynamicOffsetRef.current.toFixed(3)}s`);
     
-    const recorder = new MediaRecorder(stream); // MediaRecorder 인스턴스 생성(stream은 마이크에서 실시간 오디오 스트림)
+    const supportsOpus = MediaRecorder.isTypeSupported('audio/webm;codecs=opus');
+    const supportsMp4 = MediaRecorder.isTypeSupported('audio/mp4');
+
+    // 최적의 설정 선택
+    const recorderOptions = supportsOpus
+      ? { mimeType: 'audio/webm;codecs=opus', audioBitsPerSecond: 320000 }
+      : supportsMp4
+        ? { mimeType: 'audio/mp4', audioBitsPerSecond: 320000 }
+        : { audioBitsPerSecond: 320000 };  // 기본 설정
+
+    console.log(`[RECORDER] 사용 중인 녹음 설정:`, recorderOptions);
+    const recorder = new MediaRecorder(stream, recorderOptions);
+
     mediaRecorderRef.current = recorder;  // 이후에 중지 같은 작업에 쓸 수 있음.
     chunksRef.current = []; // 녹음된 데이터 담을 배열(chunks)을 초기화
 

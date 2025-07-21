@@ -780,6 +780,7 @@ useEffect(() => {
             showCompletedButtons={Object.keys(latestResultByScript || {}).length === front_data.captions.length && front_data.captions.length > 0}
             onOpenDubbingListenModal={() => setIsDubbingListenModalOpen(true)}
             onShowResults={handleViewResults}
+            id={id} // 추가
           />
         </div>
   
