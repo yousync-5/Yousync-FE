@@ -39,19 +39,16 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
       seekTo: (time: number) => {
         if (playerRef.current) {
           playerRef.current.seekTo(time);
-          console.log('영상 시간 이동:', time);
         }
       },
       playVideo: () => {
         if (playerRef.current) {
           playerRef.current.playVideo();
-          console.log('영상 재생 시작');
         }
       },
       pauseVideo: () => {
         if (playerRef.current) {
           playerRef.current.pauseVideo();
-          console.log('영상 일시정지');
         }
       },
       getCurrentTime: () => {
@@ -81,10 +78,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
     }, []);
     // 자동 재생 비활성화 - 사용자가 직접 재생 버튼을 눌러야 재생됨
     useEffect(() => {
-      if (!showOverlay && playerReady && playerRef.current) {
-        // 자동 재생 비활성화 - 아무 동작 하지 않음
-        console.log('플레이어 준비됨 - 자동 재생 비활성화');
-      }
+      // 자동 재생 비활성화 - 아무 동작 하지 않음
     }, [showOverlay, playerReady]);
 
     const onReady = (event: { target: { seekTo: (time: number) => void; playVideo: () => void; pauseVideo: () => void; getCurrentTime: () => number } }) => {
@@ -94,7 +88,6 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
       // 시작 시간이 설정되어 있으면 해당 시간으로 이동
       if (startTime > 0) {
         event.target.seekTo(startTime);
-        console.log('플레이어 시작 시간 설정:', startTime);
       }
       
       // 영상을 잠시 재생했다가 정지하여 첫 프레임이 보이도록 함
@@ -104,11 +97,8 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
       setTimeout(() => {
         if (playerRef.current) {
           playerRef.current.pauseVideo();
-          console.log('영상 첫 프레임 로드 후 정지');
         }
       }, 300); // 300ms 지연으로 첫 프레임이 로드될 시간을 충분히 줌
-      
-      console.log('VideoPlayer onReady - disableAutoPause:', disableAutoPause);
     };
 
     const onStateChange = (event: { data: number }) => {
@@ -120,13 +110,12 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
 
       // 재생 중일 때만 시간 업데이트
       if (event.data === 1) { // 1 = 재생 중
-        console.log('영상 재생 시작 - 시간 업데이트 인터벌 시작');
         if (typeof onPlay === 'function') onPlay();
         intervalRef.current = setInterval(() => {
           if (playerRef.current && onTimeUpdate) {
             const currentTime = playerRef.current.getCurrentTime();
             onTimeUpdate(currentTime);
-            // endTime 체크 후 자동 정지 (주석 복구)
+            // endTime 체크 후 자동 정지
             if (endTime !== undefined && currentTime >= endTime) {
               playerRef.current.pauseVideo();
               if (onEndTimeReached) onEndTimeReached();
@@ -134,7 +123,6 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
           }
         }, 100); // 100ms마다 시간 체크
       } else if (event.data === 2) { // 2 = 일시정지
-        console.log('영상 일시정지 - 시간 업데이트 인터벌 정지');
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
           intervalRef.current = null;

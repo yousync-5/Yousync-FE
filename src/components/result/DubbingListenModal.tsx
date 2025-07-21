@@ -56,18 +56,9 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
   const finalStartTime = isDuetDubbing ? duetStartTime : startTime;
   const finalEndTime = isDuetDubbing ? duetEndTime : endTime;
   
-  // 디버깅 로그 추가
+  // 디버깅 로그 제거
   useEffect(() => {
-    if (open) {
-      console.log('[DubbingListenModal] 모달 열림');
-      console.log('[DubbingListenModal] isDuetDubbing:', isDuetDubbing);
-      console.log('[DubbingListenModal] startTime:', startTime);
-      console.log('[DubbingListenModal] endTime:', endTime);
-      console.log('[DubbingListenModal] duetStartTime:', duetStartTime);
-      console.log('[DubbingListenModal] duetEndTime:', duetEndTime);
-      console.log('[DubbingListenModal] finalStartTime:', finalStartTime);
-      console.log('[DubbingListenModal] finalEndTime:', finalEndTime);
-    }
+    // 모달이 열릴 때 필요한 초기화 작업만 수행
   }, [open, isDuetDubbing, startTime, endTime, duetStartTime, duetEndTime, finalStartTime, finalEndTime]);
 
   // [수정 1] 플레이어가 준비되었는지 추적하는 상태 추가
@@ -167,40 +158,34 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
     },
   };
 
-  // [수정 2] onReady 핸들러는 플레이어 준비 상태만 설정하도록 단순화
+  // onReady 핸들러는 플레이어 준비 상태만 설정하도록 단순화
   const handleYouTubeReady = (event: any) => {
-    console.log("[DubbingListenModal] YouTube Player is Ready.");
     youtubePlayerRef.current = event.target;
     event.target.mute();
     setIsPlayerReady(true);
   };
   
-  // [수정 3] 플레이어가 준비되고, 시작 시간이 유효할 때 seekTo를 실행하는 useEffect 추가
+  // 플레이어가 준비되고, 시작 시간이 유효할 때 seekTo를 실행하는 useEffect
   useEffect(() => {
     if (isPlayerReady && youtubePlayerRef.current && typeof finalStartTime === 'number' && !isNaN(finalStartTime)) {
-      console.log("[useEffect] Player is ready and start time is valid. Seeking to:", finalStartTime);
       youtubePlayerRef.current.seekTo(finalStartTime, true);
       youtubePlayerRef.current.pauseVideo();
     }
-  }, [isPlayerReady, finalStartTime]); // 플레이어 준비 상태와 시작 시간에 따라 실행
+  }, [isPlayerReady, finalStartTime]);
 
   const handleStateChange = (event: any) => {
     if (event.data === 1) { // playing
       setIsPlaying(true);
       if (typeof finalEndTime === 'number' && !isNaN(finalEndTime)) {
-        console.log('[DubbingListenModal] 영상 재생 시작, 종료 시간 체크 설정:', finalEndTime);
         if (intervalRef.current) clearInterval(intervalRef.current);
         intervalRef.current = setInterval(() => {
           const current = youtubePlayerRef.current?.getCurrentTime();
           if (typeof current === 'number' && current >= finalEndTime) {
-            console.log('[DubbingListenModal] 종료 시간 도달:', current, '>=', finalEndTime);
             youtubePlayerRef.current.pauseVideo();
             setIsPlaying(false);
             if(intervalRef.current) clearInterval(intervalRef.current);
           }
         }, 200);
-      } else {
-        console.warn('[DubbingListenModal] 종료 시간이 유효하지 않음:', finalEndTime);
       }
     } else { // paused, ended, etc.
       setIsPlaying(false);
@@ -228,13 +213,11 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
     }
     
     if (youtubePlayerRef.current && typeof finalStartTime === 'number' && !isNaN(finalStartTime)) {
-      console.log('[DubbingListenModal] 영상 재시작, 시작 시간으로 이동:', finalStartTime);
       youtubePlayerRef.current.seekTo(finalStartTime, true);
       setTimeout(() => {
         youtubePlayerRef.current?.playVideo();
       }, 100);
     } else {
-      console.warn('[DubbingListenModal] 시작 시간이 유효하지 않음:', finalStartTime);
       // 시작 시간이 유효하지 않으면 0초로 이동
       if (youtubePlayerRef.current) {
         youtubePlayerRef.current.seekTo(0, true);
