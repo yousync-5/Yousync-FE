@@ -51,27 +51,41 @@ const [audioResponse, setAudioResponse] = useState<SynthesizeAudioResponse | nul
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const youtubePlayerRef = useRef<any>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const { startTime: duetStartTime, endTime: duetEndTime } = useDuetTokenStore()
+  const { startTime: duetStartTime, endTime: duetEndTime } = useDuetTokenStore();
   
-  // 🆕 URL에 따른 시간 분기처리
+  // URL에 따른 시간 분기처리
   const isDuetDubbing = pathname.startsWith('/duetdubbing');
-  const finalStartTime = isDuetDubbing ? duetStartTime : startTime;
-  const finalEndTime = isDuetDubbing ? duetEndTime : endTime;
   
-  // 🆕 썸네일 표시 상태
+  // 시작 시간과 종료 시간 설정
+  let finalStartTime = isDuetDubbing ? duetStartTime : startTime;
+  let finalEndTime = isDuetDubbing ? duetEndTime : endTime;
+  
+  // 시간 정보가 없는 경우 기본값 설정 (디버깅용)
+  if (finalStartTime === undefined || isNaN(finalStartTime)) {
+    console.warn("[DubbingListenModal] 시작 시간이 없습니다. 기본값 0으로 설정합니다.");
+    finalStartTime = 0;
+  }
+  
+  if (finalEndTime === undefined || isNaN(finalEndTime)) {
+    console.warn("[DubbingListenModal] 종료 시간이 없습니다. 기본값 60으로 설정합니다.");
+    finalEndTime = 60; // 기본값 1분
+  }
+  
+  // 썸네일 표시 상태
   const [showThumbnail, setShowThumbnail] = useState(true);
   
-  // 🆕 재생 상태 관리
+  // 재생 상태 관리
   const [isPlaying, setIsPlaying] = useState(false);
   
-  console.log("일찍퇴근 기원 1일차", {
+  console.log("[DubbingListenModal] 토큰 정보:", {
     isDuetDubbing,
     duetStartTime,
     duetEndTime,
     startTime,
     endTime,
     finalStartTime,
-    finalEndTime
+    finalEndTime,
+    videoId
   });
   // 개발용 더미 데이터
   // useEffect(() => {
@@ -112,7 +126,7 @@ const [audioResponse, setAudioResponse] = useState<SynthesizeAudioResponse | nul
     }
   }, [open, urlTokenId]);
 
-  // 🆕 고정 크기 YouTube 옵션
+  // 고정 크기 YouTube 옵션
   const youtubeOpts = {
     width: 640,
     height: 360,
@@ -128,6 +142,8 @@ const [audioResponse, setAudioResponse] = useState<SynthesizeAudioResponse | nul
       showinfo: 0, // 영상 정보 숨김
       cc_load_policy: 0, // 자막 비활성화
       playsinline: 1, // 인라인 재생 강제
+      start: Math.floor(finalStartTime || 0), // 시작 시간 설정 (초 단위, 정수)
+      end: Math.ceil(finalEndTime || 60), // 종료 시간 설정 (초 단위, 정수)
     },
   };
 
@@ -135,9 +151,17 @@ const [audioResponse, setAudioResponse] = useState<SynthesizeAudioResponse | nul
   const handleYouTubeReady = (event: any) => {
     youtubePlayerRef.current = event.target;
     event.target.mute();
-    if (typeof finalStartTime === 'number') {
+    
+    // 콘솔에 시작 시간 로깅
+    console.log("[DubbingListenModal] 영상 시작 시간:", finalStartTime);
+    
+    // 시작 시간이 유효한 경우에만 seekTo 실행
+    if (typeof finalStartTime === 'number' && !isNaN(finalStartTime) && finalStartTime > 0) {
+      console.log("[DubbingListenModal] 영상 시작 위치로 이동:", finalStartTime);
       event.target.seekTo(finalStartTime, true);
       event.target.pauseVideo(); // start_time에서 멈춤
+    } else {
+      console.warn("[DubbingListenModal] 유효하지 않은 시작 시간:", finalStartTime);
     }
   };
 
@@ -182,16 +206,31 @@ const [audioResponse, setAudioResponse] = useState<SynthesizeAudioResponse | nul
   };
   
   const handleRestart = () => {
-    // 🆕 처음부터 재생 시 썸네일 숨기기
+    // 처음부터 재생 시 썸네일 숨기기
     setShowThumbnail(false);
     setIsPlaying(true);
+    
+    console.log("[DubbingListenModal] 재시작 버튼 클릭, 시작 시간:", finalStartTime);
+    
+    // 오디오 재설정
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
       audioRef.current.play();
     }
-    if (youtubePlayerRef.current && typeof finalStartTime === 'number') {
+    
+    // 영상 재설정
+    if (youtubePlayerRef.current && typeof finalStartTime === 'number' && !isNaN(finalStartTime)) {
+      console.log("[DubbingListenModal] 영상 시작 위치로 이동:", finalStartTime);
       youtubePlayerRef.current.seekTo(finalStartTime, true);
-      youtubePlayerRef.current.playVideo();
+      
+      // 약간의 지연 후 재생 (seekTo가 완료되도록)
+      setTimeout(() => {
+        if (youtubePlayerRef.current) {
+          youtubePlayerRef.current.playVideo();
+        }
+      }, 100);
+    } else {
+      console.warn("[DubbingListenModal] 유효하지 않은 시작 시간 또는 플레이어 참조:", finalStartTime);
     }
   };
 
