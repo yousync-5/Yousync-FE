@@ -39,10 +39,10 @@ export default function PronunciationTimingGuide({
   recording = false,
   id, // 추가
 }: PronunciationTimingGuideProps) {
-  // id가 72일 때만 demoData의 첫 번째 결과를 analysisResult로 사용하도록 분기 조건을 변경합니다.
+  // id가 35일 때만 demoData의 첫 번째 결과를 analysisResult로 사용하도록 분기 조건을 변경합니다.
   let displayAnalysisResult = analysisResult;
   let userSTT = undefined;
-  if (id === 72 || id === '72') {
+  if (id === 35 || id === '35') {
     // demoData는 배열이므로 currentScriptIndex에 따라 결과를 선택
     const demoIdx = Math.min(currentScriptIndex, demoData.length - 1);
     const demoObj = demoData[demoIdx];
