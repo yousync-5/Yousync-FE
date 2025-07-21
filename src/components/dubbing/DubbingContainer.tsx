@@ -463,49 +463,53 @@ useEffect(() => {
   const handleTimeUpdate = useCallback((currentTime: number) => {
     if (!isReady) return;
     setCurrentVideoTime(currentTime);
-    const currentScript = front_data.captions[currentScriptIndex];
-    if (currentScript && currentTime >= currentScript.end_time) return;
+    // const currentScript = front_data.captions[currentScriptIndex];
+    // if (currentScript && currentTime >= currentScript.end_time) return;
     const newScriptIndex = findScriptIndexByTime(currentTime);
     if (newScriptIndex !== -1 && newScriptIndex !== currentScriptIndex) {
       setCurrentScriptIndex(newScriptIndex);
     }
   }, [isReady, currentScriptIndex, findScriptIndexByTime, front_data?.captions, setCurrentVideoTime, setCurrentScriptIndex]);
 
-  const getCurrentScriptPlaybackRange = useCallback(() => {
+  // DubbingContainer.tsx 내부
+
+const getCurrentScriptPlaybackRange = useCallback(() => {
     if (!isReady) return { startTime: 0, endTime: undefined };
     if (!front_data.captions || front_data.captions.length === 0) {
       return { startTime: 0, endTime: undefined };
     }
     const currentScript = front_data.captions[currentScriptIndex];
     if (!currentScript) return { startTime: 0, endTime: undefined };
+
+    // 듀엣 모드이고, 현재 대사가 '상대방 대사'일 때만 특별 로직 적용
+    if (isDuet && !isMyLine(currentScriptIndex)) {
+      let lastOpponentEndTime = currentScript.end_time;
+      let nextIndex = currentScriptIndex + 1;
+
+      // 다음 대사들을 순서대로 확인
+      while (nextIndex < front_data.captions.length) {
+        // 다음 대사가 '내 대사'이면 연속 구간이 끝난 것이므로 중단
+        if (isMyLine(nextIndex)) {
+          break;
+        }
+        // 다음 대사도 '상대방 대사'이면, 종료 시간을 업데이트하고 계속 탐색
+        lastOpponentEndTime = front_data.captions[nextIndex].end_time;
+        nextIndex++;
+      }
+
+      // 재생 구간을 [현재 대사 시작 시간 ~ 마지막 연속된 상대방 대사 종료 시간]으로 설정
+      return {
+        startTime: currentScript.start_time,
+        endTime: lastOpponentEndTime,
+      };
+    }
+
+    // 일반 모드이거나 '내 대사'인 경우는 기존처럼 한 문장 단위로 재생
     return {
       startTime: currentScript.start_time,
       endTime: currentScript.end_time,
     };
-  }, [isReady, front_data?.captions, currentScriptIndex]);
-
-  const currentWords = isReady ? (tokenData?.scripts?.[currentScriptIndex]?.words || []) : [];
-
-  useEffect(() => {
-    if (!isReady) return;
-    if (front_data.captions && front_data.captions[currentScriptIndex]) {
-      // 현재 스크립트의 시작 시간으로 이동
-      setCurrentVideoTime(front_data.captions[currentScriptIndex].start_time);
-      
-      // 영상을 해당 시점으로 이동하고 명시적으로 정지 상태 유지
-      if (videoPlayerRef?.current) {
-        videoPlayerRef.current.seekTo(front_data.captions[currentScriptIndex].start_time);
-        // 일반 더빙 모드에서는 항상 정지 상태 유지
-        if (!isDuet) {
-          videoPlayerRef.current.pauseVideo();
-        }
-        // 듀엣 모드에서 내 대사인 경우에도 정지 상태 유지
-        else if (isDuet && isMyLine(currentScriptIndex)) {
-          videoPlayerRef.current.pauseVideo();
-        }
-      }
-    }
-  }, [isReady, currentScriptIndex, front_data?.captions, setCurrentVideoTime, isDuet, isMyLine, videoPlayerRef]);
+}, [isReady, isDuet, front_data?.captions, currentScriptIndex, isMyLine]);
 
   // 기존 함수들을 훅의 함수로 대체
   const customHandlePlay = () => {
@@ -744,7 +748,7 @@ useEffect(() => {
       </div>
     );
   }
-
+  const currentWords = isReady ? (tokenData?.scripts?.[currentScriptIndex]?.words || []) : [];
   return (
     <div className="min-h-screen bg-neutral-950 text-white relative overflow-hidden">
       <Toaster position="top-center" />
@@ -771,6 +775,8 @@ useEffect(() => {
               endTime={getCurrentScriptPlaybackRange().endTime}
               disableAutoPause={true}
               ref={videoPlayerRef}
+              
+              // ✅ 이 부분을 아래 코드로 완전히 교체해주세요.
               onEndTimeReached={() => {
                 // 1. 녹음 중이면 녹음부터 중지
                 if (recording) {
@@ -778,49 +784,22 @@ useEffect(() => {
                   return;
                 }
 
-                // 2. 듀엣 모드일 때의 로직
+                // 2. 듀엣 모드일 때만 다음 로직 실행
                 if (isDuet) {
-                  const isCurrentMyLine = isMyLine(currentScriptIndex);
-
-                  // ✨ 여기가 핵심적인 수정 부분입니다!
-                  // 현재 끝난 대사가 '내 대사'인 경우, 다음으로 넘어가지 않고 즉시 멈춥니다.
-                  if (isCurrentMyLine) {
-                    console.log('[onEndTimeReached] 내 대사 종료. 자동 전환 없이 일시정지.');
-                    videoPlayerRef.current?.pauseVideo();
-                    setAllowAutoScriptChange(false); // 자동 전환 플래그 비활성화
-                    return; // 여기서 함수를 완전히 종료
-                  }
-
-                  // --- 아래 로직은 '상대방 대사'가 끝났을 때만 실행됩니다 ---
-
-                  // 마지막 대사가 아니면 다음으로 넘어갈 준비
+                  // 3. '연속 재생 구간'이 모두 끝났을 때
+                  // 마지막 대사가 아니라면 다음 대사 인덱스를 확인
                   if (currentScriptIndex < front_data.captions.length - 1) {
                     const nextScriptIndex = currentScriptIndex + 1;
-                    const isNextMyLine = isMyLine(nextScriptIndex);
-
-                    // 다음 대사가 '내 대사'인 경우: 다음으로 넘어가서 멈춤
-                    if (isNextMyLine) {
-                      console.log('[onEndTimeReached] 상대방 대사 종료. 내 대사 차례이므로 전환 후 일시정지.');
+                    
+                    // 4. 다음 대사가 '내 대사'일 경우에만 영상을 정지시킴
+                    if (isMyLine(nextScriptIndex)) {
                       setCurrentScriptIndex(nextScriptIndex);
                       videoPlayerRef.current?.pauseVideo();
-                      setAllowAutoScriptChange(false);
-                    } 
-                    // 다음 대사도 '상대방 대사'인 경우: 다음으로 넘어가서 자동 재생
-                    else {
-                      console.log('[onEndTimeReached] 상대방 대사 연속 재생.');
-                      setCurrentScriptIndex(nextScriptIndex);
-                      setTimeout(() => {
-                        if (videoPlayerRef.current) {
-                          const nextScript = front_data.captions[nextScriptIndex];
-                          videoPlayerRef.current.seekTo(nextScript.start_time);
-                          videoPlayerRef.current.playVideo();
-                        }
-                      }, 100);
-                      setAllowAutoScriptChange(true);
                     }
                   }
                 }
               }}
+              
               onPlay={customHandlePlay}
               onPause={customHandlePause}
               onOpenSidebar={() => setIsSidebarOpen(true)}
