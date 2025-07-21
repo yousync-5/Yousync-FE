@@ -815,7 +815,7 @@ useEffect(() => {
             // 더빙본 들어보기와 결과보기 버튼 관련 props
             showCompletedButtons={
               isDuet
-                ? Object.keys(latestResultByScript || {}).length === front_data.captions.filter((_, idx) => isMyLine(idx)).length && front_data.captions.filter((_, idx) => isMyLine(idx)).length > 0
+                ? Object.keys(latestResultByScript || {}).length === front_data.captions.filter((_: any, idx: number) => isMyLine(idx)).length && front_data.captions.filter((_: any, idx: number) => isMyLine(idx)).length > 0
                 : Object.keys(latestResultByScript || {}).length === front_data.captions.length && front_data.captions.length > 0
             }
             onOpenDubbingListenModal={() => setIsDubbingListenModalOpen(true)}
