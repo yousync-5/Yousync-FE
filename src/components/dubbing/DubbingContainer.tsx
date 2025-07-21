@@ -51,10 +51,10 @@ const DubbingContainer = ({
 }: DubbingContainerProps) => {
   // 듀엣 모드에서 자동 스크립트 전환 여부를 결정하는 플래그
   const [allowAutoScriptChange, setAllowAutoScriptChange] = useState(false);
-  
+
   // 데이터 준비 여부 체크
   const isReady = !!(front_data && tokenData && serverPitchData);
-  
+
   // 현재 대사가 '내 대사'인지 확인하는 함수 (듀엣 모드에서만 사용)
   const isMyLine = useCallback((scriptIndex: number) => {
     if (!isDuet || !front_data?.captions) return true; // 일반 모드에서는 항상 true
@@ -64,7 +64,7 @@ const DubbingContainer = ({
     console.log(`[isMyLine] 스크립트 ${scriptIndex}번: ${result ? '내 대사' : '상대방 대사'}, actor.id: ${currentScript?.actor?.id}`);
     return result;
   }, [isDuet, front_data?.captions]);
-  
+
   // 기본 상태들을 훅으로 관리
   const dubbingState = useDubbingState(front_data?.captions?.length || 0, {
     onScriptChange: (index: number) => {
@@ -115,7 +115,7 @@ const DubbingContainer = ({
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const { cleanupMic } = useAudioStream();
 
-  
+
 
   // zustand에서 multiJobIds 읽기
   const multiJobIds = useJobIdsStore((state) => state.multiJobIds);
@@ -136,7 +136,7 @@ const DubbingContainer = ({
     onUploadComplete: (success: boolean, jobIds: string[]) => {
       console.log(`[🔄 DubbingContainer] onUploadComplete 콜백 호출됨`);
       console.log(`[📊 결과] success: ${success}, jobIds: ${JSON.stringify(jobIds)}`);
-      
+
       if (success && Array.isArray(jobIds)) {
         // 새로운 분석 시작 시에만 초기화 (기존 결과 유지)
         if (multiJobIds.length === 0) {
@@ -167,7 +167,7 @@ const DubbingContainer = ({
 
   // 🆕 더빙본 들어보기 모달 상태
   const [isDubbingListenModalOpen, setIsDubbingListenModalOpen] = useState(false);
-  
+
   // 구간 반복 상태 추가
   const [isLooping, setIsLooping] = useState(false);
 
@@ -229,7 +229,7 @@ useEffect(() => {
     sse.onmessage = (e) => {
       const data = JSON.parse(e.data);
       console.log(`[SSE][${jobId}] 수신:`, data);
-    
+
       if (data.status === 'completed' && data.result?.result) {
         // word_analysis에서 script 재구성
         const wordArr = data.result.result.word_analysis?.map((w: any) => w.word) || [];
@@ -250,7 +250,7 @@ useEffect(() => {
           ...prev,
           [jobId]: data.result.result
         }));
-        
+
         // 2. script 기준으로 마지막 결과만 저장 (문장별 결과용)
         setLatestResultByScript((prev: Record<string, any>) => {
           const newState = {
@@ -261,7 +261,7 @@ useEffect(() => {
           console.log('- 이전 상태:', Object.keys(prev));
           console.log('- 새로 추가된 키:', resultScriptNorm);
           console.log('- 업데이트 후 전체 키:', Object.keys(newState));
-          
+
           // 분석 결과가 도착하면 상태 초기화
           setRecordingCompleted(false);
           setIsAnalyzing(false);
@@ -274,7 +274,7 @@ useEffect(() => {
         console.log(`[✅ 상태 업데이트] hasAnalysisResults를 true로 설정`);
         console.log(`[✅ 분석 데이터] 받은 결과:`, data.result.result);
       }
-    
+
       if (["completed", "failed", "error"].includes(data.status)) {
         console.log(`[SSE][${jobId}] 상태 변경: ${data.status}`, data);
         sse.close();
@@ -287,14 +287,14 @@ useEffect(() => {
       console.error(`[SSE][${jobId}] 에러 타입:`, e.type);
       console.error(`[SSE][${jobId}] 에러 상태:`, sse.readyState);
       console.error(`[SSE][${jobId}] URL:`, sse.url);
-      
+
       // 에러 상태에 따른 처리
       if (sse.readyState === EventSource.CONNECTING) {
         console.log(`[SSE][${jobId}] 재연결 시도 중...`);
       } else if (sse.readyState === EventSource.CLOSED) {
         console.log(`[SSE][${jobId}] 연결이 닫힘`);
         connectedJobIdsRef.current.delete(jobId);
-        
+
         // 3초 후 재연결 시도
         setTimeout(() => {
           if (!connectedJobIdsRef.current.has(jobId)) {
@@ -317,13 +317,13 @@ useEffect(() => {
 // ✅ 결과 개수로 전체 완료 감지
 useEffect(() => {
   if (!multiJobIds.length) return;
-  
+
   const totalCount = front_data.captions.length;
   const resultCount = Object.keys(latestResultByScript).length;
   const allDone = resultCount === totalCount && totalCount > 0;
-  
+
   console.log('[완료 감지] totalCount:', totalCount, 'resultCount:', resultCount, 'allDone:', allDone);
-  
+
   if (allDone) {
     console.log('[완료 감지] 분석 완료 - showCompleted를 true로 설정');
     // 토스트 강제 해제
@@ -348,12 +348,11 @@ useEffect(() => {
   useEffect(() => {
     const totalCount = front_data.captions.length;
     const resultCount = Object.keys(latestResultByScript).length;
-  
+
     console.log("🧪 useEffect 실행됨");
     console.log("📌 totalCount (captions.length):", totalCount);
     console.log("📌 resultCount (latestResultByScript 개수):", resultCount);
     console.log("📌 keys:", Object.keys(latestResultByScript));
-    console.log(JSON.stringify(latestResultByScript, null, 2));
     if (resultCount === totalCount && totalCount > 0) {
       console.log('✅ 모든 문장 분석 결과가 도착했습니다.');
       console.log('📊 latestResultByScript 전체 내용:');
@@ -375,12 +374,12 @@ useEffect(() => {
     return "Poor";
   };
 
-  
+
   // 결과 보기 버튼 클릭 시 결과 섹션으로 스크롤
   const showResultsSection = useCallback(() => {
     setShowResults(true);
     setTimeout(() => {
-      resultsRef.current?.scrollIntoView({ 
+      resultsRef.current?.scrollIntoView({
         behavior: 'smooth',
         block: 'start'
       });
@@ -392,7 +391,7 @@ useEffect(() => {
     setShowResults(true);
     // 레이아웃 안정화를 위한 약간의 지연
     setTimeout(() => {
-      resultsRef.current?.scrollIntoView({ 
+      resultsRef.current?.scrollIntoView({
         behavior: 'smooth',
         block: 'start'
       });
@@ -464,25 +463,25 @@ useEffect(() => {
       toast.error('상대방 대사는 녹음할 수 없습니다.');
       return;
     }
-    
+
     // 듀엣 모드에서 마이크 버튼을 클릭할 때는 자동 전환 비활성화
     if (isDuet) {
       setAllowAutoScriptChange(false);
     }
-    
+
     if (videoPlayerRef?.current && front_data.captions[currentScriptIndex]) {
       const currentScript = front_data.captions[currentScriptIndex];
-      
+
       videoPlayerRef.current.seekTo(currentScript.start_time);
       videoPlayerRef.current.playVideo();
-      
+
       // 영상이 실제로 재생되기 시작할 때까지 대기
       const checkVideoPlaying = () => {
         if (!videoPlayerRef?.current) return;
-        
+
         const currentTime = videoPlayerRef.current.getCurrentTime();
         const targetTime = currentScript.start_time;
-        
+
         // 영상이 목표 시간에 도달했는지 확인 (0.1초 허용 오차)
         if (Math.abs(currentTime - targetTime) < 0.1) {
           startScriptRecording(currentScriptIndex);
@@ -491,7 +490,7 @@ useEffect(() => {
           setTimeout(checkVideoPlaying, 50);
         }
       };
-      
+
       // 100ms 후부터 체크 시작 (브라우저 렉 고려)
       setTimeout(checkVideoPlaying, 100);
     }
@@ -503,12 +502,12 @@ useEffect(() => {
     if (recording) {
       stopScriptRecording(currentScriptIndex);
     }
-    
+
     // 듀엣 모드에서 상대방 대사를 클릭했을 때 처리
     if (isDuet) {
       const isCurrentMyLine = isMyLine(currentScriptIndex);
       const isTargetMyLine = isMyLine(index);
-      
+
       // 내 대사를 클릭했을 때는 자동 전환 비활성화
       if (isTargetMyLine) {
         setAllowAutoScriptChange(false);
@@ -524,11 +523,11 @@ useEffect(() => {
     } else {
       setAllowAutoScriptChange(false);
     }
-    
+
     // 영상 해당 시점으로 이동
     const startTime = front_data.captions[index]?.start_time ?? 0;
     videoPlayerRef.current?.seekTo(startTime);
-    
+
     // 듀엣 모드에서 상대방 대사를 클릭했고, 현재 상대방 대사에서 다음 상대방 대사로 이동할 때만 자동 재생
     if (isDuet && !isMyLine(index) && !isMyLine(currentScriptIndex) && index === currentScriptIndex + 1) {
       videoPlayerRef.current?.playVideo();
@@ -610,7 +609,7 @@ useEffect(() => {
     try {
       console.log(`[DEBUG] Job ID 유효성 확인: ${jobId}`);
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/analysis-progress/${jobId}`);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log(`[DEBUG] Job ID ${jobId} 상태:`, data.status);
@@ -632,7 +631,7 @@ useEffect(() => {
       console.error(`[SSE] Job ID ${jobId}가 유효하지 않습니다.`);
       return null;
     }
-    
+
     console.log(`[SSE] Job ID ${jobId} 유효성 확인 완료, SSE 연결 시작`);
     return new EventSource(`${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/analysis-progress/${jobId}`);
   };
@@ -663,15 +662,15 @@ useEffect(() => {
   return (
     <div className="min-h-screen bg-neutral-950 text-white relative overflow-hidden">
       <Toaster position="top-center" />
-      
+
       <DubbingHeader
         title={front_data.movie.title}
         category={front_data.movie.category}
         actorName={front_data.captions[0]?.actor?.name || ""}
       />
-  
+
       {/* 본문 - 사이드바 열릴 때 크기 조절 */}
-      <div 
+      <div
         className={`w-full mx-auto px-2 py-1 transition-all duration-300 ease-in-out ${
           isSidebarOpen ? 'pr-[400px]' : 'pr-2'
         }`}
@@ -687,59 +686,52 @@ useEffect(() => {
               disableAutoPause={true}
               ref={videoPlayerRef}
               onEndTimeReached={() => {
-                // 녹음 중일 때 처리 로직
+                // 1. 녹음 중이면 녹음부터 중지
                 if (recording) {
                   stopScriptRecording(currentScriptIndex);
                   return;
                 }
-                
-                // 듀엣 모드일 때 자동 재생 및 흐름 제어 로직
-                if (isDuet && currentScriptIndex < front_data.captions.length - 1) {
-                  const nextScriptIndex = currentScriptIndex + 1;
+
+                // 2. 듀엣 모드일 때의 로직
+                if (isDuet) {
                   const isCurrentMyLine = isMyLine(currentScriptIndex);
-                  const isNextMyLine = isMyLine(nextScriptIndex);
-                  
-                  console.log(`[onEndTimeReached] 현재 스크립트: ${currentScriptIndex}, 다음 스크립트: ${nextScriptIndex}`);
-                  console.log(`[onEndTimeReached] 현재 대사: ${isCurrentMyLine ? '내 대사' : '상대방 대사'}, 다음 대사: ${isNextMyLine ? '내 대사' : '상대방 대사'}`);
-                  
-                  // 다음 대사로 이동
-                  setCurrentScriptIndex(nextScriptIndex);
-                  
-                  // 다음 대사가 내 대사면 무조건 멈춤
-                  if (isNextMyLine) {
-                    console.log('[onEndTimeReached] 다음 대사가 내 대사이므로 멈춤');
-                    // 내 대사일 때는 녹음 준비를 위해 멈춤
-                    setTimeout(() => {
-                      if (videoPlayerRef.current) {
-                        videoPlayerRef.current.pauseVideo();
-                      }
-                    }, 100);
-                    // 내 대사로 전환될 때 자동 전환 비활성화
-                    setAllowAutoScriptChange(false);
-                  } 
-                  // 현재 상대방 대사이고 다음 대사도 상대방 대사일 경우에만 연속 재생
-                  else if (!isCurrentMyLine && !isNextMyLine) {
-                    console.log('[onEndTimeReached] 현재와 다음 대사 모두 상대방 대사이므로 연속 재생');
-                    // 상대방 대사가 연속될 때는 자동 재생
-                    setTimeout(() => {
-                      if (videoPlayerRef.current) {
-                        const nextScript = front_data.captions[nextScriptIndex];
-                        videoPlayerRef.current.seekTo(nextScript.start_time);
-                        videoPlayerRef.current.playVideo();
-                      }
-                    }, 100);
-                    // 상대방 대사가 연속될 때는 자동 전환 활성화
-                    setAllowAutoScriptChange(true);
+
+                  // ✨ 여기가 핵심적인 수정 부분입니다!
+                  // 현재 끝난 대사가 '내 대사'인 경우, 다음으로 넘어가지 않고 즉시 멈춥니다.
+                  if (isCurrentMyLine) {
+                    console.log('[onEndTimeReached] 내 대사 종료. 자동 전환 없이 일시정지.');
+                    videoPlayerRef.current?.pauseVideo();
+                    setAllowAutoScriptChange(false); // 자동 전환 플래그 비활성화
+                    return; // 여기서 함수를 완전히 종료
                   }
-                  // 내 대사에서 상대방 대사로 전환될 때는 멈춤
-                  else {
-                    console.log('[onEndTimeReached] 내 대사에서 상대방 대사로 전환되므로 멈춤');
-                    setTimeout(() => {
-                      if (videoPlayerRef.current) {
-                        videoPlayerRef.current.pauseVideo();
-                      }
-                    }, 100);
-                    setAllowAutoScriptChange(false);
+
+                  // --- 아래 로직은 '상대방 대사'가 끝났을 때만 실행됩니다 ---
+
+                  // 마지막 대사가 아니면 다음으로 넘어갈 준비
+                  if (currentScriptIndex < front_data.captions.length - 1) {
+                    const nextScriptIndex = currentScriptIndex + 1;
+                    const isNextMyLine = isMyLine(nextScriptIndex);
+
+                    // 다음 대사가 '내 대사'인 경우: 다음으로 넘어가서 멈춤
+                    if (isNextMyLine) {
+                      console.log('[onEndTimeReached] 상대방 대사 종료. 내 대사 차례이므로 전환 후 일시정지.');
+                      setCurrentScriptIndex(nextScriptIndex);
+                      videoPlayerRef.current?.pauseVideo();
+                      setAllowAutoScriptChange(false);
+                    } 
+                    // 다음 대사도 '상대방 대사'인 경우: 다음으로 넘어가서 자동 재생
+                    else {
+                      console.log('[onEndTimeReached] 상대방 대사 연속 재생.');
+                      setCurrentScriptIndex(nextScriptIndex);
+                      setTimeout(() => {
+                        if (videoPlayerRef.current) {
+                          const nextScript = front_data.captions[nextScriptIndex];
+                          videoPlayerRef.current.seekTo(nextScript.start_time);
+                          videoPlayerRef.current.playVideo();
+                        }
+                      }, 100);
+                      setAllowAutoScriptChange(true);
+                    }
                   }
                 }
               }}
@@ -777,34 +769,34 @@ useEffect(() => {
             onLoopToggle={() => {
               // 구간 반복 상태 토글
               setIsLooping(!isLooping);
-              
+
               // 듀엣 모드에서 구간 반복 버튼을 클릭할 때는 자동 전환 비활성화
               if (isDuet) {
                 setAllowAutoScriptChange(false);
               }
-              
+
               if (!isLooping) {
                 // 구간 반복 시작
                 if (videoPlayerRef?.current && front_data.captions[currentScriptIndex]) {
                   const startTime = front_data.captions[currentScriptIndex].start_time;
                   const endTime = front_data.captions[currentScriptIndex].end_time;
-                  
+
                   // 현재 시간이 구간 밖이면 시작 지점으로 이동
                   const currentTime = videoPlayerRef.current.getCurrentTime();
                   if (currentTime < startTime || currentTime >= endTime) {
                     videoPlayerRef.current.seekTo(startTime);
                   }
-                  
+
                   // 재생 시작
                   videoPlayerRef.current.playVideo();
-                  
+
                   // 구간 반복 감시 시작 - 전역 변수로 저장하여 나중에 정리할 수 있도록 함
                   window.loopIntervalId = setInterval(() => {
                     if (!videoPlayerRef.current) {
                       clearInterval(window.loopIntervalId);
                       return;
                     }
-                    
+
                     const currentTime = videoPlayerRef.current.getCurrentTime();
                     if (currentTime >= endTime - 0.1) {
                       videoPlayerRef.current.seekTo(startTime);
@@ -822,7 +814,7 @@ useEffect(() => {
             }}
             // 더빙본 들어보기와 결과보기 버튼 관련 props
             showCompletedButtons={
-              isDuet 
+              isDuet
                 ? Object.keys(latestResultByScript || {}).length === front_data.captions.filter((_, idx) => isMyLine(idx)).length && front_data.captions.filter((_, idx) => isMyLine(idx)).length > 0
                 : Object.keys(latestResultByScript || {}).length === front_data.captions.length && front_data.captions.length > 0
             }
@@ -831,7 +823,7 @@ useEffect(() => {
             id={id} // 추가
           />
         </div>
-  
+
         {/* 결과 섹션을 기존 레이아웃 안에 통합 */}
         {showResults && (
           <div ref={resultsRef} className="result-container mt-2">
@@ -848,7 +840,7 @@ useEffect(() => {
           </div>
         )}
       </div>
-      
+
       {/* Sidebar - 오른쪽 고정 */}
       <Sidebar
         isOpen={isSidebarOpen}
