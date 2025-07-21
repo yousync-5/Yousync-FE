@@ -107,6 +107,7 @@ interface DubbingActions {
  * @param {Function} options.onPlay - 비디오 재생 시 호출될 콜백 (재생 시 추가 로직 실행)
  * @param {Function} options.onPause - 비디오 일시정지 시 호출될 콜백 (일시정지 시 추가 로직 실행)
  * @param {Function} options.onRecordingChange - 녹음 상태 변경 시 호출될 콜백 (녹음 시작/종료 시 추가 로직 실행)
+ * @param {boolean} initialSidebarOpen - 초기 사이드바 열림 상태 (기본값: false)
  * 
  * @returns {DubbingState & DubbingActions} 모든 상태와 액션을 포함한 객체
  * 
@@ -121,7 +122,7 @@ interface DubbingActions {
  *     // 재생 시 추가 로직
  *     console.log('비디오 재생');
  *   }
- * });
+ * }, true); // 초기에 사이드바 열림
  * 
  * const { currentScriptIndex, handlePlay, setRecording } = dubbingState;
  * ```
@@ -147,10 +148,11 @@ export function useDubbingState(
     onPlay?: () => void;
     onPause?: () => void;
     onRecordingChange?: (recording: boolean) => void;
-  }
+  },
+  initialSidebarOpen: boolean = false
 ): DubbingState & DubbingActions {
   // UI 상태
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(initialSidebarOpen);
   const [showCompleted, setShowCompleted] = useState(false);
   const [showResults, setShowResults] = useState(false);
   

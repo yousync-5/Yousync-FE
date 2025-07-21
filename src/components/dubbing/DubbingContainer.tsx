@@ -79,7 +79,7 @@ const DubbingContainer = ({
     onRecordingChange: (recording: boolean) => {
       // 녹음 상태 변경 시 추가 로직이 필요하면 여기에
     }
-  });
+  }, true); // 초기에 사이드바를 열어두기 위해 true로 설정
 
   // 기존 상태들을 훅에서 가져오기
   const {
