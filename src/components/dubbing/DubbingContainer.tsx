@@ -344,6 +344,57 @@ useEffect(() => {
   }
 }, [multiJobIds.length]);
 
+  // 버튼 표시 여부를 결정하는 함수
+  const shouldShowCompletedButtons = useCallback(() => {
+    // 분석 결과가 없으면 버튼 표시 안함
+    if (Object.keys(latestResultByScript || {}).length === 0) {
+      return false;
+    }
+    
+    // 듀엣 더빙 모드일 때
+    if (isDuet) {
+      // 내 대사만 필터링
+      const myLines = front_data.captions.filter((_: any, idx: number) => isMyLine(idx));
+      
+      // 내 대사가 없으면 버튼 표시 안함
+      if (myLines.length === 0) {
+        return false;
+      }
+      
+      // 내 대사에 대한 분석 결과가 모두 있는지 확인
+      const myLinesWithResults = myLines.filter((caption: any) => {
+        const scriptKey = normalizeScript(caption.script);
+        return !!latestResultByScript[scriptKey];
+      });
+      
+      // 내 대사에 대한 분석 결과가 모두 있으면 버튼 표시
+      return myLinesWithResults.length === myLines.length;
+    }
+    // 일반 더빙 모드일 때
+    else {
+      // 모든 대사에 대한 분석 결과가 있으면 버튼 표시
+      return Object.keys(latestResultByScript || {}).length === front_data.captions.length;
+    }
+  }, [isDuet, latestResultByScript, front_data.captions, isMyLine]);
+  
+  // 현재 마지막 대사인지 확인하는 함수
+  const isLastScript = useCallback(() => {
+    return currentScriptIndex === front_data.captions.length - 1;
+  }, [currentScriptIndex, front_data.captions.length]);
+  
+  // 마지막 대사가 끝났는지 확인하는 상태
+  const [lastScriptFinished, setLastScriptFinished] = useState(false);
+  
+  // 마지막 대사가 끝났을 때 상태 업데이트
+  useEffect(() => {
+    if (isLastScript() && currentVideoTime > 0) {
+      const lastScript = front_data.captions[front_data.captions.length - 1];
+      if (lastScript && currentVideoTime >= lastScript.end_time) {
+        setLastScriptFinished(true);
+      }
+    }
+  }, [currentVideoTime, isLastScript, front_data.captions]);
+
   // 문장 개수만큼 분석 결과가 쌓이면 콘솔 출력
   useEffect(() => {
     const totalCount = front_data.captions.length;
@@ -813,11 +864,7 @@ useEffect(() => {
               }
             }}
             // 더빙본 들어보기와 결과보기 버튼 관련 props
-            showCompletedButtons={
-              isDuet
-                ? Object.keys(latestResultByScript || {}).length === front_data.captions.filter((_: any, idx: number) => isMyLine(idx)).length && front_data.captions.filter((_: any, idx: number) => isMyLine(idx)).length > 0
-                : Object.keys(latestResultByScript || {}).length === front_data.captions.length && front_data.captions.length > 0
-            }
+            showCompletedButtons={shouldShowCompletedButtons() || lastScriptFinished}
             onOpenDubbingListenModal={() => setIsDubbingListenModalOpen(true)}
             onShowResults={handleViewResults}
             id={id} // 추가

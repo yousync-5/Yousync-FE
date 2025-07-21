@@ -25,16 +25,25 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
   const pathname = usePathname();
   const searchParams = useSearchParams();
   let urlTokenId: string | undefined = undefined;
+  let videoId: string | undefined = modalId;
+  
   if (pathname.startsWith('/duetdubbing')) {
     urlTokenId = searchParams.get('selected') || undefined;
+    // 듀엣 더빙에서는 modalId가 없을 수 있으므로 URL에서 추출
+    if (!videoId) {
+      videoId = pathname.split('/')[2]; // /duetdubbing/[videoId] 형식에서 추출
+    }
   } else {
     // /dubbing/72?modalId=... → ['', 'dubbing', '72']
     const parts = pathname.split('/');
     if (parts.length > 2) {
       urlTokenId = parts[2];
+      if (!videoId) {
+        videoId = parts[2]; // 비디오 ID도 같이 설정
+      }
     }
   }
-  console.log("[DubbingListenModal] urlTokenId:", urlTokenId);
+  console.log("[DubbingListenModal] urlTokenId:", urlTokenId, "videoId:", videoId);
 // 합성 오디오 응답 state
 const [audioResponse, setAudioResponse] = useState<SynthesizeAudioResponse | null>(null);
   const startTime = useTokenStore((state) => state.start_time);
@@ -204,9 +213,9 @@ const [audioResponse, setAudioResponse] = useState<SynthesizeAudioResponse | nul
         {/* 항상 고정된 크기의 영상/썸네일 영역 */}
         <div className="mb-6 flex justify-center" style={{ width: '640px', height: '360px' }}>
           <div className="relative w-full h-full" style={{ width: '640px', height: '360px' }}>
-            {modalId && (
+            {videoId && (
               <YouTube
-                videoId={modalId}
+                videoId={videoId}
                 opts={youtubeOpts}
                 onReady={handleYouTubeReady}
                 onStateChange={handleStateChange}
@@ -245,13 +254,13 @@ const [audioResponse, setAudioResponse] = useState<SynthesizeAudioResponse | nul
                 }}
               >
                 <img
-                  src={`https://img.youtube.com/vi/${modalId}/maxresdefault.jpg`}
+                  src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
                   alt="Video thumbnail"
                   className="rounded-xl w-full h-full object-cover"
                   onError={(e) => {
                     // 고화질 썸네일이 없으면 중간 화질로 대체
                     const target = e.target as HTMLImageElement;
-                    target.src = `https://img.youtube.com/vi/${modalId}/hqdefault.jpg`;
+                    target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
                   }}
                 />
                 {/* 재생 버튼 오버레이 */}
