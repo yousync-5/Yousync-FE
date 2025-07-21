@@ -404,12 +404,13 @@ export default function ScriptDisplay({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 gap-1 py-2">
             {/* 왼쪽에 스크립트 번호 표시 */}
             <div className="text-base sm:text-2xl font-semibold text-white flex items-center">
+              Script&nbsp; <span className="text-teal-300">{currentScriptIndex + 1}</span> / {captions.length}
+              &nbsp;&nbsp;
               {isDuet && (
-                <span className={`mr-2 px-2 py-1 rounded ${isMyLine ? 'bg-green-600 text-white' : 'bg-blue-600 text-white'}`}>
+                <span className={`ml-2 px-2 py-1 rounded ${isMyLine ? 'bg-green-600 text-white' : 'bg-blue-600 text-white'}`}>
                   {isMyLine ? '내 대사' : '상대방'}
                 </span>
               )}
-              &nbsp;&nbsp;Script&nbsp; <span className="text-teal-300">{currentScriptIndex + 1}</span> / {captions.length}
             </div>
             
             {/* 중앙에 버튼들 배치 */}
@@ -574,7 +575,9 @@ export default function ScriptDisplay({
               style={{
                 background: isAnalyzing 
                   ? 'rgba(31, 41, 55, 0.8)' // 분석 중일 때는 회색
-                  : `linear-gradient(to right, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.15) ${animatedProgress * 100}%, rgba(31, 41, 55, 0.8) ${animatedProgress * 100}%, rgba(31, 41, 55, 0.8) 100%)`, // 그 외에는 초록색 그라데이션
+                  : isDuet && !isMyLine
+                    ? `linear-gradient(to right, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) ${animatedProgress * 100}%, rgba(31, 41, 55, 0.8) ${animatedProgress * 100}%, rgba(31, 41, 55, 0.8) 100%)` // 상대방 대사는 파란색 그라데이션
+                    : `linear-gradient(to right, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.15) ${animatedProgress * 100}%, rgba(31, 41, 55, 0.8) ${animatedProgress * 100}%, rgba(31, 41, 55, 0.8) 100%)`, // 내 대사는 초록색 그라데이션
                 transition: disableTransition ? 'none' : 'background 0.3s ease-out'
               }}
             >

@@ -45,12 +45,6 @@ export default function LandingPage() {
   
   return (
     <div className="bg-neutral-950 text-white min-h-screen">
-      {/* 테스트 페이지 링크 */}
-      <div className="fixed top-4 right-4 z-50">
-        <Link href="/test-dubbing" className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-          더빙 테스트
-        </Link>
-      </div>
       
       {/* {step === 'intro' && <IntroPlayButton onPlay={handleIntroPlay} />}
       {step === 'video' && (

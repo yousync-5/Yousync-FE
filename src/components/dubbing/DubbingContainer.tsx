@@ -60,7 +60,9 @@ const DubbingContainer = ({
     if (!isDuet || !front_data?.captions) return true; // 일반 모드에서는 항상 true
     const currentScript = front_data.captions[scriptIndex];
     // 듀엣 모드에서는 actor.id가 1인 대사가 '내 대사'
-    return currentScript?.actor?.id === 1;
+    const result = currentScript?.actor?.id === 1;
+    console.log(`[isMyLine] 스크립트 ${scriptIndex}번: ${result ? '내 대사' : '상대방 대사'}, actor.id: ${currentScript?.actor?.id}`);
+    return result;
   }, [isDuet, front_data?.captions]);
   
   // 기본 상태들을 훅으로 관리
@@ -502,19 +504,40 @@ useEffect(() => {
       stopScriptRecording(currentScriptIndex);
     }
     
-    // 듀엣 모드에서 다음 스크립트로 이동할 때 자동 전환 허용
-    if (isDuet && index === currentScriptIndex + 1) {
-      setAllowAutoScriptChange(true);
+    // 듀엣 모드에서 상대방 대사를 클릭했을 때 처리
+    if (isDuet) {
+      const isCurrentMyLine = isMyLine(currentScriptIndex);
+      const isTargetMyLine = isMyLine(index);
+      
+      // 내 대사를 클릭했을 때는 자동 전환 비활성화
+      if (isTargetMyLine) {
+        setAllowAutoScriptChange(false);
+      }
+      // 현재 상대방 대사이고 다음 대사도 상대방 대사일 경우에만 자동 전환 활성화
+      else if (!isCurrentMyLine && !isTargetMyLine && index === currentScriptIndex + 1) {
+        setAllowAutoScriptChange(true);
+      }
+      // 그 외의 경우는 자동 전환 비활성화
+      else {
+        setAllowAutoScriptChange(false);
+      }
     } else {
       setAllowAutoScriptChange(false);
     }
     
-    // 영상 해당 시점으로 이동 및 정지
+    // 영상 해당 시점으로 이동
     const startTime = front_data.captions[index]?.start_time ?? 0;
     videoPlayerRef.current?.seekTo(startTime);
-    videoPlayerRef.current?.pauseVideo();
+    
+    // 듀엣 모드에서 상대방 대사를 클릭했고, 현재 상대방 대사에서 다음 상대방 대사로 이동할 때만 자동 재생
+    if (isDuet && !isMyLine(index) && !isMyLine(currentScriptIndex) && index === currentScriptIndex + 1) {
+      videoPlayerRef.current?.playVideo();
+    } else {
+      // 그 외의 경우는 일시 정지
+      videoPlayerRef.current?.pauseVideo();
+    }
 
-    // 3. 문장 인덱스 변경
+    // 문장 인덱스 변경
     handleScriptSelect(index);
   };
 
@@ -650,7 +673,7 @@ useEffect(() => {
       {/* 본문 - 사이드바 열릴 때 크기 조절 */}
       <div 
         className={`w-full mx-auto px-2 py-1 transition-all duration-300 ease-in-out ${
-          isSidebarOpen ? 'pr-[280px]' : 'pr-2'
+          isSidebarOpen ? 'pr-[400px]' : 'pr-2'
         }`}
       >
         <div className="grid grid-cols-12 gap-2">
@@ -671,24 +694,33 @@ useEffect(() => {
                 }
                 
                 // 듀엣 모드일 때 자동 재생 및 흐름 제어 로직
-                // allowAutoScriptChange가 true일 때만 자동 전환 허용
-                if (isDuet && allowAutoScriptChange && currentScriptIndex < front_data.captions.length - 1) {
+                if (isDuet && currentScriptIndex < front_data.captions.length - 1) {
                   const nextScriptIndex = currentScriptIndex + 1;
+                  const isCurrentMyLine = isMyLine(currentScriptIndex);
                   const isNextMyLine = isMyLine(nextScriptIndex);
+                  
+                  console.log(`[onEndTimeReached] 현재 스크립트: ${currentScriptIndex}, 다음 스크립트: ${nextScriptIndex}`);
+                  console.log(`[onEndTimeReached] 현재 대사: ${isCurrentMyLine ? '내 대사' : '상대방 대사'}, 다음 대사: ${isNextMyLine ? '내 대사' : '상대방 대사'}`);
                   
                   // 다음 대사로 이동
                   setCurrentScriptIndex(nextScriptIndex);
                   
-                  // 다음 대사가 내 대사면 멈추고, 상대방 대사면 자동 재생
+                  // 다음 대사가 내 대사면 무조건 멈춤
                   if (isNextMyLine) {
+                    console.log('[onEndTimeReached] 다음 대사가 내 대사이므로 멈춤');
                     // 내 대사일 때는 녹음 준비를 위해 멈춤
                     setTimeout(() => {
                       if (videoPlayerRef.current) {
                         videoPlayerRef.current.pauseVideo();
                       }
                     }, 100);
-                  } else {
-                    // 상대방 대사일 때는 자동 재생
+                    // 내 대사로 전환될 때 자동 전환 비활성화
+                    setAllowAutoScriptChange(false);
+                  } 
+                  // 현재 상대방 대사이고 다음 대사도 상대방 대사일 경우에만 연속 재생
+                  else if (!isCurrentMyLine && !isNextMyLine) {
+                    console.log('[onEndTimeReached] 현재와 다음 대사 모두 상대방 대사이므로 연속 재생');
+                    // 상대방 대사가 연속될 때는 자동 재생
                     setTimeout(() => {
                       if (videoPlayerRef.current) {
                         const nextScript = front_data.captions[nextScriptIndex];
@@ -696,6 +728,18 @@ useEffect(() => {
                         videoPlayerRef.current.playVideo();
                       }
                     }, 100);
+                    // 상대방 대사가 연속될 때는 자동 전환 활성화
+                    setAllowAutoScriptChange(true);
+                  }
+                  // 내 대사에서 상대방 대사로 전환될 때는 멈춤
+                  else {
+                    console.log('[onEndTimeReached] 내 대사에서 상대방 대사로 전환되므로 멈춤');
+                    setTimeout(() => {
+                      if (videoPlayerRef.current) {
+                        videoPlayerRef.current.pauseVideo();
+                      }
+                    }, 100);
+                    setAllowAutoScriptChange(false);
                   }
                 }
               }}
@@ -777,7 +821,11 @@ useEffect(() => {
               }
             }}
             // 더빙본 들어보기와 결과보기 버튼 관련 props
-            showCompletedButtons={Object.keys(latestResultByScript || {}).length === front_data.captions.length && front_data.captions.length > 0}
+            showCompletedButtons={
+              isDuet 
+                ? Object.keys(latestResultByScript || {}).length === front_data.captions.filter((_, idx) => isMyLine(idx)).length && front_data.captions.filter((_, idx) => isMyLine(idx)).length > 0
+                : Object.keys(latestResultByScript || {}).length === front_data.captions.length && front_data.captions.length > 0
+            }
             onOpenDubbingListenModal={() => setIsDubbingListenModalOpen(true)}
             onShowResults={handleViewResults}
             id={id} // 추가
