@@ -1,18 +1,28 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMyPageOverview } from '@/hooks/useMyPageOverview';
 import { API_ENDPOINTS } from '@/lib/constants';
 import UserProfile from './UserProfile';
 import PageHeader from './PageHeader';
 import { extractYoutubeVideoId, getYoutubeThumbnail } from '@/utils/extractYoutubeVideoId';
-
+import { useUser } from '@/hooks/useUser';
+import { useRouter } from 'next/navigation';
+import axios, { get } from 'axios';
+import { toast } from 'react-hot-toast';
+import { useVideos } from '@/hooks/useVideos';
+import MovieDetailModal from '@/components/modal/MovieDetailModal';
+import type { TokenDetailResponse } from '@/types/pitch';
 
 const MypageContainer: React.FC = () => {
   const { data, loading, error, refetch } = useMyPageOverview();
   const [bookmarkPage, setBookmarkPage] = useState(1);
   const [dubbedPage, setDubbedPage] = useState(1);
   const [isRemovingBookmark, setIsRemovingBookmark] = useState(false);
+  const [approvedTokens, setApprovedTokens] = useState<any[]>([]);
+  const { data: tokens = [] } = useVideos();
+  const [selectedToken, setSelectedToken] = useState<TokenDetailResponse | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
   const itemsPerPage = 6; // 페이지당 표시할 항목 수
 
   // 북마크 정렬 및 페이지네이션 계산
@@ -30,6 +40,35 @@ const MypageContainer: React.FC = () => {
     (dubbedPage - 1) * itemsPerPage,
     dubbedPage * itemsPerPage
   ) : [];
+
+  // 승인된 영상 불러오기
+  useEffect(() => {
+    const fetchApprovedTokens = async () => {
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken) return;
+      try {
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/request/mine`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+        // status가 '승인됨'인 것만 필터링
+        if (Array.isArray(res.data)) {
+          setApprovedTokens(res.data.filter((item: any) => item.status === '승인됨'));
+        } else {
+          setApprovedTokens([]);
+        }
+      } catch (error) {
+        console.error('승인된 영상 불러오기 실패:', error);
+      }
+    };
+    fetchApprovedTokens();
+  }, []);
+
+
 
   // 페이지 번호 버튼 생성 함수
   const renderPaginationButtons = (totalPages: number, currentPage: number, setPage: (page: number) => void) => {
@@ -261,11 +300,15 @@ const MypageContainer: React.FC = () => {
                         window.location.href = `/result?token_id=${token.token_id}`;
                       }}
                     >
-                      <div className="relative aspect-[16/9] w-full overflow-hidden">
+                      <div className="relative aspect-[16/9] w-full overflow-hidden flex items-center justify-center bg-black">
                         <img
-                          src={token.youtube_url ? getYoutubeThumbnail(token.youtube_url) : "https://images.unsplash.com/photo-1519125323398-675f0ddb6308"}
+                          src={
+                            token.youtube_url && extractYoutubeVideoId(token.youtube_url)
+                              ? `https://img.youtube.com/vi/${extractYoutubeVideoId(token.youtube_url)}/mqdefault.jpg`
+                              : "https://images.unsplash.com/photo-1519125323398-675f0ddb6308"
+                          }
                           alt={token.token_name}
-                          className="absolute inset-0 w-full h-full object-cover"
+                          className="object-contain w-full h-full"
                           onError={(e) => {
                             const target = e.target as HTMLImageElement;
                             target.src = "https://images.unsplash.com/photo-1519125323398-675f0ddb6308";
@@ -289,8 +332,72 @@ const MypageContainer: React.FC = () => {
               </>
             )}
           </div>
+
+          {/* 승인된 영상 섹션 */}
+          <div className="bg-neutral-900 rounded-2xl p-8 border border-neutral-800 mt-10">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">
+                승인된 영상{' '}
+                <span className="text-green-400 text-lg ml-2">
+                  ({approvedTokens.length}개)
+                </span>
+              </h2>
+            </div>
+            {approvedTokens.length === 0 ? (
+              <div className="text-center py-12 text-gray-400">
+                <div className="text-4xl mb-4">✅</div>
+                <p>아직 승인된 영상이 없습니다.</p>
+                <p className="text-sm mt-2">심사 후 승인된 영상이 여기에 표시됩니다.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
+                {approvedTokens.map((token) => (
+                  <div
+                    key={token.token_id}
+                    className="group bg-neutral-800 rounded-xl overflow-hidden border border-neutral-700 hover:border-green-600 transition-all duration-300 cursor-pointer"
+                    onClick={() => {
+                      const youtubeId = extractYoutubeVideoId(token.url);
+                      const found = tokens.find(t => t.youtubeId === youtubeId);
+                      if (found) {
+                        setSelectedToken(found);
+                        setModalOpen(true);
+                      }
+                    }}
+                  >
+                    <div className="relative aspect-[16/9] w-full overflow-hidden">
+                      <img
+                        src={
+                          extractYoutubeVideoId(token.url)
+                            ? `https://img.youtube.com/vi/${extractYoutubeVideoId(token.url)}/mqdefault.jpg`
+                            : "https://images.unsplash.com/photo-1519125323398-675f0ddb6308"
+                        }
+                        alt={token.token_name}
+                        className="w-full h-full object-cover object-center"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = "https://images.unsplash.com/photo-1519125323398-675f0ddb6308";
+                        }}
+                      />
+                    </div>
+                    {/* <div className="p-4">
+                      <h3 className="font-medium text-white mb-1 truncate">{token.token_name}</h3>
+                      <p className="text-gray-400 text-sm truncate">{token.actor_name}</p>
+                    </div> */}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+      {selectedToken && (
+        <MovieDetailModal
+          youtubeId={extractYoutubeVideoId(selectedToken.youtube_url) || ''}
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          tokenData={selectedToken}
+        />
+      )}
     </div>
   );
 };

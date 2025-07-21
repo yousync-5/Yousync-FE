@@ -459,6 +459,7 @@ useEffect(() => {
   const handleTimeUpdate = useCallback((currentTime: number) => {
     if (!isReady) return;
     setCurrentVideoTime(currentTime);
+
     
     // 녹음 중이면 시간 업데이트만 하고 인덱스 변경은 하지 않음
     if (recording) return;
@@ -469,6 +470,7 @@ useEffect(() => {
     const currentScript = front_data.captions[currentScriptIndex];
     if (currentScript && currentTime >= currentScript.end_time) return;
     
+
     const newScriptIndex = findScriptIndexByTime(currentTime);
     if (newScriptIndex !== -1 && newScriptIndex !== currentScriptIndex) {
       // 새 인덱스가 내 대사인 경우 영상 일시정지
@@ -479,41 +481,45 @@ useEffect(() => {
     }
   }, [isReady, currentScriptIndex, findScriptIndexByTime, front_data?.captions, setCurrentVideoTime, setCurrentScriptIndex, recording, isMyLine]);
 
-  const getCurrentScriptPlaybackRange = useCallback(() => {
+  // DubbingContainer.tsx 내부
+
+const getCurrentScriptPlaybackRange = useCallback(() => {
     if (!isReady) return { startTime: 0, endTime: undefined };
     if (!front_data.captions || front_data.captions.length === 0) {
       return { startTime: 0, endTime: undefined };
     }
     const currentScript = front_data.captions[currentScriptIndex];
     if (!currentScript) return { startTime: 0, endTime: undefined };
+
+    // 듀엣 모드이고, 현재 대사가 '상대방 대사'일 때만 특별 로직 적용
+    if (isDuet && !isMyLine(currentScriptIndex)) {
+      let lastOpponentEndTime = currentScript.end_time;
+      let nextIndex = currentScriptIndex + 1;
+
+      // 다음 대사들을 순서대로 확인
+      while (nextIndex < front_data.captions.length) {
+        // 다음 대사가 '내 대사'이면 연속 구간이 끝난 것이므로 중단
+        if (isMyLine(nextIndex)) {
+          break;
+        }
+        // 다음 대사도 '상대방 대사'이면, 종료 시간을 업데이트하고 계속 탐색
+        lastOpponentEndTime = front_data.captions[nextIndex].end_time;
+        nextIndex++;
+      }
+
+      // 재생 구간을 [현재 대사 시작 시간 ~ 마지막 연속된 상대방 대사 종료 시간]으로 설정
+      return {
+        startTime: currentScript.start_time,
+        endTime: lastOpponentEndTime,
+      };
+    }
+
+    // 일반 모드이거나 '내 대사'인 경우는 기존처럼 한 문장 단위로 재생
     return {
       startTime: currentScript.start_time,
       endTime: currentScript.end_time,
     };
-  }, [isReady, front_data?.captions, currentScriptIndex]);
-
-  const currentWords = isReady ? (tokenData?.scripts?.[currentScriptIndex]?.words || []) : [];
-
-  useEffect(() => {
-    if (!isReady) return;
-    if (front_data.captions && front_data.captions[currentScriptIndex]) {
-      // 현재 스크립트의 시작 시간으로 이동
-      setCurrentVideoTime(front_data.captions[currentScriptIndex].start_time);
-      
-      // 영상을 해당 시점으로 이동하고 명시적으로 정지 상태 유지
-      if (videoPlayerRef?.current) {
-        videoPlayerRef.current.seekTo(front_data.captions[currentScriptIndex].start_time);
-        // 일반 더빙 모드에서는 항상 정지 상태 유지
-        if (!isDuet) {
-          videoPlayerRef.current.pauseVideo();
-        }
-        // 듀엣 모드에서 내 대사인 경우에도 정지 상태 유지
-        else if (isDuet && isMyLine(currentScriptIndex)) {
-          videoPlayerRef.current.pauseVideo();
-        }
-      }
-    }
-  }, [isReady, currentScriptIndex, front_data?.captions, setCurrentVideoTime, isDuet, isMyLine, videoPlayerRef]);
+}, [isReady, isDuet, front_data?.captions, currentScriptIndex, isMyLine]);
 
   // 기존 함수들을 훅의 함수로 대체
   const customHandlePlay = () => {
@@ -752,7 +758,7 @@ useEffect(() => {
       </div>
     );
   }
-
+  const currentWords = isReady ? (tokenData?.scripts?.[currentScriptIndex]?.words || []) : [];
   return (
     <div className="min-h-screen bg-neutral-950 text-white relative overflow-hidden">
       <Toaster position="top-center" />
@@ -779,12 +785,15 @@ useEffect(() => {
               endTime={getCurrentScriptPlaybackRange().endTime}
               disableAutoPause={true}
               ref={videoPlayerRef}
+              
+              // ✅ 이 부분을 아래 코드로 완전히 교체해주세요.
               onEndTimeReached={() => {
                 // 녹음 중이면 녹음부터 중지
                 if (recording) {
                   stopScriptRecording(currentScriptIndex);
                   return;
                 }
+
 
                 // 내 대사인 경우 항상 자동 전환 방지
                 if (isMyLine(currentScriptIndex)) {
@@ -817,10 +826,12 @@ useEffect(() => {
                         }
                       }, 100);
                       setAllowAutoScriptChange(true);
+
                     }
                   }
                 }
               }}
+              
               onPlay={customHandlePlay}
               onPause={customHandlePause}
               onOpenSidebar={() => setIsSidebarOpen(true)}
