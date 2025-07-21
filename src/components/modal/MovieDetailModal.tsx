@@ -25,6 +25,12 @@ export default function MovieDetailModal({
   const router = useRouter();
   const playerRef = useRef<any>(null);
   const [isDubbingLoading, setIsDubbingLoading] = useState(false);
+  
+  // 마우스 호버 관련 상태 추가
+  const [isHovering, setIsHovering] = useState(false);
+  const [shouldPlay, setShouldPlay] = useState(false);
+  const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const videoContainerRef = useRef<HTMLDivElement>(null);
 
   // tokenData가 있을 때만 접근
   const startTime = Number(tokenData?.start_time) || 0;
@@ -36,19 +42,49 @@ export default function MovieDetailModal({
     if (startTime > 0) {
       event.target.seekTo(startTime);
     }
-    event.target.playVideo();
+    // 자동 재생하지 않고 대기
+    event.target.pauseVideo();
   };
 
   const handlePlayerEnd = () => {
-    if (playerRef.current) {
+    if (playerRef.current && shouldPlay) {
       playerRef.current.seekTo(startTime);
       playerRef.current.playVideo();
     }
   };
 
+  // 마우스가 영상 위에 1.5초 이상 머물면 재생
+  useEffect(() => {
+    if (isHovering) {
+      hoverTimerRef.current = setTimeout(() => {
+        setShouldPlay(true);
+        if (playerRef.current) {
+          playerRef.current.seekTo(startTime);
+          playerRef.current.playVideo();
+        }
+      }, 1500); // 1.5초 후 재생
+    } else {
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+        hoverTimerRef.current = null;
+      }
+      setShouldPlay(false);
+      if (playerRef.current) {
+        playerRef.current.pauseVideo();
+        playerRef.current.seekTo(startTime);
+      }
+    }
+
+    return () => {
+      if (hoverTimerRef.current) {
+        clearTimeout(hoverTimerRef.current);
+      }
+    };
+  }, [isHovering, startTime]);
+
   // endTime이 지정된 경우, 100ms마다 체크해서 endTime 도달 시 반복
   useEffect(() => {
-    if (!playerRef.current || !endTime) return;
+    if (!playerRef.current || !endTime || !shouldPlay) return;
     const interval = setInterval(() => {
       const current = playerRef.current.getCurrentTime?.();
       if (typeof current === 'number' && current >= endTime) {
@@ -57,7 +93,7 @@ export default function MovieDetailModal({
       }
     }, 100);
     return () => clearInterval(interval);
-  }, [endTime, startTime, isOpen]);
+  }, [endTime, startTime, isOpen, shouldPlay]);
 
   if (!isOpen || !youtubeId || !tokenData) return null;
 
@@ -74,7 +110,14 @@ export default function MovieDetailModal({
     }
   };
 
-  
+  // 마우스 이벤트 핸들러
+  const handleMouseEnter = () => {
+    setIsHovering(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+  };
 
   return (
     <div className="fixed inset-0 z-51 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -91,7 +134,12 @@ export default function MovieDetailModal({
           &times;
         </button> */}
         {/* 메인 영상 */}
-        <div className="mx-auto aspect-video w-full overflow-hidden rounded-xl relative shadow-lg">
+        <div 
+          ref={videoContainerRef}
+          className="mx-auto aspect-video w-full overflow-hidden rounded-xl relative shadow-lg"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
           <YouTube
             key={youtubeId}
             videoId={youtubeId}
@@ -103,7 +151,7 @@ export default function MovieDetailModal({
               height: "100%",
               playerVars: {
                 controls: 0, // 재생바 숨김
-                autoplay: 1,
+                autoplay: 0, // 자동 재생 비활성화
                 start: startTime,
                 showinfo: 0, // 제목 숨김
                 modestbranding: 1, // 유튜브 로고 최소화
@@ -120,6 +168,15 @@ export default function MovieDetailModal({
             style={{ height: 64, background: '#000', opacity: 1 }}
           />
           
+          {/* 재생 상태 표시 오버레이 */}
+          {!shouldPlay && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+              <div className="text-white text-center">
+                
+                <p className="text-lg">마우스를 1.5초간 올려두면 재생됩니다</p>
+              </div>
+            </div>
+          )}
         </div>
         <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mt-6 bg-[#20232a] rounded-2xl shadow-lg p-6 border border-[#23272f]">
           <div className="flex-1 flex flex-col gap-2">
