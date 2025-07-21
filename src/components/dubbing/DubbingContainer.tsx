@@ -380,19 +380,6 @@ useEffect(() => {
   const isLastScript = useCallback(() => {
     return currentScriptIndex === front_data.captions.length - 1;
   }, [currentScriptIndex, front_data.captions.length]);
-  
-  // 마지막 대사가 끝났는지 확인하는 상태
-  const [lastScriptFinished, setLastScriptFinished] = useState(false);
-  
-  // 마지막 대사가 끝났을 때 상태 업데이트
-  useEffect(() => {
-    if (isLastScript() && currentVideoTime > 0) {
-      const lastScript = front_data.captions[front_data.captions.length - 1];
-      if (lastScript && currentVideoTime >= lastScript.end_time) {
-        setLastScriptFinished(true);
-      }
-    }
-  }, [currentVideoTime, isLastScript, front_data.captions]);
 
   // 문장 개수만큼 분석 결과가 쌓이면 콘솔 출력
   useEffect(() => {
@@ -451,25 +438,48 @@ useEffect(() => {
   // 데이터가 준비되지 않았으면 내부 로직 실행하지 않음
   const findScriptIndexByTime = useCallback((time: number) => {
     if (!isReady) return 0;
+    
+    // 녹음 중이 아니고 현재 내 대사인 경우, 시간 기반 인덱스 변경을 방지
+    if (!recording && isMyLine(currentScriptIndex)) {
+      return currentScriptIndex;
+    }
+    
     const lastIndex = front_data.captions.length - 1;
     const lastScript = front_data.captions[lastIndex];
+    
     if (lastScript && time > lastScript.end_time) return lastIndex;
+    
     const foundIndex = front_data.captions.findIndex(
       (script: any) => time >= script.start_time && time <= script.end_time
     );
+    
     return foundIndex !== -1 ? foundIndex : 0;
-  }, [isReady, front_data?.captions]);
+  }, [isReady, front_data?.captions, isMyLine, currentScriptIndex, recording]);
 
   const handleTimeUpdate = useCallback((currentTime: number) => {
     if (!isReady) return;
     setCurrentVideoTime(currentTime);
-    // const currentScript = front_data.captions[currentScriptIndex];
-    // if (currentScript && currentTime >= currentScript.end_time) return;
+
+    
+    // 녹음 중이면 시간 업데이트만 하고 인덱스 변경은 하지 않음
+    if (recording) return;
+    
+    // 내 대사인 경우 자동 전환 방지
+    if (isMyLine(currentScriptIndex)) return;
+    
+    const currentScript = front_data.captions[currentScriptIndex];
+    if (currentScript && currentTime >= currentScript.end_time) return;
+    
+
     const newScriptIndex = findScriptIndexByTime(currentTime);
     if (newScriptIndex !== -1 && newScriptIndex !== currentScriptIndex) {
+      // 새 인덱스가 내 대사인 경우 영상 일시정지
+      if (isMyLine(newScriptIndex)) {
+        videoPlayerRef.current?.pauseVideo();
+      }
       setCurrentScriptIndex(newScriptIndex);
     }
-  }, [isReady, currentScriptIndex, findScriptIndexByTime, front_data?.captions, setCurrentVideoTime, setCurrentScriptIndex]);
+  }, [isReady, currentScriptIndex, findScriptIndexByTime, front_data?.captions, setCurrentVideoTime, setCurrentScriptIndex, recording, isMyLine]);
 
   // DubbingContainer.tsx 내부
 
@@ -778,23 +788,45 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
               
               // ✅ 이 부분을 아래 코드로 완전히 교체해주세요.
               onEndTimeReached={() => {
-                // 1. 녹음 중이면 녹음부터 중지
+                // 녹음 중이면 녹음부터 중지
                 if (recording) {
                   stopScriptRecording(currentScriptIndex);
                   return;
                 }
 
-                // 2. 듀엣 모드일 때만 다음 로직 실행
+
+                // 내 대사인 경우 항상 자동 전환 방지
+                if (isMyLine(currentScriptIndex)) {
+                  videoPlayerRef.current?.pauseVideo();
+                  setAllowAutoScriptChange(false);
+                  return;
+                }
+
+                // 듀엣 모드일 때의 로직
                 if (isDuet) {
-                  // 3. '연속 재생 구간'이 모두 끝났을 때
-                  // 마지막 대사가 아니라면 다음 대사 인덱스를 확인
+                  // 마지막 대사가 아니면 다음으로 넘어갈 준비
                   if (currentScriptIndex < front_data.captions.length - 1) {
                     const nextScriptIndex = currentScriptIndex + 1;
-                    
-                    // 4. 다음 대사가 '내 대사'일 경우에만 영상을 정지시킴
-                    if (isMyLine(nextScriptIndex)) {
+                    const isNextMyLine = isMyLine(nextScriptIndex);
+
+                    // 다음 대사가 '내 대사'인 경우: 다음으로 넘어가서 멈춤
+                    if (isNextMyLine) {
                       setCurrentScriptIndex(nextScriptIndex);
                       videoPlayerRef.current?.pauseVideo();
+                      setAllowAutoScriptChange(false);
+                    } 
+                    // 다음 대사도 '상대방 대사'인 경우: 다음으로 넘어가서 자동 재생
+                    else {
+                      setCurrentScriptIndex(nextScriptIndex);
+                      setTimeout(() => {
+                        if (videoPlayerRef.current) {
+                          const nextScript = front_data.captions[nextScriptIndex];
+                          videoPlayerRef.current.seekTo(nextScript.start_time);
+                          videoPlayerRef.current.playVideo();
+                        }
+                      }, 100);
+                      setAllowAutoScriptChange(true);
+
                     }
                   }
                 }
@@ -878,7 +910,7 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
               }
             }}
             // 더빙본 들어보기와 결과보기 버튼 관련 props
-            showCompletedButtons={shouldShowCompletedButtons() || lastScriptFinished}
+            showCompletedButtons={shouldShowCompletedButtons()}
             onOpenDubbingListenModal={() => setIsDubbingListenModalOpen(true)}
             onShowResults={handleViewResults}
             id={id} // 추가

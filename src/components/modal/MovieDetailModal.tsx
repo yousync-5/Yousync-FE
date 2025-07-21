@@ -38,18 +38,60 @@ export default function MovieDetailModal({
 
   // 반복 재생: 영상이 끝나면 startTime으로 이동 후 재생
   const handlePlayerReady = (event: any) => {
-    playerRef.current = event.target;
-    if (startTime > 0) {
-      event.target.seekTo(startTime);
+    try {
+      if (event && event.target) {
+        playerRef.current = event.target;
+        
+        if (startTime > 0) {
+          try {
+            if (typeof event.target.seekTo === 'function') {
+              event.target.seekTo(startTime);
+            }
+          } catch (error) {
+            console.error('Error seeking to start time:', error);
+          }
+        }
+        
+        // 자동 재생하지 않고 대기
+        try {
+          if (typeof event.target.pauseVideo === 'function') {
+            event.target.pauseVideo();
+          }
+        } catch (error) {
+          console.error('Error pausing video:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error in handlePlayerReady:', error);
     }
-    // 자동 재생하지 않고 대기
-    event.target.pauseVideo();
   };
 
   const handlePlayerEnd = () => {
-    if (playerRef.current && shouldPlay) {
-      playerRef.current.seekTo(startTime);
-      playerRef.current.playVideo();
+    if (!shouldPlay) return;
+    
+    try {
+      const player = playerRef.current;
+      if (player) {
+        // 시간 이동 시도
+        try {
+          if (typeof player.seekTo === 'function') {
+            player.seekTo(startTime);
+          }
+        } catch (error) {
+          console.error('Error seeking video:', error);
+        }
+        
+        // 재생 시도
+        try {
+          if (typeof player.playVideo === 'function') {
+            player.playVideo();
+          }
+        } catch (error) {
+          console.error('Error playing video:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error accessing player:', error);
     }
   };
 
@@ -58,9 +100,30 @@ export default function MovieDetailModal({
     if (isHovering) {
       hoverTimerRef.current = setTimeout(() => {
         setShouldPlay(true);
-        if (playerRef.current) {
-          playerRef.current.seekTo(startTime);
-          playerRef.current.playVideo();
+        
+        try {
+          const player = playerRef.current;
+          if (player) {
+            // 시간 이동 시도
+            try {
+              if (typeof player.seekTo === 'function') {
+                player.seekTo(startTime);
+              }
+            } catch (error) {
+              console.error('Error seeking video:', error);
+            }
+            
+            // 재생 시도
+            try {
+              if (typeof player.playVideo === 'function') {
+                player.playVideo();
+              }
+            } catch (error) {
+              console.error('Error playing video:', error);
+            }
+          }
+        } catch (error) {
+          console.error('Error accessing player:', error);
         }
       }, 1500); // 1.5초 후 재생
     } else {
@@ -69,9 +132,31 @@ export default function MovieDetailModal({
         hoverTimerRef.current = null;
       }
       setShouldPlay(false);
-      if (playerRef.current) {
-        playerRef.current.pauseVideo();
-        playerRef.current.seekTo(startTime);
+      
+      try {
+        // 안전하게 메서드 호출
+        const player = playerRef.current;
+        if (player) {
+          // 일시 정지 시도
+          try {
+            if (typeof player.pauseVideo === 'function') {
+              player.pauseVideo();
+            }
+          } catch (error) {
+            console.error('Error pausing video:', error);
+          }
+          
+          // 시간 이동 시도
+          try {
+            if (typeof player.seekTo === 'function') {
+              player.seekTo(startTime);
+            }
+          } catch (error) {
+            console.error('Error seeking video:', error);
+          }
+        }
+      } catch (error) {
+        console.error('Error accessing player:', error);
       }
     }
 
@@ -84,25 +169,63 @@ export default function MovieDetailModal({
 
   // endTime이 지정된 경우, 100ms마다 체크해서 endTime 도달 시 반복
   useEffect(() => {
-    if (!playerRef.current || !endTime || !shouldPlay) return;
+    if (!endTime || !shouldPlay) return;
+    
     const interval = setInterval(() => {
-      const current = playerRef.current.getCurrentTime?.();
-      if (typeof current === 'number' && current >= endTime) {
-        playerRef.current.seekTo(startTime);
-        playerRef.current.playVideo();
+      try {
+        const player = playerRef.current;
+        if (!player) {
+          clearInterval(interval);
+          return;
+        }
+        
+        // 현재 시간 가져오기 시도
+        let current;
+        try {
+          if (typeof player.getCurrentTime === 'function') {
+            current = player.getCurrentTime();
+          } else {
+            clearInterval(interval);
+            return;
+          }
+        } catch (error) {
+          console.error('Error getting current time:', error);
+          clearInterval(interval);
+          return;
+        }
+        
+        // endTime 도달 시 처리
+        if (typeof current === 'number' && current >= endTime) {
+          try {
+            // 시간 이동 시도
+            if (typeof player.seekTo === 'function') {
+              player.seekTo(startTime);
+            }
+            
+            // 재생 시도
+            if (typeof player.playVideo === 'function') {
+              player.playVideo();
+            }
+          } catch (error) {
+            console.error('Error handling end time reached:', error);
+            clearInterval(interval);
+          }
+        }
+      } catch (error) {
+        console.error('Error in interval:', error);
+        clearInterval(interval);
       }
     }, 100);
+    
     return () => clearInterval(interval);
-  }, [endTime, startTime, isOpen, shouldPlay]);
+  }, [endTime, startTime, shouldPlay, isOpen]);
 
   if (!isOpen || !youtubeId || !tokenData) return null;
 
   const handleDubbingClick = async () => {
     setIsDubbingLoading(true);
-    console.log(">> ", tokenData.id, youtubeId);
     try {
       await tokenApi.incrementView(tokenData.id);
-      console.log("View count incremented successfully!");
     } catch (error) {
       console.error("Failed to increment view count:", error);
     } finally {
