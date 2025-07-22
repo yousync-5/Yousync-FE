@@ -11,6 +11,7 @@ interface MovieListProps {
   onPlay?: (youtubeId: string) => void;
   onOpenModal?: (youtubeId: string) => void;
   onStop?: () => void;
+  customRender?: (video: { videoId: string; youtubeId: string; actor_name: string }, index: number) => React.ReactNode;
 }
 
 export default function MovieList({
@@ -22,6 +23,7 @@ export default function MovieList({
   onPlay,
   onOpenModal,
   onStop,
+  customRender,
 }: MovieListProps) {
   // 가로 스크롤 함수들
   const scrollLeft = () => {
@@ -62,18 +64,21 @@ export default function MovieList({
         className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 pt-4 pl-4"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
-        {videos.map((video) => (
-          <MovieItem
-            key={`${sectionId}-${video.videoId}`}
-            video={video}
-            isPlayable={isPlayable}
-            isShorts={isShorts}
-            playingVideo={playingVideo}
-            onPlay={onPlay}
-            onOpenModal={onOpenModal ? () => onOpenModal(video.videoId) : undefined}
-            onStop={onStop}
-          />
-        ))}
+        {customRender 
+          ? videos.map((video, index) => customRender(video, index))
+          : videos.map((video) => (
+            <MovieItem
+              key={`${sectionId}-${video.videoId}`}
+              video={video}
+              isPlayable={isPlayable}
+              isShorts={isShorts}
+              playingVideo={playingVideo}
+              onPlay={onPlay}
+              onOpenModal={onOpenModal ? () => onOpenModal(video.videoId) : undefined}
+              onStop={onStop}
+            />
+          ))
+        }
       </div>
     </div>
   );

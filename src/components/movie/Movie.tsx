@@ -117,7 +117,7 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
     },
     {
       id: "animation-dubbing",
-      title: "애니 더빙",
+      title: "코미디 더빙",
       subtitle: "재미있는 애니메이션 더빙",
       icon: <FilmIcon className="w-6 h-6 text-green-500" />,
       videos: romanticTokens.map(({ id, youtubeId, actor_name }) => ({ videoId: String(id), youtubeId, actor_name })),
@@ -209,7 +209,9 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                     {heroVideos[currentIndex].actor_name}
                   </h1>
                   <p className="text-xl text-white/90 mb-8 max-w-lg">
-                    AI와 함께 더빙의 재미를 발견하세요! 실시간 피치 분석으로 완벽한 연기를 만들어보세요.
+                    YouSync와 함께하는 {heroVideos[currentIndex].actor_name}의 최신 더빙 영상입니다.
+                    <br />
+                    다양한 장르의 영화를 즐겨보세요!
                   </p>
                   <div className="flex items-center gap-4">
                     <button
@@ -309,13 +311,22 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                       ) : duetScenesError ? (
                         <div className="text-red-400 text-lg py-8">듀엣 더빙 목록을 불러오지 못했습니다.</div>
                       ) : (
-                        <div className="flex gap-6 overflow-x-auto pb-4 pt-4 pl-4">
-                          {duetScenes.map((scene: any) => (
+                        <MovieList
+                          sectionId="duet-dubbing"
+                          videos={duetScenes.map((scene: any) => ({
+                            videoId: scene.youtube_url,
+                            youtubeId: scene.duet_pair[0].youtube_url.split('v=')[1],
+                            actor_name: `${scene.duet_pair[0].actor_name} & ${scene.duet_pair[1].actor_name}`
+                          }))}
+                          isPlayable={false}
+                          onOpenModal={() => {}}
+                          customRender={(video, index) => (
                             <div
-                              key={scene.youtube_url}
+                              key={`duet-${index}`}
                               className="relative bg-gray-900 border-2 border-gray-800 rounded-3xl overflow-hidden hover:border-blue-400 hover:shadow-2xl transition-all duration-300 cursor-pointer flex-shrink-0 transform hover:scale-105 aspect-video"
                               style={{ minWidth: "280px", maxWidth: "280px" }}
                               onClick={() => {
+                                const scene = duetScenes[index];
                                 setSelectedDuet({ scene, pair: scene.duet_pair[0] });
                               }}
                             >
@@ -323,10 +334,10 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                               <div className="absolute inset-0 z-10 flex flex-col justify-between pointer-events-none">
                                 <div className="flex justify-between p-3">
                                   <div className="flex items-center gap-1 bg-blue-500/80 text-white px-2 py-1 rounded-full text-xs font-bold shadow">
-                                    {scene.duet_pair[0].actor_name}
+                                    {duetScenes[index].duet_pair[0].actor_name}
                                   </div>
                                   <div className="flex items-center gap-1 bg-green-500/80 text-white px-2 py-1 rounded-full text-xs font-bold shadow">
-                                    {scene.duet_pair[1].actor_name}
+                                    {duetScenes[index].duet_pair[1].actor_name}
                                   </div>
                                 </div>
                                 <div className="flex justify-center mb-3">
@@ -335,18 +346,18 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                               </div>
                               {/* 유튜브 썸네일 */}
                               <img
-                                src={`https://img.youtube.com/vi/${scene.duet_pair[0].youtube_url.split('v=')[1]}/mqdefault.jpg`}
-                                alt={scene.scene_title}
+                                src={`https://img.youtube.com/vi/${duetScenes[index].duet_pair[0].youtube_url.split('v=')[1]}/mqdefault.jpg`}
+                                alt={duetScenes[index].scene_title}
                                 className="w-full h-full object-cover"
                                 draggable={false}
                               />
                               {/* 카드 설명 영역 */}
                               <div className="p-6 relative z-20 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
                                 <h3 className="font-bold mb-2 text-white text-lg">
-                                  {scene.scene_title}
+                                  {duetScenes[index].scene_title}
                                 </h3>
                                 <p className="text-sm text-gray-300 font-medium mb-3">
-                                  {scene.duet_pair[0].actor_name} & {scene.duet_pair[1].actor_name}
+                                  {duetScenes[index].duet_pair[0].actor_name} & {duetScenes[index].duet_pair[1].actor_name}
                                 </p>
                                 <button
                                   className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-colors shadow-lg bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 text-white hover:brightness-110"
@@ -357,8 +368,8 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                                 </button>
                               </div>
                             </div>
-                          ))}
-                        </div>
+                          )}
+                        />
                       )}
                     </div>
                   )}
