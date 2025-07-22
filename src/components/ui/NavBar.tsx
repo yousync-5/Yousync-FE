@@ -7,7 +7,6 @@ import axios from "axios";
 import { authService } from "@/services/auth";
 import { extractYoutubeVideoId } from "@/utils/extractYoutubeVideoId";
 import { useUser } from "@/hooks/useUser";
-import { motion } from "framer-motion";
 
 interface Actor {
   name: string;
@@ -146,9 +145,7 @@ export const NavBar: React.FC<NavBarProps> = ({ animateOnMount }) => {
   const handleToMain = () => router.push('/');
 
   return (
-    <motion.nav
-      {...(animateOnMount && { initial: { y: -100 }, animate: { y: 0 }, transition: { type: "spring", stiffness: 80 } })}
-      className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-b border-gray-800 shadow-2xl"
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-b border-gray-800 shadow-2xl"
     >
       <div className="max-w-7xl mx-auto px-2 py-4">
         <div className="flex items-center w-full">
@@ -247,6 +244,6 @@ export const NavBar: React.FC<NavBarProps> = ({ animateOnMount }) => {
           </div>
         </div>
       </div>
-    </motion.nav>
+    </nav>
   );
 };
