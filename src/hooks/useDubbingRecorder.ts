@@ -2,7 +2,23 @@ import { useState } from 'react';
 import { useVoiceRecorder } from './useVoiceRecorder';
 import { useAudioStore } from '@/store/useAudioStore';
 import { useJobIdsStore } from '@/store/useJobIdsStore';
-import axios, { isAxiosError } from 'axios';
+import axios from 'axios';
+
+// 타입 정의 추가
+interface AxiosErrorInterface {
+  isAxiosError?: boolean;
+  code?: string;
+  message?: string;
+  response?: {
+    status: number;
+    data: any;
+  };
+}
+
+// 타입 가드 함수 추가
+function isAxiosError(error: unknown): error is AxiosErrorInterface {
+  return (error as any)?.isAxiosError === true;
+}
 import { ScriptItem } from '@/types/pitch';
 
 interface UseDubbingRecorderProps {
@@ -174,8 +190,12 @@ export function useDubbingRecorder({
               // 분석 중이면 대기 후 재시도
               console.log(`[⏳ 분석 중] 대기 후 재시도...`);
               await new Promise(resolve => setTimeout(resolve, 2000)); // 2초 대기
-            } catch (error) {
-              if (axios.isAxiosError(error)) {
+            } catch (error: unknown) {
+              // 에러 객체 로깅
+              console.warn(`[⚠️ 분석 폴링 실패] 시도 ${attempt + 1}/${maxAttempts}:`, error);
+              
+              // 에러 타입 체크 및 상세 정보 로깅
+              if (isAxiosError(error)) {
                 if (error.code === 'ECONNABORTED') {
                   console.error('요청 시간 초과 - 서버 응답이 너무 느립니다.');
                 } else if (error.message === 'Network Error') {
@@ -184,9 +204,9 @@ export function useDubbingRecorder({
                 } else if (error.response) {
                   console.error('서버 응답 에러:', error.response.status, error.response.data);
                 }
+              } else {
+                console.error('알 수 없는 에러 발생:', (error as Error)?.message || '상세 정보 없음');
               }
-              
-              console.warn(`[⚠️ 분석 폴링 실패] 시도 ${attempt + 1}/${maxAttempts}:`, error);
               
               // 마지막 시도가 아니면 대기 후 재시도
               if (attempt < maxAttempts - 1) {

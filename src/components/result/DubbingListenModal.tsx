@@ -137,7 +137,10 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
           
           // 오디오도 함께 재생
           if (audioRef.current && audioResponse?.dubbing_audio_url) {
-            audioRef.current.play().catch(err => console.error('오디오 재생 실패:', err));
+            audioRef.current.play().catch(err => {
+              console.error('오디오 재생 실패:', err);
+              // 오디오 재생 실패 시 사용자에게 알림 (선택 사항)
+            });
           }
         }
       }, 500);
@@ -181,7 +184,13 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
         youtubePlayerRef.current.mute();
       }
       
-      audioRef.current?.play();
+      // 오디오 URL이 있을 때만 재생 시도
+      if (audioRef.current && audioResponse?.dubbing_audio_url) {
+        audioRef.current.play().catch(err => {
+          console.error('오디오 재생 실패:', err);
+        });
+      }
+      
       youtubePlayerRef.current?.playVideo();
     }
   };
@@ -263,7 +272,11 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
             )}
           </div>
         </div>
-        <audio ref={audioRef} src={audioResponse?.dubbing_audio_url || ""} />
+        {audioResponse?.dubbing_audio_url ? (
+          <audio ref={audioRef} src={audioResponse.dubbing_audio_url} />
+        ) : (
+          <audio ref={audioRef} />
+        )}
         <div className="flex flex-row gap-4 mt-4">
           <button
             onClick={handlePlayPause}
