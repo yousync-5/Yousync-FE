@@ -39,28 +39,31 @@ export default function MovieDetailModal({
   // 반복 재생: 영상이 끝나면 startTime으로 이동 후 재생
   const handlePlayerReady = (event: any) => {
     try {
-      if (event && event.target) {
-        playerRef.current = event.target;
-        
-        if (startTime > 0) {
-          try {
-            if (typeof event.target.seekTo === 'function') {
-              event.target.seekTo(startTime);
-            }
-          } catch (error) {
-            console.error('Error seeking to start time:', error);
-          }
-        }
-        
-        // 자동 재생하지 않고 대기
-        try {
-          if (typeof event.target.pauseVideo === 'function') {
-            event.target.pauseVideo();
-          }
-        } catch (error) {
-          console.error('Error pausing video:', error);
-        }
+      // event와 event.target이 존재하는지 확인
+      if (!event || !event.target) {
+        console.warn('Invalid player event received');
+        return;
       }
+      
+      // playerRef에 저장
+      playerRef.current = event.target;
+      
+      // 안전하게 래핑하여 메서드 호출
+      setTimeout(() => {
+        try {
+          // startTime이 있으면 해당 시간으로 이동
+          if (startTime > 0 && playerRef.current && typeof playerRef.current.seekTo === 'function') {
+            playerRef.current.seekTo(startTime);
+          }
+          
+          // 자동 재생하지 않고 대기
+          if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
+            playerRef.current.pauseVideo();
+          }
+        } catch (e) {
+          console.warn('Failed in handlePlayerReady:', e);
+        }
+      }, 0);
     } catch (error) {
       console.error('Error in handlePlayerReady:', error);
     }
@@ -71,59 +74,62 @@ export default function MovieDetailModal({
     
     try {
       const player = playerRef.current;
-      if (player) {
-        // 시간 이동 시도
-        try {
-          if (typeof player.seekTo === 'function') {
-            player.seekTo(startTime);
+      // player가 null이 아니고 필요한 메서드가 있는지 확인
+      if (player && typeof player.seekTo === 'function' && typeof player.playVideo === 'function') {
+        // 시간 이동 및 재생 시도 - 안전하게 래핑
+        setTimeout(() => {
+          try {
+            if (playerRef.current) {
+              playerRef.current.seekTo(startTime);
+              playerRef.current.playVideo();
+            }
+          } catch (e) {
+            console.warn('Failed to handle player end:', e);
           }
-        } catch (error) {
-          console.error('Error seeking video:', error);
-        }
-        
-        // 재생 시도
-        try {
-          if (typeof player.playVideo === 'function') {
-            player.playVideo();
-          }
-        } catch (error) {
-          console.error('Error playing video:', error);
-        }
+        }, 0);
       }
     } catch (error) {
-      console.error('Error accessing player:', error);
+      console.error('Error in handlePlayerEnd:', error);
     }
   };
 
   // 마우스가 영상 위에 1.5초 이상 머물면 재생
   useEffect(() => {
+    let isMounted = true; // 컴포넌트 마운트 상태 추적
+
     if (isHovering) {
       hoverTimerRef.current = setTimeout(() => {
+        if (!isMounted) return; // 컴포넌트가 언마운트되었으면 중단
         setShouldPlay(true);
         
         try {
           const player = playerRef.current;
-          if (player) {
-            // 시간 이동 시도
-            try {
-              if (typeof player.seekTo === 'function') {
-                player.seekTo(startTime);
+          // player가 null이 아니고 필요한 메서드가 있는지 확인
+          if (player && typeof player.seekTo === 'function' && typeof player.playVideo === 'function') {
+            // 시간 이동 시도 - 안전하게 래핑
+            setTimeout(() => {
+              try {
+                if (playerRef.current) {
+                  playerRef.current.seekTo(startTime);
+                }
+              } catch (e) {
+                console.warn('Failed to seek video:', e);
               }
-            } catch (error) {
-              console.error('Error seeking video:', error);
-            }
+            }, 0);
             
-            // 재생 시도
-            try {
-              if (typeof player.playVideo === 'function') {
-                player.playVideo();
+            // 재생 시도 - 안전하게 래핑
+            setTimeout(() => {
+              try {
+                if (playerRef.current) {
+                  playerRef.current.playVideo();
+                }
+              } catch (e) {
+                console.warn('Failed to play video:', e);
               }
-            } catch (error) {
-              console.error('Error playing video:', error);
-            }
+            }, 0);
           }
         } catch (error) {
-          console.error('Error accessing player:', error);
+          console.error('Error playing video:', error);
         }
       }, 1500); // 1.5초 후 재생
     } else {
@@ -134,35 +140,44 @@ export default function MovieDetailModal({
       setShouldPlay(false);
       
       try {
-        // 안전하게 메서드 호출
         const player = playerRef.current;
-        if (player) {
-          // 일시 정지 시도
-          try {
-            if (typeof player.pauseVideo === 'function') {
-              player.pauseVideo();
+        // player가 null이 아니고 필요한 메서드가 있는지 확인
+        if (player && typeof player.pauseVideo === 'function') {
+          // 일시 정지 시도 - 안전하게 래핑
+          setTimeout(() => {
+            try {
+              if (playerRef.current) {
+                playerRef.current.pauseVideo();
+              }
+            } catch (e) {
+              console.warn('Failed to pause video:', e);
             }
-          } catch (error) {
-            console.error('Error pausing video:', error);
-          }
+          }, 0);
           
-          // 시간 이동 시도
-          try {
-            if (typeof player.seekTo === 'function') {
-              player.seekTo(startTime);
-            }
-          } catch (error) {
-            console.error('Error seeking video:', error);
+          // 시간 이동 시도 (seekTo 메서드가 있는지 확인)
+          if (typeof player.seekTo === 'function') {
+            setTimeout(() => {
+              try {
+                if (playerRef.current) {
+                  playerRef.current.seekTo(startTime);
+                }
+              } catch (e) {
+                console.warn('Failed to seek video:', e);
+              }
+            }, 0);
           }
         }
       } catch (error) {
-        console.error('Error accessing player:', error);
+        console.error('Error pausing video:', error);
       }
     }
 
+    // 클린업 함수
     return () => {
+      isMounted = false; // 컴포넌트 언마운트 표시
       if (hoverTimerRef.current) {
         clearTimeout(hoverTimerRef.current);
+        hoverTimerRef.current = null;
       }
     };
   }, [isHovering, startTime]);
@@ -171,53 +186,51 @@ export default function MovieDetailModal({
   useEffect(() => {
     if (!endTime || !shouldPlay) return;
     
+    let isMounted = true; // 컴포넌트 마운트 상태 추적
+    
     const interval = setInterval(() => {
+      if (!isMounted) {
+        clearInterval(interval);
+        return;
+      }
+      
       try {
         const player = playerRef.current;
-        if (!player) {
-          clearInterval(interval);
+        // player가 null이거나 필요한 메서드가 없으면 중단
+        if (!player || typeof player.getCurrentTime !== 'function') {
           return;
         }
         
-        // 현재 시간 가져오기 시도
-        let current;
-        try {
-          if (typeof player.getCurrentTime === 'function') {
-            current = player.getCurrentTime();
-          } else {
-            clearInterval(interval);
-            return;
-          }
-        } catch (error) {
-          console.error('Error getting current time:', error);
-          clearInterval(interval);
-          return;
-        }
+        // 현재 시간 가져오기
+        const current = player.getCurrentTime();
         
         // endTime 도달 시 처리
         if (typeof current === 'number' && current >= endTime) {
-          try {
-            // 시간 이동 시도
-            if (typeof player.seekTo === 'function') {
-              player.seekTo(startTime);
-            }
-            
-            // 재생 시도
-            if (typeof player.playVideo === 'function') {
-              player.playVideo();
-            }
-          } catch (error) {
-            console.error('Error handling end time reached:', error);
-            clearInterval(interval);
+          // player가 필요한 메서드를 가지고 있는지 확인
+          if (typeof player.seekTo === 'function' && typeof player.playVideo === 'function') {
+            // 안전하게 래핑
+            setTimeout(() => {
+              try {
+                if (playerRef.current) {
+                  playerRef.current.seekTo(startTime);
+                  playerRef.current.playVideo();
+                }
+              } catch (e) {
+                console.warn('Failed to handle end time reached:', e);
+              }
+            }, 0);
           }
         }
       } catch (error) {
         console.error('Error in interval:', error);
-        clearInterval(interval);
       }
     }, 100);
     
-    return () => clearInterval(interval);
+    // 클린업 함수
+    return () => {
+      isMounted = false; // 컴포넌트 언마운트 표시
+      clearInterval(interval);
+    };
   }, [endTime, startTime, shouldPlay, isOpen]);
 
   if (!isOpen || !youtubeId || !tokenData) return null;

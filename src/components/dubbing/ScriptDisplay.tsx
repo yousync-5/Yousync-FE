@@ -404,7 +404,7 @@ export default function ScriptDisplay({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 gap-1 py-2">
             {/* 왼쪽에 스크립트 번호 표시 */}
             <div className="text-base sm:text-2xl font-semibold text-white flex items-center">
-              Script&nbsp; <span className="text-teal-300">{currentScriptIndex + 1}</span> / {captions.length}
+              &nbsp;&nbsp; <span className="text-teal-300">{currentScriptIndex + 1}</span>&nbsp;/ {captions.length}
               &nbsp;&nbsp;
               {isDuet && (
                 <span className={`ml-2 px-2 py-1 rounded ${isMyLine ? 'bg-green-600 text-white' : 'bg-blue-600 text-white'}`}>
@@ -528,7 +528,7 @@ export default function ScriptDisplay({
                   🎧 {formatTime(playbackRange.startTime)} ~ {playbackRange.endTime ? formatTime(playbackRange.endTime) : '끝'}
                 </span>
               )}
-              {recordingCompleted && !analysisResult ? (
+              {(recordingCompleted || isAnalyzing) && !analysisResult ? (
                 <div className="flex items-center space-x-1 font-medium text-blue-400">
                   <div className="animate-spin w-2 h-2 border-2 border-blue-400 border-t-transparent rounded-full"></div>
                   <span>분석 중</span>

@@ -105,16 +105,39 @@ export function useDubbingRecorder({
       const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/scripts/${scriptId}/upload-audio`;
       console.log(`[DEBUG] 요청 URL:`, url);
       
-      const res = await axios.post<UploadAudioResponse>(
-        url,
-        formData,
-        { headers }
-      );
+      // 타임아웃 설정 및 재시도 로직 추가
+      const maxRetries = 3;
+      let retryCount = 0;
+      let res = null;
       
-      console.log(`[📥 서버 응답] 문장 ${idx + 1}번 서버 응답:`, res.data);
-      console.log(`[🆔 Job ID 수신] 문장 ${idx + 1}번 job_id: ${res.data?.job_id}`);
+      while (retryCount < maxRetries) {
+        try {
+          res = await axios.post<UploadAudioResponse>(
+            url,
+            formData,
+            { 
+              headers,
+              timeout: 30000 // 30초 타임아웃 설정 (파일 업로드는 시간이 더 필요)
+            }
+          );
+          console.log(`[📥 서버 응답] 문장 ${idx + 1}번 서버 응답:`, res.data);
+          break; // 성공하면 반복 중단
+        } catch (retryError) {
+          retryCount++;
+          console.warn(`[⚠️ 업로드 재시도] 문장 ${idx + 1}번 업로드 실패 (${retryCount}/${maxRetries}):`, retryError);
+          
+          if (retryCount >= maxRetries) {
+            throw retryError; // 최대 재시도 횟수 초과 시 에러 발생
+          }
+          
+          // 재시도 전 잠시 대기 (지수 백오프)
+          await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
+        }
+      }
+      
+      console.log(`[🆔 Job ID 수신] 문장 ${idx + 1}번 job_id: ${res?.data?.job_id}`);
 
-      if (res.data && res.data.job_id) {
+      if (res?.data && res.data.job_id) {
         addJobId(res.data.job_id);
         setJobIds(prev => [...prev, res.data.job_id!]);
         console.log(`[✅ 업로드 성공] 문장 ${idx + 1}번 업로드 완료!`);
@@ -123,10 +146,35 @@ export function useDubbingRecorder({
         // 🆕 분석 조회 API 호출
         try {
           console.log(`[🔍 분석 조회] 문장 ${idx + 1}번 분석 결과 조회 시작`);
-          const analysisResponse = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/analysis-result/${res.data.job_id}`
-          );
-          console.log(`[✅ 분석 조회 성공] 문장 ${idx + 1}번 분석 결과:`, analysisResponse.data);
+          
+          // 타임아웃 설정 및 재시도 로직 추가
+          const maxRetries = 3;
+          let retryCount = 0;
+          let analysisResponse = null;
+          
+          while (retryCount < maxRetries) {
+            try {
+              analysisResponse = await axios.get(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/analysis-result/${res.data.job_id}`,
+                { 
+                  timeout: 30000, // 10초 타임아웃 설정
+                  headers: headers // 인증 헤더 추가
+                }
+              );
+              console.log(`[✅ 분석 조회 성공] 문장 ${idx + 1}번 분석 결과:`, analysisResponse.data);
+              break; // 성공하면 반복 중단
+            } catch (retryError) {
+              retryCount++;
+              console.warn(`[⚠️ 분석 조회 재시도] 문장 ${idx + 1}번 분석 조회 실패 (${retryCount}/${maxRetries}):`, retryError);
+              
+              if (retryCount >= maxRetries) {
+                throw retryError; // 최대 재시도 횟수 초과 시 에러 발생
+              }
+              
+              // 재시도 전 잠시 대기 (지수 백오프)
+              await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
+            }
+          }
         } catch (analysisError) {
           console.error(`[❌ 분석 조회 실패] 문장 ${idx + 1}번 분석 조회 실패:`, analysisError);
           // 분석 조회 실패해도 업로드는 성공했으므로 계속 진행
@@ -163,10 +211,20 @@ export function useDubbingRecorder({
         next[scriptIdx] = true;
         return next;
       });
+      
+      // 분석 중 상태 설정 (이 부분이 중요)
+      if (onUploadComplete) {
+        onUploadComplete(false, []); // 분석 중 상태로 설정
+      }
+      
       await uploadScript(scriptIdx); // 각 문장별로 업로드
       console.log(`[DEBUG][stopScriptRecording] 업로드 완료 idx=${scriptIdx}`);
     } catch (e) {
       console.error('[ERROR][stopScriptRecording] in useDubbingRecorder failed', e);
+      // 에러 발생 시에도 분석 중 상태 해제
+      if (onUploadComplete) {
+        onUploadComplete(true, []); // 분석 완료 상태로 설정
+      }
     }
   };
 

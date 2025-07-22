@@ -137,7 +137,7 @@ const DubbingContainer = ({
       console.log(`[🔄 DubbingContainer] onUploadComplete 콜백 호출됨`);
       console.log(`[📊 결과] success: ${success}, jobIds: ${JSON.stringify(jobIds)}`);
 
-      if (success && Array.isArray(jobIds)) {
+      if (success && Array.isArray(jobIds) && jobIds.length > 0) {
         // 새로운 분석 시작 시에만 초기화 (기존 결과 유지)
         if (multiJobIds.length === 0) {
           console.log('[DEBUG] 새로운 분석 시작 - 상태 초기화');
@@ -152,6 +152,10 @@ const DubbingContainer = ({
         // 새 jobIds로 세팅
         setMultiJobIds(jobIds);
         // 분석 시작 상태 설정
+        setIsAnalyzing(true);
+      } else if (!success) {
+        // 분석 중 상태 설정 (녹음 완료 후 분석 중 표시)
+        setRecordingCompleted(true);
         setIsAnalyzing(true);
       }
     },
