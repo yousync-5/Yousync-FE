@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useVoiceRecorder } from './useVoiceRecorder';
 import { useAudioStore } from '@/store/useAudioStore';
 import { useJobIdsStore } from '@/store/useJobIdsStore';
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
 import { ScriptItem } from '@/types/pitch';
 
 interface UseDubbingRecorderProps {
@@ -143,48 +143,73 @@ export function useDubbingRecorder({
         console.log(`[✅ 업로드 성공] 문장 ${idx + 1}번 업로드 완료!`);
         console.log(`[📊 Job ID 추가] 총 ${jobIds.length + 1}개의 Job ID 수집됨`);
         
-        // 🆕 분석 조회 API 호출
-        try {
-          console.log(`[🔍 분석 조회] 문장 ${idx + 1}번 분석 결과 조회 시작`);
-          
-          // 타임아웃 설정 및 재시도 로직 추가
-          const maxRetries = 3;
-          let retryCount = 0;
-          let analysisResponse = null;
-          
-          while (retryCount < maxRetries) {
-            try {
-              analysisResponse = await axios.get(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/analysis-result/${res.data.job_id}`,
-                { 
-                  timeout: 30000, // 10초 타임아웃 설정
-                  headers: headers // 인증 헤더 추가
-                }
-              );
-              console.log(`[✅ 분석 조회 성공] 문장 ${idx + 1}번 분석 결과:`, analysisResponse.data);
-              break; // 성공하면 반복 중단
-            } catch (retryError) {
-              retryCount++;
-              console.warn(`[⚠️ 분석 조회 재시도] 문장 ${idx + 1}번 분석 조회 실패 (${retryCount}/${maxRetries}):`, retryError);
-              
-              if (retryCount >= maxRetries) {
-                throw retryError; // 최대 재시도 횟수 초과 시 에러 발생
-              }
-              
-              // 재시도 전 잠시 대기 (지수 백오프)
-              await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)));
-            }
-          }
-        } catch (analysisError) {
-          console.error(`[❌ 분석 조회 실패] 문장 ${idx + 1}번 분석 조회 실패:`, analysisError);
-          // 분석 조회 실패해도 업로드는 성공했으므로 계속 진행
-        }
-        
-        // 문장별 업로드 성공 시 onUploadComplete 콜백 호출
+        // 먼저 업로드 성공 알림
         if (onUploadComplete) {
           console.log(`[🔄 콜백 호출] 문장 ${idx + 1}번 onUploadComplete 호출`);
           onUploadComplete(true, [res.data.job_id]);
         }
+        
+        // 🆕 폴링 방식으로 분석 결과 조회
+        const getAnalysisResult = async (jobId: string, maxAttempts = 10) => {
+          console.log(`[🔍 분석 폴링 시작] 문장 ${idx + 1}번 분석 결과 폴링 시작`);
+          
+          for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            try {
+              console.log(`[🔍 분석 폴링] 시도 ${attempt + 1}/${maxAttempts}`);
+              
+              const response = await axios.get(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/analysis-result/${jobId}/`, // 끝에 슬래시 추가
+                { 
+                  timeout: 10000,
+                  headers: headers
+                }
+              );
+              
+              // 분석 결과가 있으면 반환
+              if (response.data) {
+                console.log(`[✅ 분석 완료] 문장 ${idx + 1}번 분석 결과:`, response.data);
+                return response.data;
+              }
+              
+              // 분석 중이면 대기 후 재시도
+              console.log(`[⏳ 분석 중] 대기 후 재시도...`);
+              await new Promise(resolve => setTimeout(resolve, 2000)); // 2초 대기
+            } catch (error) {
+              if (axios.isAxiosError(error)) {
+                if (error.code === 'ECONNABORTED') {
+                  console.error('요청 시간 초과 - 서버 응답이 너무 느립니다.');
+                } else if (error.message === 'Network Error') {
+                  console.error('네트워크 연결 문제 - API 서버에 접근할 수 없습니다.');
+                  console.error('API URL:', `${process.env.NEXT_PUBLIC_API_BASE_URL}/tokens/analysis-result/${jobId}/`);
+                } else if (error.response) {
+                  console.error('서버 응답 에러:', error.response.status, error.response.data);
+                }
+              }
+              
+              console.warn(`[⚠️ 분석 폴링 실패] 시도 ${attempt + 1}/${maxAttempts}:`, error);
+              
+              // 마지막 시도가 아니면 대기 후 재시도
+              if (attempt < maxAttempts - 1) {
+                await new Promise(resolve => setTimeout(resolve, 2000));
+              }
+            }
+          }
+          
+          console.error(`[❌ 분석 폴링 실패] 문장 ${idx + 1}번 최대 시도 횟수 초과`);
+          return null; // 최대 시도 횟수를 초과하면 null 반환
+        };
+        
+        // 백그라운드에서 분석 결과 폴링 (결과를 기다리지 않음)
+        getAnalysisResult(res.data.job_id)
+          .then(result => {
+            if (result) {
+              console.log(`[✅ 분석 완료] 문장 ${idx + 1}번 분석 결과 폴링 성공`);
+              // 필요한 경우 여기서 추가 처리
+            }
+          })
+          .catch(error => {
+            console.error(`[❌ 분석 실패] 문장 ${idx + 1}번 분석 폴링 중 예외 발생:`, error);
+          });
       } else {
         console.error(`[❌ 업로드 실패] 문장 ${idx + 1}번 job_id가 응답에 없습니다.`);
         if (onUploadComplete) onUploadComplete(false, []);
