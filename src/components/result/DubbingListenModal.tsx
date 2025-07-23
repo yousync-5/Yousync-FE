@@ -93,8 +93,8 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
   }, [open, urlTokenId]);
 
   const youtubeOpts = {
-    width: 640,
-    height: 360,
+    width: 1280,  // 2배로 키움
+    height: 720,  // 2배로 키움
     playerVars: {
       autoplay: 0, // 자동 재생 비활성화
       mute: 1,     // 음소거 활성화
@@ -229,13 +229,21 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/70 backdrop-blur-[2px]" onClick={onClose} />
       <div
-        className="relative bg-gray-900 rounded-3xl shadow-2xl z-10 flex flex-col items-center px-8 py-6"
-        style={{ maxWidth: '800px', width: '90vw' }}
+        className="relative bg-gray-900 rounded-3xl shadow-2xl z-10 flex flex-col items-center px-10 py-8"
+        style={{ maxWidth: '1400px', width: '95vw' }}
       >
-        <div className="mb-6 flex justify-center" style={{ width: '640px', height: '360px' }}>
+        <button 
+          onClick={onClose}
+          className="absolute top-4 right-4 w-10 h-10 rounded-full bg-gray-800/80 hover:bg-gray-700 flex items-center justify-center transition-all duration-200 text-gray-400 hover:text-white"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+        <div className="mb-8 flex justify-center" style={{ width: '1280px', height: '720px' }}>
           <div 
             className="relative" 
-            style={{ width: '640px', height: '360px' }}
+            style={{ width: '1280px', height: '720px' }}
           >
             {videoId && (
               <YouTube
@@ -244,7 +252,7 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
                 onReady={handleYouTubeReady}
                 onStateChange={handleStateChange}
                 className="rounded-xl border border-gray-800"
-                style={{ width: '640px', height: '360px', position: 'absolute', top: 0, left: 0 }}
+                style={{ width: '1280px', height: '720px', position: 'absolute', top: 0, left: 0 }}
               />
             )}
             <div 
@@ -277,29 +285,40 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
         ) : (
           <audio ref={audioRef} />
         )}
-        <div className="flex flex-row gap-4 mt-4">
+        <div className="flex flex-row gap-8 mt-6">
           <button
             onClick={handlePlayPause}
-            className={`w-16 h-16 ${isPlaying ? 'bg-gradient-to-r from-gray-500 to-gray-700' : 'bg-gradient-to-r from-green-500 to-lime-500 hover:from-green-600 hover:to-lime-600'} text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20`}
+            className={`w-16 h-16 rounded-3xl flex items-center justify-center transition-all duration-300 shadow-lg border border-white/10 transform hover:scale-105 active:scale-95 ${
+              isPlaying 
+                ? 'bg-gradient-to-br from-purple-800 to-indigo-900 hover:from-purple-700 hover:to-indigo-800' 
+                : 'bg-gradient-to-br from-emerald-700 to-teal-800 hover:from-emerald-600 hover:to-teal-700'
+            }`}
+            style={{ boxShadow: isPlaying ? '0 0 10px rgba(139, 92, 246, 0.3)' : '0 0 10px rgba(20, 184, 166, 0.3)' }}
             title={isPlaying ? '정지' : '재생'}
           >
             {isPlaying ? (
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M5 5h10v10H5z"/></svg>
+              <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                <rect x="6" y="6" width="12" height="12" rx="2" />
+              </svg>
             ) : (
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M6 4l10 6-10 6z"/></svg>
+              <svg className="w-8 h-8 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5.14v14l11-7-11-7z" />
+              </svg>
             )}
           </button>
           <button
-            className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-full flex items-center justify-center transition-all duration-200 transform hover:scale-110 shadow-lg border-2 border-white/20"
+            className={`w-16 h-16 rounded-3xl flex items-center justify-center transition-all duration-300 shadow-lg border border-white/10 transform hover:scale-105 active:scale-95 bg-gradient-to-br from-slate-700 to-slate-800 hover:from-amber-700 hover:to-orange-800 text-white`}
+            style={{ boxShadow: '0 0 10px rgba(245, 158, 11, 0.3)' }} // Loop 버튼의 기본 boxShadow 유지
+
             onClick={handleRestart}
             title="처음부터"
           >
-           <svg viewBox="0 0 48 48" fill="none" className={`w-7 h-7`} stroke="currentColor" strokeWidth="4">
-                <path d="M8 24c0-8.837 7.163-16 16-16 4.418 0 8.418 1.79 11.314 4.686" strokeLinecap="round"/>
-                <path d="M40 8v8h-8" strokeLinecap="round"/>
-                <path d="M40 24c0 8.837-7.163 16-16 16-4.418 0-8.418-1.79-11.314-4.686" strokeLinecap="round"/>
-                <path d="M8 40v-8h8" strokeLinecap="round"/>
-              </svg>
+            <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8" stroke="currentColor" strokeWidth="2">
+              <path d="M4 12c0-4.4 3.6-8 8-8 2.2 0 4.2 0.9 5.7 2.3" strokeLinecap="round"/>
+              <path d="M20 4v4h-4" strokeLinecap="round"/>
+              <path d="M20 12c0 4.4-3.6 8-8 8-2.2 0-4.2-0.9-5.7-2.3" strokeLinecap="round"/>
+              <path d="M4 20v-4h4" strokeLinecap="round"/>
+            </svg>
           </button>
         </div>
       </div>
