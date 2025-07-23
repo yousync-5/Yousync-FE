@@ -928,7 +928,7 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
                 <RecordingCountdown 
                   isVisible={showCountdown} 
                   onComplete={startRecordingAfterCountdown}
-                  duration={2000} // 2초 카운트다운
+                  duration={1500} // 2초 카운트다운
                 />
               </div>
             )}
