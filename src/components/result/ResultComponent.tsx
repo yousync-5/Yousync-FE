@@ -207,47 +207,58 @@ const ResultComponent: React.FC<TestResultAnalysisSectionProps> = ({
   return (
     <>
       {(showResults || showCompleted) && (
-        <div ref={resultRef} className="min-h-screen flex flex-col items-center justify-center px-4 py-12 overflow-hidden" style={{ background: '#232B3A', color: COLORS.text }}>
+        <div ref={resultRef} className="min-h-screen flex flex-col items-center justify-center px-4 py-12 overflow-hidden bg-gradient-to-b from-gray-900 via-gray-900 to-gray-950">
           {filteredResults.length > 0 ? (
             <>
+              <div className="w-full max-w-4xl mx-auto mb-12">
+                <h2 className="text-3xl md:text-4xl font-bold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300">
+                  더빙 분석 결과
+                </h2>
+                <div className="h-1 w-32 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 mx-auto rounded-full mb-12"></div>
+              </div>
+              
               <ScoreCards
                 syncRate={syncRate}
                 pronunciation={pronunciation}
                 intonation={intonation}
                 timing={timing}
               />
-              <div className="flex items-center justify-center mb-10" style={{ gap: 28 }}>
-                <div
-                  style={{
-                    fontSize: 88,
-                    fontWeight: 900,
-                    color: getRankColor(rank),
-                    textShadow: `0 0 28px ${getRankColor(rank)}66, 0 6px 42px #000a`,
-                    minWidth: 110
-                  }}
-                >
-                  {rank}
+              
+              <div className="flex flex-col md:flex-row items-center justify-center mb-16 w-full max-w-4xl mx-auto">
+                <div className="flex-1 flex justify-center items-center mb-8 md:mb-0">
+                  <div
+                    className="text-center"
+                    style={{
+                      fontSize: 120,
+                      fontWeight: 900,
+                      lineHeight: 1,
+                      color: getRankColor(rank),
+                      textShadow: `0 0 30px ${getRankColor(rank)}66, 0 8px 45px #000a`,
+                      minWidth: 150
+                    }}
+                  >
+                    {rank}
+                    <div className="text-base font-medium text-gray-400 mt-2">등급</div>
+                  </div>
                 </div>
-                <div style={{
-                  width: 260,
-                  height: 260,
-                  background: "#181F2A", // 딥 네이비
-                  borderRadius: 18,
-                  border: "2px solid #222f2b",
-                  padding: 12,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}>
-                  <Radar data={radarData} options={radarOptions} />
+                
+                <div className="flex-1 flex justify-center">
+                  <div className="w-64 h-64 bg-gray-900/80 backdrop-blur-sm rounded-2xl border border-gray-800/50 p-4 flex items-center justify-center shadow-xl"
+                    style={{
+                      boxShadow: '0 10px 30px -5px rgba(0, 0, 0, 0.3), 0 0 20px rgba(79, 70, 229, 0.15) inset'
+                    }}
+                  >
+                    <Radar data={radarData} options={radarOptions} />
+                  </div>
                 </div>
               </div>
+              
               <SentenceAnalysis finalResults={filteredResults} />
             </>
           ) : (
-            <div className="text-center max-w-md mx-auto p-6 bg-gray-900 rounded-xl border border-gray-800">
-              <div className="text-5xl mb-4">🎬</div>
-              <h2 className="text-2xl font-bold mb-4">분석 결과가 없습니다</h2>
+            <div className="text-center max-w-md mx-auto p-8 bg-gray-900/80 backdrop-blur-sm rounded-2xl border border-gray-800/50 shadow-xl">
+              <div className="text-6xl mb-6">🎬</div>
+              <h2 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300">분석 결과가 없습니다</h2>
               <p className="text-gray-400 mb-6">
                 아직 이 토큰에 대한 분석 결과가 없습니다. 먼저 더빙을 진행해주세요.
               </p>
