@@ -485,11 +485,11 @@ export default function ScriptDisplay({
                 }}
                 className={`w-16 h-16 ${
                   recording 
-                    ? 'bg-gray-700 cursor-not-allowed' 
+                    ? 'bg-gray-700/70 backdrop-blur-sm cursor-not-allowed' 
                     : isVideoPlaying 
-                      ? 'bg-gradient-to-br from-purple-800 to-indigo-900 hover:from-purple-700 hover:to-indigo-800' 
-                      : 'bg-gradient-to-br from-emerald-700 to-teal-800 hover:from-emerald-600 hover:to-teal-700'
-                } text-white rounded-3xl flex items-center justify-center transition-all duration-300 shadow-lg border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95`}
+                      ? 'bg-gradient-to-br from-purple-800/70 to-indigo-900/70 backdrop-blur-sm hover:from-purple-700/80 hover:to-indigo-800/80' 
+                      : 'bg-gradient-to-br from-emerald-700/70 to-teal-800/70 backdrop-blur-sm hover:from-emerald-600/80 hover:to-teal-700/80'
+                } text-white rounded-3xl flex items-center justify-center transition-all duration-300 shadow-lg border border-white/20 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95`}
                 style={{ boxShadow: isVideoPlaying ? '0 0 10px rgba(139, 92, 246, 0.3)' : '0 0 10px rgba(20, 184, 166, 0.3)' }}
                 title={isVideoPlaying ? '정지' : '실행'}
                 disabled={!videoPlayerRef?.current}
@@ -509,12 +509,12 @@ export default function ScriptDisplay({
               <button
                 onClick={onMicClick}
                 disabled={recording || recordingCompleted || (isDuet && !isMyLine)} // 듀엣 모드에서 상대방 대사일 때 비활성화
-                className={` w-16 h-16 rounded-3xl flex items-center justify-center transition-all duration-300 shadow-lg border border-white/10 transform hover:scale-105 active:scale-95 ${
+                className={` w-16 h-16 rounded-3xl flex items-center justify-center transition-all duration-300 shadow-lg border border-white/20 transform hover:scale-105 active:scale-95 ${
                   recording 
-                    ? 'bg-gradient-to-br from-red-700 to-rose-800 animate-pulse-mic' 
+                    ? 'bg-gradient-to-br from-red-700/70 to-rose-800/70 backdrop-blur-sm animate-pulse-mic' 
                     : isDuet && !isMyLine 
-                      ? 'bg-gray-700 text-gray-400 cursor-not-allowed' // 상대방 대사일 때 비활성화 스타일
-                      : 'bg-gradient-to-br from-rose-700 to-pink-800 hover:from-rose-600 hover:to-pink-700 text-white'
+                      ? 'bg-gray-700/70 backdrop-blur-sm text-gray-400 cursor-not-allowed' // 상대방 대사일 때 비활성화 스타일
+                      : 'bg-gradient-to-br from-rose-700/70 to-pink-800/70 backdrop-blur-sm hover:from-rose-600/80 hover:to-pink-700/80 text-white'
                 }`}
                 style={recording 
                   ? { boxShadow: '0 0 15px rgba(239, 68, 68, 0.4)' } 
@@ -543,10 +543,10 @@ export default function ScriptDisplay({
               {/* 구간반복 버튼 */}
               <button
                 onClick={onLoopToggle}
-                className={`w-16 h-16 rounded-3xl flex items-center justify-center transition-all duration-300 shadow-lg border border-white/10 transform hover:scale-105 active:scale-95 ${
+                className={`w-16 h-16 rounded-3xl flex items-center justify-center transition-all duration-300 shadow-lg border border-white/20 transform hover:scale-105 active:scale-95 ${
                   isLooping 
-                    ? 'bg-gradient-to-br from-amber-700 to-orange-800' 
-                    : 'bg-gradient-to-br from-slate-700 to-slate-800 hover:from-amber-700 hover:to-orange-800'
+                    ? 'bg-gradient-to-br from-amber-700/70 to-orange-800/70 backdrop-blur-sm' 
+                    : 'bg-gradient-to-br from-slate-700/70 to-slate-800/70 backdrop-blur-sm hover:from-amber-700/80 hover:to-orange-800/80'
                 } text-white disabled:opacity-60 disabled:cursor-not-allowed`}
                 style={isLooping ? { boxShadow: '0 0 10px rgba(245, 158, 11, 0.3)' } : {}}
                 title={isLooping ? '구간반복 해제' : '구간반복'}
@@ -567,7 +567,7 @@ export default function ScriptDisplay({
               {showCompletedButtons && (
                 <>
                   <button 
-                    className="ml-4 px-5 py-3 rounded-xl bg-gradient-to-br from-teal-700 to-emerald-800 hover:from-teal-600 hover:to-emerald-700 text-white text-sm font-medium tracking-wide shadow-lg shadow-emerald-700/20 transition-all duration-300 transform hover:scale-105 active:scale-95 border border-emerald-400/20"
+                    className="ml-4 px-5 py-3 rounded-xl bg-gradient-to-br from-teal-700/70 to-emerald-800/70 backdrop-blur-sm hover:from-teal-600/80 hover:to-emerald-700/80 text-white text-sm font-medium tracking-wide shadow-lg shadow-emerald-700/20 transition-all duration-300 transform hover:scale-105 active:scale-95 border border-emerald-400/30"
                     style={{ boxShadow: '0 5px 15px rgba(16, 185, 129, 0.2)' }}
                     onClick={onOpenDubbingListenModal}
                   >
@@ -580,7 +580,7 @@ export default function ScriptDisplay({
                     </div>
                   </button>
                   <button
-                    className="ml-4 px-5 py-3 rounded-xl bg-gradient-to-br from-blue-700 to-indigo-800 hover:from-blue-600 hover:to-indigo-700 text-white text-sm font-medium tracking-wide shadow-lg shadow-indigo-700/20 transition-all duration-300 transform hover:scale-105 active:scale-95 border border-indigo-400/20"
+                    className="ml-4 px-5 py-3 rounded-xl bg-gradient-to-br from-blue-700/70 to-indigo-800/70 backdrop-blur-sm hover:from-blue-600/80 hover:to-indigo-700/80 text-white text-sm font-medium tracking-wide shadow-lg shadow-indigo-700/20 transition-all duration-300 transform hover:scale-105 active:scale-95 border border-indigo-400/30"
                     style={{ boxShadow: '0 5px 15px rgba(79, 70, 229, 0.2)' }}
                     onClick={onShowResults}
                   >
@@ -647,8 +647,8 @@ export default function ScriptDisplay({
                 currentScriptIndex === 0 
                   ? 'bg-gray-800/50 text-gray-500 cursor-not-allowed' 
                   : isDuet && !isMyLine
-                    ? 'bg-indigo-900/50 text-blue-400 hover:bg-indigo-800/70 hover:text-blue-300 shadow-lg'
-                    : 'bg-emerald-900/50 text-green-400 hover:bg-emerald-800/70 hover:text-green-300 shadow-lg'
+                    ? 'bg-indigo-900/50 backdrop-blur-sm text-blue-400 hover:bg-indigo-800/70 hover:text-blue-300 shadow-lg border border-blue-700/30'
+                    : 'bg-emerald-900/50 backdrop-blur-sm text-green-400 hover:bg-emerald-800/70 hover:text-green-300 shadow-lg border border-emerald-700/30'
               }`}
               style={currentScriptIndex === 0 ? {} : {
                 boxShadow: isDuet && !isMyLine
@@ -698,7 +698,7 @@ export default function ScriptDisplay({
                   </div>
                 </div>
               ) : (
-                <div className="text-white text-xs sm:text-sm font-bold text-center leading-tight px-1">
+                <div className="text-white text-xl sm:text-2xl md:text-3xl font-bold text-center leading-tight px-2">
                   {renderScriptWithWords()}
                 </div>
               )}
@@ -713,8 +713,8 @@ export default function ScriptDisplay({
                 currentScriptIndex === captions.length - 1 
                   ? 'bg-gray-800/50 text-gray-500 cursor-not-allowed' 
                   : isDuet && !isMyLine
-                    ? 'bg-indigo-900/50 text-blue-400 hover:bg-indigo-800/70 hover:text-blue-300 shadow-lg'
-                    : 'bg-emerald-900/50 text-green-400 hover:bg-emerald-800/70 hover:text-green-300 shadow-lg'
+                    ? 'bg-indigo-900/50 backdrop-blur-sm text-blue-400 hover:bg-indigo-800/70 hover:text-blue-300 shadow-lg border border-blue-700/30'
+                    : 'bg-emerald-900/50 backdrop-blur-sm text-green-400 hover:bg-emerald-800/70 hover:text-green-300 shadow-lg border border-emerald-700/30'
               }`}
               style={currentScriptIndex === captions.length - 1 ? {} : {
                 boxShadow: isDuet && !isMyLine

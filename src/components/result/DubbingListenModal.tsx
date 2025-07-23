@@ -84,14 +84,14 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
 
   // 반응형 비디오 크기 계산
   const calculateVideoSize = () => {
-    // 기본 비디오 크기 (16:9 비율)
-    const baseWidth = 1280;
-    const baseHeight = 720;
+    // 기본 비디오 크기 (16:9 비율) - 더 크게 설정
+    const baseWidth = 1600; // 1280에서 1600으로 증가
+    const baseHeight = 900; // 720에서 900으로 증가
     
-    // 모달 최대 너비 (화면 너비의 90%)
-    const maxModalWidth = windowSize.width * 0.9;
-    // 모달 최대 높이 (화면 높이의 80%)
-    const maxModalHeight = windowSize.height * 0.8;
+    // 모달 최대 너비 (화면 너비의 95%)
+    const maxModalWidth = windowSize.width * 0.95; // 90%에서 95%로 증가
+    // 모달 최대 높이 (화면 높이의 90%)
+    const maxModalHeight = windowSize.height * 0.9; // 80%에서 90%로 증가
     
     // 비디오 최대 너비 (패딩 고려)
     const maxVideoWidth = maxModalWidth - 40; // 좌우 패딩 20px씩
@@ -284,24 +284,31 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/70 backdrop-blur-[2px]" onClick={onClose} />
       <div
-        className="relative bg-gray-900 rounded-3xl shadow-2xl z-10 flex flex-col items-center px-4 sm:px-6 md:px-8 lg:px-10 py-4 sm:py-6 md:py-8"
+        className="relative bg-gray-900/90 backdrop-blur-md rounded-3xl shadow-2xl z-10 flex flex-col items-center px-6 sm:px-8 md:px-10 lg:px-12 py-6 sm:py-8 md:py-10 border border-gray-700/50"
         style={{ 
-          maxWidth: Math.min(calculateVideoSize().width + 80, 1400), // 비디오 너비 + 패딩
-          width: '95vw'
+          maxWidth: Math.min(calculateVideoSize().width + 120, 1800), // 비디오 너비 + 패딩 (증가)
+          width: '98vw', // 95vw에서 98vw로 증가
+          boxShadow: '0 15px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(20, 184, 166, 0.25)'
         }}
       >
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 w-10 h-10 rounded-full bg-gray-800/80 hover:bg-gray-700 flex items-center justify-center transition-all duration-200 text-gray-400 hover:text-white"
+          className="absolute top-6 right-6 w-14 h-14 rounded-xl bg-gray-800/70 backdrop-blur-sm hover:bg-gray-700/80 flex items-center justify-center transition-all duration-300 text-gray-400 hover:text-white border border-gray-600/30 transform hover:scale-105 active:scale-95"
+          style={{ boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)' }}
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
         </button>
-        <div className="mb-4 sm:mb-6 md:mb-8 flex justify-center" style={{ width: calculateVideoSize().width, height: calculateVideoSize().height }}>
+        <h2 className="text-3xl font-bold text-white mb-6 bg-gradient-to-r from-teal-400 to-emerald-500 bg-clip-text text-transparent">더빙본 들어보기</h2>
+        <div className="mb-6 sm:mb-8 md:mb-10 flex justify-center" style={{ width: calculateVideoSize().width, height: calculateVideoSize().height }}>
           <div 
-            className="relative" 
-            style={{ width: calculateVideoSize().width, height: calculateVideoSize().height }}
+            className="relative rounded-xl overflow-hidden shadow-2xl" 
+            style={{ 
+              width: calculateVideoSize().width, 
+              height: calculateVideoSize().height,
+              boxShadow: '0 15px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(20, 184, 166, 0.25)'
+            }}
           >
             {videoId && (
               <YouTube
@@ -309,7 +316,7 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
                 opts={youtubeOpts}
                 onReady={handleYouTubeReady}
                 onStateChange={handleStateChange}
-                className="rounded-xl border border-gray-800"
+                className="rounded-xl border border-gray-700/50"
                 style={{ width: calculateVideoSize().width, height: calculateVideoSize().height, position: 'absolute', top: 0, left: 0 }}
               />
             )}
@@ -319,19 +326,19 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
               style={{ cursor: 'default' }}
             />
             {showThumbnail && (
-              <div className="absolute inset-0 rounded-xl z-20 flex items-center justify-center bg-gray-900">
+              <div className="absolute inset-0 rounded-xl z-20 flex items-center justify-center bg-gray-900/80 backdrop-blur-sm">
                 <img
                   src={`https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`}
                   alt="Video thumbnail"
-                  className="rounded-xl w-full h-full object-cover"
+                  className="rounded-xl w-full h-full object-cover opacity-90"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.src = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
                   }}
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-16 h-16 bg-black/50 rounded-full flex items-center justify-center">
-                    <div className="w-0 h-0 border-l-[20px] border-l-white border-t-[12px] border-t-transparent border-b-[12px] border-b-transparent ml-1" />
+                  <div className="w-20 h-20 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20 transform hover:scale-105 transition-all duration-300" style={{ boxShadow: '0 0 20px rgba(0, 0, 0, 0.5)' }}>
+                    <div className="w-0 h-0 border-l-[24px] border-l-white border-t-[14px] border-t-transparent border-b-[14px] border-b-transparent ml-2" />
                   </div>
                 </div>
               </div>
@@ -346,12 +353,12 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
         <div className="flex flex-row gap-8 mt-6">
           <button
             onClick={handlePlayPause}
-            className={`w-16 h-16 rounded-3xl flex items-center justify-center transition-all duration-300 shadow-lg border border-white/10 transform hover:scale-105 active:scale-95 ${
+            className={`w-16 h-16 rounded-3xl flex items-center justify-center transition-all duration-300 shadow-lg border border-white/20 transform hover:scale-105 active:scale-95 ${
               isPlaying 
-                ? 'bg-gradient-to-br from-purple-800 to-indigo-900 hover:from-purple-700 hover:to-indigo-800' 
-                : 'bg-gradient-to-br from-emerald-700 to-teal-800 hover:from-emerald-600 hover:to-teal-700'
+                ? 'bg-gradient-to-br from-purple-800/70 to-indigo-900/70 backdrop-blur-sm hover:from-purple-700/80 hover:to-indigo-800/80' 
+                : 'bg-gradient-to-br from-emerald-700/70 to-teal-800/70 backdrop-blur-sm hover:from-emerald-600/80 hover:to-teal-700/80'
             }`}
-            style={{ boxShadow: isPlaying ? '0 0 10px rgba(139, 92, 246, 0.3)' : '0 0 10px rgba(20, 184, 166, 0.3)' }}
+            style={{ boxShadow: isPlaying ? '0 0 15px rgba(139, 92, 246, 0.3)' : '0 0 15px rgba(20, 184, 166, 0.3)' }}
             title={isPlaying ? '정지' : '재생'}
           >
             {isPlaying ? (
@@ -365,9 +372,8 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
             )}
           </button>
           <button
-            className={`w-16 h-16 rounded-3xl flex items-center justify-center transition-all duration-300 shadow-lg border border-white/10 transform hover:scale-105 active:scale-95 bg-gradient-to-br from-slate-700 to-slate-800 hover:from-amber-700 hover:to-orange-800 text-white`}
-            style={{ boxShadow: '0 0 10px rgba(245, 158, 11, 0.3)' }} // Loop 버튼의 기본 boxShadow 유지
-
+            className={`w-16 h-16 rounded-3xl flex items-center justify-center transition-all duration-300 shadow-lg border border-white/20 transform hover:scale-105 active:scale-95 bg-gradient-to-br from-slate-700/70 to-slate-800/70 backdrop-blur-sm hover:from-amber-700/80 hover:to-orange-800/80 text-white`}
+            style={{ boxShadow: '0 0 15px rgba(245, 158, 11, 0.3)' }}
             onClick={handleRestart}
             title="처음부터"
           >
