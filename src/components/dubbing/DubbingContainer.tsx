@@ -557,8 +557,6 @@ useEffect(() => {
     // 현재 스크립트가 내 대사이면 자동 전환 방지
     if (isMyLine(currentScriptIndex)) return;
     
-    
-    
     // 현재 시간에 해당하는 스크립트 인덱스 찾기
     const foundIndex = front_data.captions.findIndex(
       (script: any) => currentTime >= script.start_time && currentTime <= script.end_time
@@ -570,10 +568,9 @@ useEffect(() => {
       if (!isMyLine(foundIndex)) {
         console.log(`[자동 전환] 시간 기반 스크립트 전환: ${currentScriptIndex} -> ${foundIndex}`);
         setCurrentScriptIndex(foundIndex);
-        setAllowAutoScriptChange(true); // 자동 전환 활성화
       }
     }
-  }, [isReady, setCurrentVideoTime, recording, currentScriptIndex, isMyLine, front_data?.captions, setCurrentScriptIndex, setAllowAutoScriptChange]);
+  }, [isReady, setCurrentVideoTime, recording, currentScriptIndex, isMyLine, front_data?.captions, setCurrentScriptIndex]);
 
   // DubbingContainer.tsx 내부
 
@@ -585,7 +582,7 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
     const currentScript = front_data.captions[currentScriptIndex];
     if (!currentScript) return { startTime: 0, endTime: undefined };
 
-    // 듀엣 모드이고, 현재 대사가 '상대방 대사'일 때만 특별 로직 적용
+    // 듀엣 모드이고, 현재 대사가 '상대방 대사'일 때 특별 로직 적용
     if (isDuet && !isMyLine(currentScriptIndex)) {
       let lastOpponentEndTime = currentScript.end_time;
       let nextIndex = currentScriptIndex + 1;
@@ -598,7 +595,7 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
         };
       }
 
-      // 다음 대사들을 순서대로 확인
+      // 다음 대사들을 순서대로 확인하여 연속된 상대방 대사를 하나의 구간으로 처리
       while (nextIndex < front_data.captions.length) {
         // 다음 대사가 '내 대사'이면 연속 구간이 끝난 것이므로 중단
         if (isMyLine(nextIndex)) {
@@ -862,28 +859,22 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
               onEndTimeReached={() => {
                 // 녹음 중이면 녹음부터 중지
                 if (recording) {
-                  // 현재 스크립트의 단어 정보 가져오기
                   const currentWords = tokenData?.scripts?.[currentScriptIndex]?.words || [];
-                  
-                  // 단어 정보가 있으면 마지막 단어 종료 시간에 녹음 종료
                   if (currentWords.length > 0) {
                     const lastWord = currentWords[currentWords.length - 1];
                     const currentTime = videoPlayerRef.current?.getCurrentTime() || 0;
-                    
-                    // 현재 시간이 마지막 단어 종료 시간 이상이면 녹음 종료
                     if (currentTime >= lastWord.end_time) {
                       console.log(`[녹음 종료] 마지막 단어 종료 시점에 도달하여 녹음 종료`);
                       stopScriptRecording(currentScriptIndex);
                     }
                   } else {
-                    // 단어 정보가 없으면 그냥 녹음 종료
                     stopScriptRecording(currentScriptIndex);
                   }
                   videoPlayerRef.current?.pauseVideo();
                   return;
                 }
 
-                // 현재 스크립트가 '내 대사'인 경우, 일시정지하고 반환
+                // 현재 스크립트가 '내 대사'인 경우, 일시정지
                 if (isMyLine(currentScriptIndex)) {
                   videoPlayerRef.current?.pauseVideo();
                   return;
@@ -905,29 +896,20 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
                 if (isNextMyLine) {
                   console.log('[자동 전환] 상대방 대사 -> 내 대사: 내 대사 시작점에서 일시정지');
                   setCurrentScriptIndex(nextScriptIndex);
+                  videoPlayerRef.current?.pauseVideo();
                   setTimeout(() => {
                     if (videoPlayerRef.current && front_data.captions[nextScriptIndex]) {
-                      // 내 대사 시작점으로 이동
                       videoPlayerRef.current.seekTo(front_data.captions[nextScriptIndex].start_time);
-                      // 일시정지
-                      videoPlayerRef.current.pauseVideo();
                     }
                   }, 100);
                   return;
                 }
                 
                 // 다음 스크립트가 '상대방 대사'이면 자동으로 다음 스크립트로 전환하고 계속 재생
+                // 이 경우 영상을 멈추지 않고 자연스럽게 재생되도록 함
                 console.log('[자동 전환] 상대방 대사 -> 상대방 대사: 자동 전환 후 계속 재생');
-                
                 setCurrentScriptIndex(nextScriptIndex);
-                setAllowAutoScriptChange(true); // 자동 전환 활성화
-                setTimeout(() => {
-                  if (videoPlayerRef.current && front_data.captions[nextScriptIndex]) {
-                    videoPlayerRef.current.seekTo(front_data.captions[nextScriptIndex].start_time);
-                    videoPlayerRef.current.playVideo();
-                    
-                  }
-                }, 100);
+                // 영상을 멈추거나 시간을 이동시키지 않음 - 자연스럽게 계속 재생
               }}
               
               onPlay={customHandlePlay}
