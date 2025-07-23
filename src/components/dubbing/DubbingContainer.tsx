@@ -651,6 +651,12 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
     }
 
     if (videoPlayerRef?.current && front_data.captions[currentScriptIndex]) {
+      // 비디오가 재생 중이면 일시 정지
+      if (isVideoPlaying) {
+        videoPlayerRef.current.pauseVideo();
+        customHandlePause();
+      }
+      
       // 카운트다운 표시 시작
       setShowCountdown(true);
     }
