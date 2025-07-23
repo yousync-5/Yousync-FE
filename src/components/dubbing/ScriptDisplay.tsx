@@ -359,39 +359,52 @@ export default function ScriptDisplay({
     if (!currentWords || currentWords.length === 0) {
       // word 데이터가 없으면 기존 방식으로 렌더링
       return (
-        <div className="text-white text-lg sm:text-2xl md:text-3xl font-bold text-center leading-tight">
-          &quot;{decodeHtmlEntities(captions[currentScriptIndex]?.script || '')}&quot;
+        <div className="text-white text-lg sm:text-2xl md:text-3xl font-bold text-center leading-tight tracking-wide">
+          <span className="text-gray-400 opacity-70">"</span>
+          <span className="bg-gradient-to-br from-white to-gray-300 bg-clip-text text-transparent">
+            {decodeHtmlEntities(captions[currentScriptIndex]?.script || '')}
+          </span>
+          <span className="text-gray-400 opacity-70">"</span>
         </div>
       );
     }
 
     return (
-      <div className="text-white text-lg sm:text-2xl md:text-3xl font-bold text-center leading-tight">
-        &quot;{currentWords.map((word, index) => {
+      <div className="text-white text-lg sm:text-2xl md:text-3xl font-bold text-center leading-tight tracking-wide">
+        <span className="text-gray-400 opacity-70">"</span>
+        {currentWords.map((word, index) => {
           const isCurrent = currentVideoTime >= word.start_time && currentVideoTime <= word.end_time;
           const animatedScore = animatedScores[word.word] || 0;
-          let textColor = 'text-white'; // 기본 색상
-          if (isCurrent) {
-            textColor = 'text-yellow-400';
-          } else if (animatedScore > 0) {
-            textColor = '';
-          }
+          
           return (
             <span 
               key={word.id}
-              className={`transition-all duration-200 ${
-                isCurrent ? 'font-bold bg-green-400/10 px-1 rounded' : ''
+              className={`transition-all duration-300 ${
+                isCurrent ? 'font-bold px-1 rounded-md transform scale-110' : ''
               }`}
               style={{
                 color: animatedScore > 0
                   ? getGradientColor(animatedScore)
-                  : (isCurrent ? '#22c55e' : undefined)
+                  : (isCurrent 
+                      ? isDuet && !isMyLine ? '#60a5fa' : '#22c55e' 
+                      : 'white'),
+                textShadow: isCurrent 
+                  ? isDuet && !isMyLine 
+                    ? '0 0 10px rgba(59, 130, 246, 0.7)' 
+                    : '0 0 10px rgba(34, 197, 94, 0.7)'
+                  : 'none',
+                background: isCurrent 
+                  ? isDuet && !isMyLine 
+                    ? 'rgba(59, 130, 246, 0.15)' 
+                    : 'rgba(34, 197, 94, 0.15)'
+                  : 'transparent'
               }}
             >
               {decodeHtmlEntities(word.word)}{index < currentWords.length - 1 ? ' ' : ''}
             </span>
           );
-        })}&quot;
+        })}
+        <span className="text-gray-400 opacity-70">"</span>
       </div>
     );
   };
@@ -403,18 +416,46 @@ export default function ScriptDisplay({
         <div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 gap-1 py-2">
             {/* 왼쪽에 스크립트 번호 표시 */}
-            <div className="text-base sm:text-2xl font-semibold text-white flex items-center">
-              &nbsp;&nbsp; <span className="text-teal-300">{currentScriptIndex + 1}</span>&nbsp;/ {captions.length}
+            <div className="text-base sm:text-xl font-semibold text-white flex items-center">
+              &nbsp;&nbsp; <span className="text-teal-300 font-mono">{currentScriptIndex + 1}</span>&nbsp;/ <span className="font-mono">{captions.length}</span>
               &nbsp;&nbsp;
               {isDuet && (
-                <span className={`ml-2 px-2 py-1 rounded ${isMyLine ? 'bg-green-600 text-white' : 'bg-blue-600 text-white'}`}>
-                  {isMyLine ? '내 대사' : '상대방'}
+                <span className={`ml-2 px-3 py-1 rounded-lg ${
+                  isMyLine 
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium tracking-wide shadow-md' 
+                    : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium tracking-wide shadow-md'
+                }`}
+                style={{
+                  boxShadow: isMyLine 
+                    ? '0 2px 10px rgba(16, 185, 129, 0.3)' 
+                    : '0 2px 10px rgba(79, 70, 229, 0.3)'
+                }}>
+                  <div className="flex items-center">
+                    {isMyLine ? (
+                      <>
+                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 14l9-5-9-5-9 5 9 5z"/>
+                          <path d="M12 19l9-5-9-5-9 5 9 5z"/>
+                        </svg>
+                        내 대사
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                        </svg>
+                        상대방
+                      </>
+                    )}
+                  </div>
                 </span>
               )}
             </div>
             
             {/* 중앙에 버튼들 배치 */}
-            <div className="flex items-center justify-center mx-auto">
+            <div className="flex items-center justify-center mx-auto py-2"> {/* 최상위 컨테이너에서 space-x-2 제거 */}
+              {/* 재생 버튼 그룹 */}
+              <div className="flex items-center space-x-4">
               {/* 재생/정지 버튼 */}
               <button
                 onClick={() => {
@@ -442,17 +483,24 @@ export default function ScriptDisplay({
                     }
                   }
                 }}
-                className={`w-13 h-13 ${recording ? 'bg-gradient-to-r from-gray-600 to-gray-700' : 'bg-gradient-to-r from-green-600 to-lime-500 hover:from-green-700 hover:to-lime-600'} text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed`}
+                className={`w-16 h-16 ${
+                  recording 
+                    ? 'bg-gray-700 cursor-not-allowed' 
+                    : isVideoPlaying 
+                      ? 'bg-gradient-to-br from-purple-800 to-indigo-900 hover:from-purple-700 hover:to-indigo-800' 
+                      : 'bg-gradient-to-br from-emerald-700 to-teal-800 hover:from-emerald-600 hover:to-teal-700'
+                } text-white rounded-3xl flex items-center justify-center transition-all duration-300 shadow-lg border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95`}
+                style={{ boxShadow: isVideoPlaying ? '0 0 10px rgba(139, 92, 246, 0.3)' : '0 0 10px rgba(20, 184, 166, 0.3)' }}
                 title={isVideoPlaying ? '정지' : '실행'}
                 disabled={!videoPlayerRef?.current}
               >
                 {isVideoPlaying || recording ? (
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <rect x="5" y="5" width="10" height="10" rx="2" />
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <rect x="6" y="6" width="12" height="12" rx="2" />
                   </svg>
                 ) : (
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <polygon points="6,4 16,10 6,16" />
+                  <svg className="w-8 h-8 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5.14v14l11-7-11-7z" />
                   </svg>
                 )}
               </button>
@@ -461,27 +509,32 @@ export default function ScriptDisplay({
               <button
                 onClick={onMicClick}
                 disabled={recording || recordingCompleted || (isDuet && !isMyLine)} // 듀엣 모드에서 상대방 대사일 때 비활성화
-                className={`ml-3 w-13 h-13 rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border border-white/10 ${
+                className={` w-16 h-16 rounded-3xl flex items-center justify-center transition-all duration-300 shadow-lg border border-white/10 transform hover:scale-105 active:scale-95 ${
                   recording 
-                    ? 'bg-green-500 animate-pulse-mic' 
+                    ? 'bg-gradient-to-br from-red-700 to-rose-800 animate-pulse-mic' 
                     : isDuet && !isMyLine 
-                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed' // 상대방 대사일 때 비활성화 스타일
-                      : 'bg-gradient-to-r from-red-600 to-pink-500 hover:from-red-700 hover:to-pink-600 text-white'
+                      ? 'bg-gray-700 text-gray-400 cursor-not-allowed' // 상대방 대사일 때 비활성화 스타일
+                      : 'bg-gradient-to-br from-rose-700 to-pink-800 hover:from-rose-600 hover:to-pink-700 text-white'
                 }`}
-                style={recording ? { boxShadow: '0 0 0 3px rgba(34,197,94,0.4)' } : undefined}
+                style={recording 
+                  ? { boxShadow: '0 0 15px rgba(239, 68, 68, 0.4)' } 
+                  : isDuet && !isMyLine 
+                    ? {} 
+                    : { boxShadow: '0 0 10px rgba(244, 63, 94, 0.3)' }
+                }
                 title={isDuet && !isMyLine ? '상대방 대사는 녹음할 수 없습니다' : '녹음하기'}
               >
                 {recording && (
-                  <span className="absolute w-12 h-12 rounded-full border-2 border-green-400 opacity-60 animate-ping-mic z-0"></span>
+                  <span className="absolute w-18 h-18 rounded-xl border-2 border-red-400 opacity-60 animate-ping-mic z-0"></span>
                 )}
                 <svg 
-                  className="w-4 h-4 relative z-10" 
+                  className="w-8 h-8 relative z-10" 
                   fill="currentColor" 
-                  viewBox="0 0 20 20"
+                  viewBox="0 0 24 24"
                 >
                   <path 
                     fillRule="evenodd" 
-                    d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" 
+                    d="M7 4a5 5 0 0110 0v5a5 5 0 01-10 0V4zm5 15a7 7 0 01-7-7h2a5 5 0 0010 0h2a7 7 0 01-7 7zm-3 2h6v2H9v-2z" 
                     clipRule="evenodd" 
                   />
                 </svg>
@@ -490,35 +543,58 @@ export default function ScriptDisplay({
               {/* 구간반복 버튼 */}
               <button
                 onClick={onLoopToggle}
-                className={`ml-3 w-13 h-13 ${isLooping ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-gray-600 to-gray-700'} hover:from-yellow-600 hover:to-orange-600 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-sm border border-white/10 disabled:opacity-60 disabled:cursor-not-allowed`}
+                className={`w-16 h-16 rounded-3xl flex items-center justify-center transition-all duration-300 shadow-lg border border-white/10 transform hover:scale-105 active:scale-95 ${
+                  isLooping 
+                    ? 'bg-gradient-to-br from-amber-700 to-orange-800' 
+                    : 'bg-gradient-to-br from-slate-700 to-slate-800 hover:from-amber-700 hover:to-orange-800'
+                } text-white disabled:opacity-60 disabled:cursor-not-allowed`}
+                style={isLooping ? { boxShadow: '0 0 10px rgba(245, 158, 11, 0.3)' } : {}}
                 title={isLooping ? '구간반복 해제' : '구간반복'}
                 disabled={recording || recordingCompleted || !videoPlayerRef?.current}
               >
-                <svg viewBox="0 0 48 48" fill="none" className={`w-4 h-4 ${isLooping ? 'animate-spin' : ''}`} stroke="currentColor" strokeWidth="4">
-                  <path d="M8 24c0-8.837 7.163-16 16-16 4.418 0 8.418 1.79 11.314 4.686" strokeLinecap="round"/>
-                  <path d="M40 8v8h-8" strokeLinecap="round"/>
-                  <path d="M40 24c0 8.837-7.163 16-16 16-4.418 0-8.418-1.79-11.314-4.686" strokeLinecap="round"/>
-                  <path d="M8 40v-8h8" strokeLinecap="round"/>
+                <svg viewBox="0 0 24 24" fill="none" className={`w-8 h-8 ${isLooping ? 'animate-spin' : ''}`} stroke="currentColor" strokeWidth="2">
+                  <path d="M4 12c0-4.4 3.6-8 8-8 2.2 0 4.2 0.9 5.7 2.3" strokeLinecap="round"/>
+                  <path d="M20 4v4h-4" strokeLinecap="round"/>
+                  <path d="M20 12c0 4.4-3.6 8-8 8-2.2 0-4.2-0.9-5.7-2.3" strokeLinecap="round"/>
+                  <path d="M4 20v-4h4" strokeLinecap="round"/>
                 </svg>
               </button>
               
-              {/* 더빙본 들어보기와 결과보기 버튼 */}
+              </div>
+              
+              {/* 결과 버튼 그룹 */}
+              <div className="flex items-center">
               {showCompletedButtons && (
                 <>
                   <button 
-                    className="ml-10 px-4 py-3 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white text-m font-semibold shadow-md shadow-emerald-700/20 transition-all duration-200"
+                    className="ml-4 px-5 py-3 rounded-xl bg-gradient-to-br from-teal-700 to-emerald-800 hover:from-teal-600 hover:to-emerald-700 text-white text-sm font-medium tracking-wide shadow-lg shadow-emerald-700/20 transition-all duration-300 transform hover:scale-105 active:scale-95 border border-emerald-400/20"
+                    style={{ boxShadow: '0 5px 15px rgba(16, 185, 129, 0.2)' }}
                     onClick={onOpenDubbingListenModal}
                   >
-                    더빙본 들어보기
+                    <div className="flex items-center">
+                      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 19c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8zm0-14c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6z"/>
+                        <path d="M10 16l6-4-6-4z"/>
+                      </svg>
+                      더빙본 들어보기
+                    </div>
                   </button>
                   <button
-                    className="ml-3 px-4 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white text-m font-semibold shadow-md shadow-blue-700/20 transition-all duration-200"
+                    className="ml-4 px-5 py-3 rounded-xl bg-gradient-to-br from-blue-700 to-indigo-800 hover:from-blue-600 hover:to-indigo-700 text-white text-sm font-medium tracking-wide shadow-lg shadow-indigo-700/20 transition-all duration-300 transform hover:scale-105 active:scale-95 border border-indigo-400/20"
+                    style={{ boxShadow: '0 5px 15px rgba(79, 70, 229, 0.2)' }}
                     onClick={onShowResults}
                   >
-                    결과보기
+                    <div className="flex items-center">
+                      <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        <path d="M9 14h6m-6-4h6"/>
+                      </svg>
+                      결과보기
+                    </div>
                   </button>
                 </>
               )}
+              </div>
             </div>
             
             {/* 오른쪽에 시간 정보 */}
@@ -540,12 +616,19 @@ export default function ScriptDisplay({
             </div>
           </div>
 
-          <div className="relative w-full h-4 bg-gray-800/80 rounded-full overflow-hidden shadow-inner">
+          <div className="relative w-full h-5 bg-gray-800/90 rounded-lg overflow-hidden shadow-inner border border-gray-700/30">
             <div
-              className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-500 ease-out"
-              style={{ width: `${((currentScriptIndex + 1) / captions.length) * 100}%` }}
+              className={`absolute top-0 left-0 h-full ${
+                isDuet && !isMyLine
+                  ? 'bg-gradient-to-r from-blue-600 via-indigo-500 to-violet-500'
+                  : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-green-500'
+              } transition-all duration-500 ease-out`}
+              style={{ 
+                width: `${((currentScriptIndex + 1) / captions.length) * 100}%`,
+                boxShadow: '0 0 10px rgba(16, 185, 129, 0.5)'
+              }}
             >
-              <span className="absolute right-1 text-[12px] font-bold text-white drop-shadow-sm">
+              <span className="absolute right-2 text-[12px] font-bold text-white drop-shadow-md flex items-center h-full">
                 {Math.round(((currentScriptIndex + 1) / captions.length) * 100)}%
               </span>
             </div>
@@ -560,24 +643,32 @@ export default function ScriptDisplay({
                 handleScriptChange(Math.max(0, currentScriptIndex - 1));
               }}
               disabled={currentScriptIndex === 0 || recording || recordingCompleted}
-              className={`p-2 rounded-full transition-all duration-200  ${
+              className={`p-3 rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95 ${
                 currentScriptIndex === 0 
                   ? 'bg-gray-800/50 text-gray-500 cursor-not-allowed' 
-                  : 'bg-gray-800 text-green-400 hover:bg-gray-700 hover:text-green-300'
+                  : isDuet && !isMyLine
+                    ? 'bg-indigo-900/50 text-blue-400 hover:bg-indigo-800/70 hover:text-blue-300 shadow-lg'
+                    : 'bg-emerald-900/50 text-green-400 hover:bg-emerald-800/70 hover:text-green-300 shadow-lg'
               }`}
+              style={currentScriptIndex === 0 ? {} : {
+                boxShadow: isDuet && !isMyLine
+                  ? '0 4px 12px rgba(79, 70, 229, 0.2)'
+                  : '0 4px 12px rgba(16, 185, 129, 0.2)'
+              }}
             >
-              <ChevronLeftIcon className="w-6 h-6" />
+              <ChevronLeftIcon className="w-7 h-7" />
             </button>
 
             <div 
-              className="bg-gray-800/80 rounded-lg p-2 flex-1 shadow-inner border border-gray-700/50 flex items-center justify-center min-h-[100px] relative overflow-hidden"
+              className="bg-gray-800/80 rounded-xl p-3 flex-1 shadow-inner border border-gray-700/50 flex items-center justify-center min-h-[120px] relative overflow-hidden"
               style={{
                 background: isAnalyzing 
                   ? 'rgba(31, 41, 55, 0.8)' // 분석 중일 때는 회색
                   : isDuet && !isMyLine
                     ? `linear-gradient(to right, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.15) ${animatedProgress * 100}%, rgba(31, 41, 55, 0.8) ${animatedProgress * 100}%, rgba(31, 41, 55, 0.8) 100%)` // 상대방 대사는 파란색 그라데이션
                     : `linear-gradient(to right, rgba(34, 197, 94, 0.15) 0%, rgba(34, 197, 94, 0.15) ${animatedProgress * 100}%, rgba(31, 41, 55, 0.8) ${animatedProgress * 100}%, rgba(31, 41, 55, 0.8) 100%)`, // 내 대사는 초록색 그라데이션
-                transition: disableTransition ? 'none' : 'background 0.3s ease-out'
+                transition: disableTransition ? 'none' : 'background 0.3s ease-out',
+                boxShadow: 'inset 0 2px 10px rgba(0, 0, 0, 0.3)'
               }}
             >
               {showAnalysisResult && analysisResult ? (
@@ -618,13 +709,20 @@ export default function ScriptDisplay({
                 handleScriptChange(Math.min(captions.length - 1, currentScriptIndex + 1));
               }}
               disabled={currentScriptIndex === captions.length - 1 || recording || recordingCompleted}
-              className={`p-2 rounded-full transition-all duration-200 ${
+              className={`p-3 rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95 ${
                 currentScriptIndex === captions.length - 1 
                   ? 'bg-gray-800/50 text-gray-500 cursor-not-allowed' 
-                  : 'bg-gray-800 text-green-400 hover:bg-gray-700 hover:text-green-300'
+                  : isDuet && !isMyLine
+                    ? 'bg-indigo-900/50 text-blue-400 hover:bg-indigo-800/70 hover:text-blue-300 shadow-lg'
+                    : 'bg-emerald-900/50 text-green-400 hover:bg-emerald-800/70 hover:text-green-300 shadow-lg'
               }`}
+              style={currentScriptIndex === captions.length - 1 ? {} : {
+                boxShadow: isDuet && !isMyLine
+                  ? '0 4px 12px rgba(79, 70, 229, 0.2)'
+                  : '0 4px 12px rgba(16, 185, 129, 0.2)'
+              }}
             >
-              <ChevronRightIcon className="w-6 h-6" />
+              <ChevronRightIcon className="w-7 h-7" />
             </button>
           </div>
         </div>
