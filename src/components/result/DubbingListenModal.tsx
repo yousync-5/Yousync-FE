@@ -1,6 +1,6 @@
 // DubbingListenModal.tsx
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import axios from 'axios';
 import { useParams, usePathname, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -61,10 +61,60 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
     // 모달이 열릴 때 필요한 초기화 작업만 수행
   }, [open, isDuetDubbing, startTime, endTime, duetStartTime, duetEndTime, finalStartTime, finalEndTime]);
 
-  // [수정 1] 플레이어가 준비되었는지 추적하는 상태 추가
-  const [isPlayerReady, setIsPlayerReady] = useState(false);
-  const [showThumbnail, setShowThumbnail] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(false);
+  // 반응형 크기 계산을 위한 훅 추가
+  const [windowSize, setWindowSize] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1920,
+    height: typeof window !== 'undefined' ? window.innerHeight : 1080
+  });
+
+  // 화면 크기 변경 감지
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // 반응형 비디오 크기 계산
+  const calculateVideoSize = () => {
+    // 기본 비디오 크기 (16:9 비율)
+    const baseWidth = 1280;
+    const baseHeight = 720;
+    
+    // 모달 최대 너비 (화면 너비의 90%)
+    const maxModalWidth = windowSize.width * 0.9;
+    // 모달 최대 높이 (화면 높이의 80%)
+    const maxModalHeight = windowSize.height * 0.8;
+    
+    // 비디오 최대 너비 (패딩 고려)
+    const maxVideoWidth = maxModalWidth - 40; // 좌우 패딩 20px씩
+    // 비디오 최대 높이 (패딩과 버튼 영역 고려)
+    const maxVideoHeight = maxModalHeight - 140; // 상하 패딩 + 버튼 영역
+    
+    // 너비 기준으로 크기 계산
+    let width = Math.min(baseWidth, maxVideoWidth);
+    let height = width * (baseHeight / baseWidth);
+    
+    // 높이가 최대 높이를 초과하면 높이 기준으로 다시 계산
+    if (height > maxVideoHeight) {
+      height = maxVideoHeight;
+      width = height * (baseWidth / baseHeight);
+    }
+    
+    return {
+      width: Math.floor(width),
+      height: Math.floor(height)
+    };
+  };
+  
+  const videoSize = calculateVideoSize();
 
   const getSynthesizeAudio = async () => {
     try {
@@ -92,9 +142,14 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
     }
   }, [open, urlTokenId]);
 
+  // [수정 1] 플레이어가 준비되었는지 추적하는 상태 추가
+  const [isPlayerReady, setIsPlayerReady] = useState(false);
+  const [showThumbnail, setShowThumbnail] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+
   const youtubeOpts = {
-    width: 1280,  // 2배로 키움
-    height: 720,  // 2배로 키움
+    width: calculateVideoSize().width,
+    height: calculateVideoSize().height,
     playerVars: {
       autoplay: 0, // 자동 재생 비활성화
       mute: 1,     // 음소거 활성화
@@ -229,8 +284,11 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/70 backdrop-blur-[2px]" onClick={onClose} />
       <div
-        className="relative bg-gray-900 rounded-3xl shadow-2xl z-10 flex flex-col items-center px-10 py-8"
-        style={{ maxWidth: '1400px', width: '95vw' }}
+        className="relative bg-gray-900 rounded-3xl shadow-2xl z-10 flex flex-col items-center px-4 sm:px-6 md:px-8 lg:px-10 py-4 sm:py-6 md:py-8"
+        style={{ 
+          maxWidth: Math.min(calculateVideoSize().width + 80, 1400), // 비디오 너비 + 패딩
+          width: '95vw'
+        }}
       >
         <button 
           onClick={onClose}
@@ -240,10 +298,10 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
         </button>
-        <div className="mb-8 flex justify-center" style={{ width: '1280px', height: '720px' }}>
+        <div className="mb-4 sm:mb-6 md:mb-8 flex justify-center" style={{ width: calculateVideoSize().width, height: calculateVideoSize().height }}>
           <div 
             className="relative" 
-            style={{ width: '1280px', height: '720px' }}
+            style={{ width: calculateVideoSize().width, height: calculateVideoSize().height }}
           >
             {videoId && (
               <YouTube
@@ -252,7 +310,7 @@ const DubbingListenModal: React.FC<DubbingListenModalProps> = ({ open, onClose, 
                 onReady={handleYouTubeReady}
                 onStateChange={handleStateChange}
                 className="rounded-xl border border-gray-800"
-                style={{ width: '1280px', height: '720px', position: 'absolute', top: 0, left: 0 }}
+                style={{ width: calculateVideoSize().width, height: calculateVideoSize().height, position: 'absolute', top: 0, left: 0 }}
               />
             )}
             <div 
