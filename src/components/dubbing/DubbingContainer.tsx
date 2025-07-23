@@ -444,7 +444,7 @@ useEffect(() => {
       });
       
       // 내 대사에 대한 분석 결과가 모두 있으면 버튼 표시
-      return myLinesWithResults.length === myLines.length;
+      return myLinesWithResults.length >= 3;
     }
     // 일반 더빙 모드일 때
     else {
