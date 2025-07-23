@@ -549,11 +549,31 @@ useEffect(() => {
 
   const handleTimeUpdate = useCallback((currentTime: number) => {
     if (!isReady) return;
-    setCurrentVideoTime(currentTime); // 비디오 시간만 업데이트
+    setCurrentVideoTime(currentTime); // 비디오 시간 업데이트
     
-    // 자동 전환을 방지하기 위해 스크립트/단어 인덱스를 변경하는 모든 로직 제거
-    // 녹음 중이거나 내 대사일 경우에는 무조건 자동 전환 방지
-  }, [isReady, setCurrentVideoTime]); // 종속성 배열 최소화
+    // 녹음 중이면 스크립트 자동 전환 방지
+    if (recording) return;
+    
+    // 현재 스크립트가 내 대사이면 자동 전환 방지
+    if (isMyLine(currentScriptIndex)) return;
+    
+    
+    
+    // 현재 시간에 해당하는 스크립트 인덱스 찾기
+    const foundIndex = front_data.captions.findIndex(
+      (script: any) => currentTime >= script.start_time && currentTime <= script.end_time
+    );
+    
+    // 찾은 인덱스가 유효하고 현재 인덱스와 다르면 스크립트 변경
+    if (foundIndex !== -1 && foundIndex !== currentScriptIndex) {
+      // 찾은 스크립트가 상대방 대사인 경우에만 자동 전환
+      if (!isMyLine(foundIndex)) {
+        console.log(`[자동 전환] 시간 기반 스크립트 전환: ${currentScriptIndex} -> ${foundIndex}`);
+        setCurrentScriptIndex(foundIndex);
+        setAllowAutoScriptChange(true); // 자동 전환 활성화
+      }
+    }
+  }, [isReady, setCurrentVideoTime, recording, currentScriptIndex, isMyLine, front_data?.captions, setCurrentScriptIndex, setAllowAutoScriptChange]);
 
   // DubbingContainer.tsx 내부
 
@@ -570,11 +590,23 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
       let lastOpponentEndTime = currentScript.end_time;
       let nextIndex = currentScriptIndex + 1;
 
+      // 다음 대사가 있고 '내 대사'인 경우, 다음 대사 시작점을 종료 시간으로 설정
+      if (nextIndex < front_data.captions.length && isMyLine(nextIndex)) {
+        return {
+          startTime: currentScript.start_time,
+          endTime: front_data.captions[nextIndex].start_time, // 내 대사 시작점에서 멈춤
+        };
+      }
+
       // 다음 대사들을 순서대로 확인
       while (nextIndex < front_data.captions.length) {
         // 다음 대사가 '내 대사'이면 연속 구간이 끝난 것이므로 중단
         if (isMyLine(nextIndex)) {
-          break;
+          // 내 대사 시작점을 종료 시간으로 설정
+          return {
+            startTime: currentScript.start_time,
+            endTime: front_data.captions[nextIndex].start_time,
+          };
         }
         // 다음 대사도 '상대방 대사'이면, 종료 시간을 업데이트하고 계속 탐색
         lastOpponentEndTime = front_data.captions[nextIndex].end_time;
@@ -826,12 +858,8 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
               disableAutoPause={true}
               ref={videoPlayerRef}
               
-              // ✅ 이 부분을 아래 코드로 완전히 교체해주세요.
+              // 수정된 코드: 상대방 대사 -> 내 대사 전환 시 내 대사 시작점에서 멈추도록 수정
               onEndTimeReached={() => {
-                // 어떤 경우든 비디오를 일시정지합니다.
-                videoPlayerRef.current?.pauseVideo();
-                setAllowAutoScriptChange(false); // 자동 전환 플래그를 확실히 false로 설정하여 추가 자동 전환 방지
-
                 // 녹음 중이면 녹음부터 중지
                 if (recording) {
                   // 현재 스크립트의 단어 정보 가져오기
@@ -851,32 +879,55 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
                     // 단어 정보가 없으면 그냥 녹음 종료
                     stopScriptRecording(currentScriptIndex);
                   }
+                  videoPlayerRef.current?.pauseVideo();
                   return;
                 }
 
-                // 현재 스크립트가 '내 대사'인 경우, 여기까지만 하고 반환 (아무것도 하지 않음)
+                // 현재 스크립트가 '내 대사'인 경우, 일시정지하고 반환
                 if (isMyLine(currentScriptIndex)) {
+                  videoPlayerRef.current?.pauseVideo();
                   return;
                 }
 
-                // 듀엣 모드에서 '상대방 대사' -> '상대방 대사'로의 자동 전환 (allowAutoScriptChange가 true일 때만)
-                if (isDuet && allowAutoScriptChange && currentScriptIndex < front_data.captions.length - 1) {
-                  const nextScriptIndex = currentScriptIndex + 1;
-                  const isNextMyLine = isMyLine(nextScriptIndex);
-
-                  if (!isNextMyLine) { // 다음 대사가 상대방 대사일 경우에만 자동 재생
-                    setCurrentScriptIndex(nextScriptIndex);
-                    setTimeout(() => {
-                      if (videoPlayerRef.current && front_data.captions[nextScriptIndex]) {
-                        videoPlayerRef.current.seekTo(front_data.captions[nextScriptIndex].start_time);
-                        videoPlayerRef.current.playVideo();
-                      }
-                    }, 100);
-                    return;
-                  }
+                // 다음 스크립트 인덱스 확인
+                const nextScriptIndex = currentScriptIndex + 1;
+                
+                // 다음 스크립트가 없으면 일시정지
+                if (nextScriptIndex >= front_data.captions.length) {
+                  videoPlayerRef.current?.pauseVideo();
+                  return;
                 }
-
-                // 그 외 모든 경우: 이미 위에서 pauseVideo()와 setAllowAutoScriptChange(false)를 했으므로 추가 작업 불필요
+                
+                // 다음 스크립트가 '내 대사'인지 확인
+                const isNextMyLine = isMyLine(nextScriptIndex);
+                
+                // 다음 스크립트가 '내 대사'이면 다음 스크립트 시작점에서 일시정지
+                if (isNextMyLine) {
+                  console.log('[자동 전환] 상대방 대사 -> 내 대사: 내 대사 시작점에서 일시정지');
+                  setCurrentScriptIndex(nextScriptIndex);
+                  setTimeout(() => {
+                    if (videoPlayerRef.current && front_data.captions[nextScriptIndex]) {
+                      // 내 대사 시작점으로 이동
+                      videoPlayerRef.current.seekTo(front_data.captions[nextScriptIndex].start_time);
+                      // 일시정지
+                      videoPlayerRef.current.pauseVideo();
+                    }
+                  }, 100);
+                  return;
+                }
+                
+                // 다음 스크립트가 '상대방 대사'이면 자동으로 다음 스크립트로 전환하고 계속 재생
+                console.log('[자동 전환] 상대방 대사 -> 상대방 대사: 자동 전환 후 계속 재생');
+                
+                setCurrentScriptIndex(nextScriptIndex);
+                setAllowAutoScriptChange(true); // 자동 전환 활성화
+                setTimeout(() => {
+                  if (videoPlayerRef.current && front_data.captions[nextScriptIndex]) {
+                    videoPlayerRef.current.seekTo(front_data.captions[nextScriptIndex].start_time);
+                    videoPlayerRef.current.playVideo();
+                    
+                  }
+                }, 100);
               }}
               
               onPlay={customHandlePlay}
