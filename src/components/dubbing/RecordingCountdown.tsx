@@ -63,11 +63,25 @@ const RecordingCountdown: React.FC<RecordingCountdownProps> = ({
           exit={{ scale: 0.5, opacity: 0 }}
           className="flex flex-col items-center"
         >
-          <div className="flex items-baseline mb-6">
-            <span className="text-[12rem] font-bold text-white" style={{ lineHeight: '1' }}>
+          <div className="mb-6 relative" style={{ height: '12rem' }}>
+            <span style={{ 
+              fontSize: '12rem', 
+              fontWeight: 'bold', 
+              lineHeight: '1', 
+              color: 'white',
+              display: 'inline-block'
+            }}>
               {integerPart}
             </span>
-            <span className="text-[6rem] font-bold text-white" style={{ lineHeight: '1' }}>
+            <span style={{ 
+              fontSize: '6rem', 
+              fontWeight: 'bold', 
+              lineHeight: '1', 
+              color: 'white',
+              position: 'absolute',
+              bottom: '0',
+              marginLeft: '0.2rem'
+            }}>
               .{decimalPart}
             </span>
           </div>
