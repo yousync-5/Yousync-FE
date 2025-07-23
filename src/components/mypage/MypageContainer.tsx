@@ -8,7 +8,7 @@ import PageHeader from './PageHeader';
 import { extractYoutubeVideoId, getYoutubeThumbnail } from '@/utils/extractYoutubeVideoId';
 import { useUser } from '@/hooks/useUser';
 import { useRouter } from 'next/navigation';
-import axios, { get } from 'axios';
+import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { useVideos } from '@/hooks/useVideos';
 import MovieDetailModal from '@/components/modal/MovieDetailModal';

@@ -26,6 +26,7 @@ export interface VideoPlayerRef {
   playVideo: () => void;
   pauseVideo: () => void;
   getCurrentTime: () => number;
+  getIsPlaying: () => boolean;
 }
 
 const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
@@ -33,6 +34,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
     const playerRef = useRef<{ seekTo: (time: number) => void; playVideo: () => void; pauseVideo: () => void; getCurrentTime: () => number } | null>(null);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const initialStartTimeRef = useRef(startTime);
+    const isPlayingRef = useRef<boolean>(false);
 
     // 외부에서 호출할 수 있는 메서드들
     useImperativeHandle(ref, () => ({
@@ -44,11 +46,13 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
       playVideo: () => {
         if (playerRef.current) {
           playerRef.current.playVideo();
+          isPlayingRef.current = true;
         }
       },
       pauseVideo: () => {
         if (playerRef.current) {
           playerRef.current.pauseVideo();
+          isPlayingRef.current = false;
         }
       },
       getCurrentTime: () => {
@@ -56,6 +60,9 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
           return playerRef.current.getCurrentTime();
         }
         return 0;
+      },
+      getIsPlaying: () => {
+        return isPlayingRef.current;
       }
     }));
 
@@ -110,6 +117,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
 
       // 재생 중일 때만 시간 업데이트
       if (event.data === 1) { // 1 = 재생 중
+        isPlayingRef.current = true; // 재생 상태 업데이트
         if (typeof onPlay === 'function') onPlay();
         intervalRef.current = setInterval(() => {
           if (playerRef.current && onTimeUpdate) {
@@ -118,11 +126,13 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
             // endTime 체크 후 자동 정지
             if (endTime !== undefined && currentTime >= endTime) {
               playerRef.current.pauseVideo();
+              isPlayingRef.current = false; // 정지 상태 업데이트
               if (onEndTimeReached) onEndTimeReached();
             }
           }
         }, 100); // 100ms마다 시간 체크
       } else if (event.data === 2) { // 2 = 일시정지
+        isPlayingRef.current = false; // 정지 상태 업데이트
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
           intervalRef.current = null;

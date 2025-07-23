@@ -5,6 +5,7 @@ import DubbingHeader from "@/components/dubbing/DubbingHeader";
 import VideoPlayer, { VideoPlayerRef } from "@/components/dubbing/VideoPlayer";
 import ScriptDisplay from "@/components/dubbing/ScriptDisplay";
 import ResultContainer from "@/components/result/ResultComponent";
+import RecordingCountdown from "@/components/dubbing/RecordingCountdown";
 
 import { Toaster } from "react-hot-toast";
 import toast from "react-hot-toast";
@@ -173,6 +174,78 @@ const DubbingContainer = ({
 
   // 구간 반복 상태 추가
   const [isLooping, setIsLooping] = useState(false);
+  
+  // 카운트다운 상태 추가
+  const [showCountdown, setShowCountdown] = useState(false);
+  
+  // 카운트다운 완료 후 녹음 시작 함수
+  const startRecordingAfterCountdown = useCallback(() => {
+    // 카운트다운 숨기기
+    setShowCountdown(false);
+    
+    if (!videoPlayerRef?.current || !front_data.captions[currentScriptIndex]) return;
+    
+    const currentScript = front_data.captions[currentScriptIndex];
+    const currentWords = tokenData?.scripts?.[currentScriptIndex]?.words || [];
+    
+    // 영상을 해당 시점으로 이동
+    videoPlayerRef.current.seekTo(currentScript.start_time);
+    
+    // 영상 재생 시작
+    videoPlayerRef.current.playVideo();
+
+    // 영상이 실제로 재생되기 시작할 때까지 대기
+    const checkVideoPlaying = () => {
+      if (!videoPlayerRef?.current) return;
+
+      const currentTime = videoPlayerRef.current.getCurrentTime();
+      const targetTime = currentScript.start_time;
+
+      // 영상이 목표 시간에 도달했는지 확인 (0.1초 허용 오차)
+      if (Math.abs(currentTime - targetTime) < 0.1) {
+        // 녹음 시작
+        startScriptRecording(currentScriptIndex);
+        toast.success('녹음이 시작되었습니다!', {
+          id: 'recording-started',
+          duration: 1000,
+        });
+        
+        // 단어 단위로 녹음 종료 시점 설정
+        if (currentWords.length > 0) {
+          // 마지막 단어의 종료 시간에 녹음 종료
+          const lastWord = currentWords[currentWords.length - 1];
+          const recordingDuration = (lastWord.end_time - currentScript.start_time) * 1000;
+          
+          console.log(`[녹음 설정] 마지막 단어 기준 녹음 종료 예정: ${recordingDuration}ms 후`);
+          console.log(`[녹음 정보] 스크립트 시작: ${currentScript.start_time}, 마지막 단어 종료: ${lastWord.end_time}`);
+          
+          // 녹음 종료 타이머 설정
+          setTimeout(() => {
+            if (recording) {
+              console.log(`[녹음 종료] 마지막 단어 종료 시점에 녹음 종료`);
+              stopScriptRecording(currentScriptIndex);
+            }
+          }, recordingDuration);
+        } else {
+          console.log(`[녹음 설정] 단어 정보가 없어 스크립트 전체 시간으로 녹음 설정`);
+          // 단어 정보가 없으면 스크립트 전체 시간으로 설정
+          const scriptDuration = (currentScript.end_time - currentScript.start_time) * 1000;
+          setTimeout(() => {
+            if (recording) {
+              console.log(`[녹음 종료] 스크립트 종료 시점에 녹음 종료`);
+              stopScriptRecording(currentScriptIndex);
+            }
+          }, scriptDuration);
+        }
+      } else {
+        // 아직 재생되지 않았으면 다시 체크
+        setTimeout(checkVideoPlaying, 50);
+      }
+    };
+
+    // 영상 재생 시작 후 체크 시작 (브라우저 렉 고려)
+    setTimeout(checkVideoPlaying, 100);
+  }, [currentScriptIndex, front_data, recording, startScriptRecording, stopScriptRecording, tokenData, videoPlayerRef, setShowCountdown]);
 
   // 컴포넌트가 언마운트될 때 구간 반복 인터벌 정리
   useEffect(() => {
@@ -453,37 +526,34 @@ useEffect(() => {
     
     if (lastScript && time > lastScript.end_time) return lastIndex;
     
+    // 현재 스크립트의 단어 정보 확인
+    const currentScript = front_data.captions[currentScriptIndex];
+    const currentWords = tokenData?.scripts?.[currentScriptIndex]?.words || [];
+    
+    // 현재 스크립트 내에 단어 정보가 있고, 현재 시간이 마지막 단어 종료 시간보다 작으면
+    // 현재 스크립트 인덱스 유지
+    if (currentScript && currentWords.length > 0) {
+      const lastWord = currentWords[currentWords.length - 1];
+      if (time >= currentScript.start_time && time <= lastWord.end_time) {
+        return currentScriptIndex;
+      }
+    }
+    
+    // 그 외의 경우 기존 로직대로 스크립트 찾기
     const foundIndex = front_data.captions.findIndex(
       (script: any) => time >= script.start_time && time <= script.end_time
     );
     
     return foundIndex !== -1 ? foundIndex : 0;
-  }, [isReady, front_data?.captions, isMyLine, currentScriptIndex, recording]);
+  }, [isReady, front_data?.captions, isMyLine, currentScriptIndex, recording, tokenData?.scripts]);
 
   const handleTimeUpdate = useCallback((currentTime: number) => {
     if (!isReady) return;
-    setCurrentVideoTime(currentTime);
-
+    setCurrentVideoTime(currentTime); // 비디오 시간만 업데이트
     
-    // 녹음 중이면 시간 업데이트만 하고 인덱스 변경은 하지 않음
-    if (recording) return;
-    
-    // 내 대사인 경우 자동 전환 방지
-    if (isMyLine(currentScriptIndex)) return;
-    
-    const currentScript = front_data.captions[currentScriptIndex];
-    if (currentScript && currentTime >= currentScript.end_time) return;
-    
-
-    const newScriptIndex = findScriptIndexByTime(currentTime);
-    if (newScriptIndex !== -1 && newScriptIndex !== currentScriptIndex) {
-      // 새 인덱스가 내 대사인 경우 영상 일시정지
-      if (isMyLine(newScriptIndex)) {
-        videoPlayerRef.current?.pauseVideo();
-      }
-      setCurrentScriptIndex(newScriptIndex);
-    }
-  }, [isReady, currentScriptIndex, findScriptIndexByTime, front_data?.captions, setCurrentVideoTime, setCurrentScriptIndex, recording, isMyLine]);
+    // 자동 전환을 방지하기 위해 스크립트/단어 인덱스를 변경하는 모든 로직 제거
+    // 녹음 중이거나 내 대사일 경우에는 무조건 자동 전환 방지
+  }, [isReady, setCurrentVideoTime]); // 종속성 배열 최소화
 
   // DubbingContainer.tsx 내부
 
@@ -552,48 +622,11 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
     }
 
     if (videoPlayerRef?.current && front_data.captions[currentScriptIndex]) {
-      const currentScript = front_data.captions[currentScriptIndex];
-
-      // 녹음 시작 전 카운트다운 표시
-      toast.success('2초 후 녹음이 시작됩니다...', {
-        id: 'recording-countdown',
-        duration: 2000,
-      });
-
-      // 2초 후에 모든 동작 시작
-      setTimeout(() => {
-        // 영상을 해당 시점으로 이동
-        videoPlayerRef.current?.seekTo(currentScript.start_time);
-        
-        // 영상 재생 시작
-        videoPlayerRef.current?.playVideo();
-
-        // 영상이 실제로 재생되기 시작할 때까지 대기
-        const checkVideoPlaying = () => {
-          if (!videoPlayerRef?.current) return;
-
-          const currentTime = videoPlayerRef.current.getCurrentTime();
-          const targetTime = currentScript.start_time;
-
-          // 영상이 목표 시간에 도달했는지 확인 (0.1초 허용 오차)
-          if (Math.abs(currentTime - targetTime) < 0.1) {
-            // 녹음 시작
-            startScriptRecording(currentScriptIndex);
-            toast.success('녹음이 시작되었습니다!', {
-              id: 'recording-started',
-              duration: 1000,
-            });
-          } else {
-            // 아직 재생되지 않았으면 다시 체크
-            setTimeout(checkVideoPlaying, 50);
-          }
-        };
-
-        // 영상 재생 시작 후 체크 시작 (브라우저 렉 고려)
-        setTimeout(checkVideoPlaying, 100);
-      }, 2000); // 2초(2000ms) 지연
+      // 카운트다운 표시 시작
+      setShowCountdown(true);
     }
   };
+    
 
   // 문장 클릭 시 영상 이동 및 정지, 인덱스 변경
   const customHandleScriptSelect = (index: number) => {
@@ -601,6 +634,9 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
     if (recording) {
       stopScriptRecording(currentScriptIndex);
     }
+    
+    // 카운트다운 숨기기 (진행 중이었다면)
+    setShowCountdown(false);
 
     // 듀엣 모드에서 상대방 대사를 클릭했을 때 처리
     if (isDuet) {
@@ -781,7 +817,7 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
       >
         <div className="grid grid-cols-12 gap-2">
           {/* Video - 전체 너비 사용 */}
-          <div className="col-span-12">
+          <div className="col-span-12 relative">
             <VideoPlayer
               videoId={front_data.movie.youtube_url.split("v=")[1]}
               onTimeUpdate={handleTimeUpdate}
@@ -792,54 +828,71 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
               
               // ✅ 이 부분을 아래 코드로 완전히 교체해주세요.
               onEndTimeReached={() => {
+                // 어떤 경우든 비디오를 일시정지합니다.
+                videoPlayerRef.current?.pauseVideo();
+                setAllowAutoScriptChange(false); // 자동 전환 플래그를 확실히 false로 설정하여 추가 자동 전환 방지
+
                 // 녹음 중이면 녹음부터 중지
                 if (recording) {
-                  stopScriptRecording(currentScriptIndex);
-                  return;
-                }
-
-
-                // 내 대사인 경우 항상 자동 전환 방지
-                if (isMyLine(currentScriptIndex)) {
-                  videoPlayerRef.current?.pauseVideo();
-                  setAllowAutoScriptChange(false);
-                  return;
-                }
-
-                // 듀엣 모드일 때의 로직
-                if (isDuet) {
-                  // 마지막 대사가 아니면 다음으로 넘어갈 준비
-                  if (currentScriptIndex < front_data.captions.length - 1) {
-                    const nextScriptIndex = currentScriptIndex + 1;
-                    const isNextMyLine = isMyLine(nextScriptIndex);
-
-                    // 다음 대사가 '내 대사'인 경우: 다음으로 넘어가서 멈춤
-                    if (isNextMyLine) {
-                      setCurrentScriptIndex(nextScriptIndex);
-                      videoPlayerRef.current?.pauseVideo();
-                      setAllowAutoScriptChange(false);
-                    } 
-                    // 다음 대사도 '상대방 대사'인 경우: 다음으로 넘어가서 자동 재생
-                    else {
-                      setCurrentScriptIndex(nextScriptIndex);
-                      setTimeout(() => {
-                        if (videoPlayerRef.current) {
-                          const nextScript = front_data.captions[nextScriptIndex];
-                          videoPlayerRef.current.seekTo(nextScript.start_time);
-                          videoPlayerRef.current.playVideo();
-                        }
-                      }, 100);
-                      setAllowAutoScriptChange(true);
-
+                  // 현재 스크립트의 단어 정보 가져오기
+                  const currentWords = tokenData?.scripts?.[currentScriptIndex]?.words || [];
+                  
+                  // 단어 정보가 있으면 마지막 단어 종료 시간에 녹음 종료
+                  if (currentWords.length > 0) {
+                    const lastWord = currentWords[currentWords.length - 1];
+                    const currentTime = videoPlayerRef.current?.getCurrentTime() || 0;
+                    
+                    // 현재 시간이 마지막 단어 종료 시간 이상이면 녹음 종료
+                    if (currentTime >= lastWord.end_time) {
+                      console.log(`[녹음 종료] 마지막 단어 종료 시점에 도달하여 녹음 종료`);
+                      stopScriptRecording(currentScriptIndex);
                     }
+                  } else {
+                    // 단어 정보가 없으면 그냥 녹음 종료
+                    stopScriptRecording(currentScriptIndex);
+                  }
+                  return;
+                }
+
+                // 현재 스크립트가 '내 대사'인 경우, 여기까지만 하고 반환 (아무것도 하지 않음)
+                if (isMyLine(currentScriptIndex)) {
+                  return;
+                }
+
+                // 듀엣 모드에서 '상대방 대사' -> '상대방 대사'로의 자동 전환 (allowAutoScriptChange가 true일 때만)
+                if (isDuet && allowAutoScriptChange && currentScriptIndex < front_data.captions.length - 1) {
+                  const nextScriptIndex = currentScriptIndex + 1;
+                  const isNextMyLine = isMyLine(nextScriptIndex);
+
+                  if (!isNextMyLine) { // 다음 대사가 상대방 대사일 경우에만 자동 재생
+                    setCurrentScriptIndex(nextScriptIndex);
+                    setTimeout(() => {
+                      if (videoPlayerRef.current && front_data.captions[nextScriptIndex]) {
+                        videoPlayerRef.current.seekTo(front_data.captions[nextScriptIndex].start_time);
+                        videoPlayerRef.current.playVideo();
+                      }
+                    }, 100);
+                    return;
                   }
                 }
+
+                // 그 외 모든 경우: 이미 위에서 pauseVideo()와 setAllowAutoScriptChange(false)를 했으므로 추가 작업 불필요
               }}
               
               onPlay={customHandlePlay}
               onPause={customHandlePause}
               onOpenSidebar={() => setIsSidebarOpen(true)}
             />
+            {/* 녹음 카운트다운 컴포넌트 - 비디오 위에 표시 */}
+            {showCountdown && (
+              <div className="absolute inset-0">
+                <RecordingCountdown 
+                  isVisible={showCountdown} 
+                  onComplete={startRecordingAfterCountdown}
+                  duration={2000} // 2초 카운트다운
+                />
+              </div>
+            )}
           </div>
         </div>
 
