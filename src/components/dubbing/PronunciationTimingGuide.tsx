@@ -121,10 +121,18 @@ export default function PronunciationTimingGuide({
     }
   }, [id]);
 
-  const WORDS_PER_LINE = 10;
-  const firstLine = words.slice(0, WORDS_PER_LINE);
-  const secondLine = words.slice(WORDS_PER_LINE, WORDS_PER_LINE * 2);
-  const thirdLine = words.slice(WORDS_PER_LINE * 2);
+  // 단어를 더 효율적으로 배치하기 위한 동적 계산
+  const getWordsPerLine = () => {
+    const totalWords = words.length;
+    if (totalWords <= 8) return totalWords; // 8개 이하면 한 줄
+    if (totalWords <= 16) return Math.ceil(totalWords / 2); // 16개 이하면 두 줄
+    return Math.ceil(totalWords / 3); // 그 이상이면 세 줄로 균등 분배
+  };
+
+  const wordsPerLine = getWordsPerLine();
+  const firstLine = words.slice(0, wordsPerLine);
+  const secondLine = words.slice(wordsPerLine, wordsPerLine * 2);
+  const thirdLine = words.slice(wordsPerLine * 2);
 
   // RGB 그라데이션 색상 계산
   const getGradientColor = (score: number) => {
@@ -220,7 +228,6 @@ export default function PronunciationTimingGuide({
                             }}
                           />
                         </div>
-                        <div className="text-xs text-gray-400 mt-1">{Math.round(animatedScore * 100)}%</div>
                       </div>
                     );
                   })}
@@ -249,7 +256,6 @@ export default function PronunciationTimingGuide({
                               }}
                             />
                           </div>
-                          <div className="text-xs text-gray-400 mt-1">{Math.round(animatedScore * 100)}%</div>
                         </div>
                       );
                     })}
@@ -279,7 +285,6 @@ export default function PronunciationTimingGuide({
                               }}
                             />
                           </div>
-                          <div className="text-xs text-gray-400 mt-1">{Math.round(animatedScore * 100)}%</div>
                         </div>
                       );
                     })}

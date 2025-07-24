@@ -163,21 +163,6 @@ export default function WordDetailModal({ isOpen, onClose, word, userSTT }: Word
           </div>
         )}
 
-        {/* 실제 사용자 발음 */}
-        {/* 플레이 버튼만 표시 (기능 없음) */}
-        <div className="mt-6 p-4 bg-gray-800 rounded-lg border border-gray-600 w-full flex justify-center">
-          <button
-            className="w-12 h-12 flex items-center justify-center rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-2xl transition-colors duration-200 shadow-lg"
-            type="button"
-            title="플레이 (기능 없음)"
-            disabled
-          >
-            <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 20 20">
-              <polygon points="6,4 16,10 6,16" />
-            </svg>
-          </button>
-        </div>
-
         {/* 닫기 버튼 */}
         <div className="mt-8 text-center w-full">
           <button

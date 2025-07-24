@@ -934,8 +934,8 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
           </div>
         </div>
 
-        {/* Script Display - 마진 축소 */}
-        <div className="mt-1 col-span-12">
+        {/* Script Display - 동적 마진 */}
+        <div className="mt-1 col-span-12 flex-shrink-0">
           <ScriptDisplay
             captions={front_data.captions}
             currentScriptIndex={currentScriptIndex}
