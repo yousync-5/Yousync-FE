@@ -108,18 +108,15 @@ const ScriptDisplay = ({
     if (!currentWords || currentWords.length === 0) {
       return (
         <div className="text-white font-bold text-center leading-tight tracking-wide" style={{ fontSize: 'clamp(24px, 3.5vw, 48px)' }}>
-          <span className="text-gray-400 opacity-70">"</span>
           <span className="bg-gradient-to-br from-white to-gray-300 bg-clip-text text-transparent">
             {decodeHtmlEntities(captions[currentScriptIndex]?.script || "")}
           </span>
-          <span className="text-gray-400 opacity-70">"</span>
         </div>
       );
     }
 
     return (
       <div className="text-white font-bold text-center leading-tight tracking-wide" style={{ fontSize: 'clamp(14px, 2vw, 32px)' }}>
-        <span className="text-gray-400 opacity-70">"</span>
         {currentWords.map((word, index) => {
           // 시간 허용 오차 (0.1초) - 네트워크 지연이나 처리 지연 고려
           const TIME_TOLERANCE = 0.1;
@@ -263,14 +260,17 @@ const ScriptDisplay = ({
             </span>
           );
         })}
-        <span className="text-gray-400 opacity-70">"</span>
       </div>
     );
   };
 
   return (
     <div className={`bg-gray-900/80 backdrop-blur-sm rounded-xl w-full flex flex-col relative border ${isDuet && !isMyLine ? 'border-blue-800' : 'border-gray-800'} shadow-lg`}>
-      <div className={`bg-gradient-to-br ${isDuet &&  !isMyLine ? 'from-[#0f1a2a] to-[#1e2b3b]' : 'from-[#0f172a] to-[#1e293b]'} rounded-xl p-[0.6vw] shadow-xl text-white border ${isDuet && !isMyLine ? 'border-blue-700/50' : 'border-gray-700/50'} h-full flex flex-col justify-between min-h-[12vh] max-h-[16vh] sm:min-h-[14vh] sm:max-h-[18vh] lg:min-h-[16vh] lg:max-h-[20vh]`}>
+      <div className={`bg-gradient-to-br ${isDuet &&  !isMyLine ? 'from-[#0f1a2a] to-[#1e2b3b]' : 'from-[#0f172a] to-[#1e293b]'} rounded-xl p-[0.6vw] shadow-xl text-white border ${isDuet && !isMyLine ? 'border-blue-700/50' : 'border-gray-700/50'} flex flex-col justify-between ${
+        showAnalysisResult && analysisResult 
+          ? 'min-h-[16vh] max-h-[30vh]' // 분석 결과 표시 시 더 큰 높이 허용
+          : 'min-h-[12vh] max-h-[16vh]'  // 일반 상태 시 작은 높이
+      }`}>
         
         {/* 상단 통합 영역: 스크립트 번호(좌) + 버튼들(중) + 시간 정보(우) */}
         <div className="flex items-center justify-between w-full  py-[0.3vh]">
@@ -289,7 +289,7 @@ const ScriptDisplay = ({
           </div>
 
           {/* 중앙: 버튼들 */}
-          <div className="flex items-center justify-center gap-[1vw] flex-1">
+          <div className="flex items-center justify-center gap-[0.8vw] flex-1 flex-wrap min-h-0">
             {/* 재생/정지 버튼 */}
             <button
               onClick={() => {
@@ -325,7 +325,7 @@ const ScriptDisplay = ({
                   <rect x="14" y="4" width="4" height="16" rx="2" />
                 </svg>
               ) : (
-                <svg className="w-[1.6vw] h-[1.6vw] min-w-[18px] min-h-[18px] max-w-[24px] max-h-[24px] ml-1" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-[1.6vw] h-[1.6vw] min-w-[18px] min-h-[18px] max-w-[24px] max-h-[24px] " fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8 5.14v14l11-7-11-7z" />
                 </svg>
               )}
@@ -371,6 +371,31 @@ const ScriptDisplay = ({
                 <path d="M4 20v-4h4" strokeLinecap="round"/>
               </svg>
             </button>
+
+            {/* 완료 버튼들 */}
+            {showCompletedButtons && (
+              <>
+                {/* 더빙본 들어보기 버튼 */}
+                <button
+                  onClick={onOpenDubbingListenModal}
+                  className="px-[0.8vw] py-[0.5vh] h-[2.5vw] rounded-xl flex items-center justify-center gap-1 transition-all duration-300 shadow-lg border border-white/20 transform hover:scale-105 active:scale-95 bg-gradient-to-br from-purple-700/70 to-indigo-800/70 backdrop-blur-sm hover:from-purple-600/80 hover:to-indigo-700/80"
+                >
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                  <span className="text-[0.8vw]  font-medium whitespace-nowrap">더빙영상</span>
+                </button>
+
+                {/* 결과보기 버튼 */}
+                <button
+                  onClick={onShowResults}
+                  className="px-[0.8vw] py-[0.5vh]  h-[2.5vw]  rounded-xl flex items-center justify-center gap-1 transition-all duration-300 shadow-lg border border-white/20 transform hover:scale-105 active:scale-95 bg-gradient-to-br from-emerald-700/70 to-teal-800/70 backdrop-blur-sm hover:from-emerald-600/80 hover:to-teal-700/80"
+                >
+                  
+                    <path d="M9 11H7v6h2v-6zm4 0h-2v6h2v-6zm4 0h-2v6h2v-6zm2.5-9H19v2h-1.5v17.5c0 .83-.67 1.5-1.5 1.5H8c-.83 0-1.5-.67-1.5-1.5V4H5V2h4.5c0-.83.67-1.5 1.5-1.5h3c.83 0 1.5.67 1.5 1.5H20v2zm-3 2H8v15.5h10.5V4z"/>
+          
+                  <span className="text-[0.8vw] font-medium whitespace-nowrap">결과보기</span>
+                </button>
+              </>
+            )}
           </div>
 
           {/* 오른쪽: 시간 정보 */}
@@ -438,7 +463,11 @@ const ScriptDisplay = ({
 
             {/* 중앙 스크립트 박스 */}
             <div 
-              className="bg-gray-800/80 rounded-xl p-[0.5vw] flex-1 shadow-inner border border-gray-700/50 flex items-center justify-center relative overflow-visible min-h-[6vh] max-h-[8vh] sm:min-h-[7vh] sm:max-h-[9vh] lg:min-h-[8vh] lg:max-h-[10vh] py-[1vh]"
+              className={`bg-gray-800/80 rounded-xl p-[0.5vw] flex-1 shadow-inner border border-gray-700/50 flex items-center justify-center relative overflow-visible py-[1vh] ${
+                showAnalysisResult && analysisResult 
+                  ? 'min-h-[8vh] max-h-[25vh]' // 분석 결과 표시 시 더 큰 높이 허용
+                  : 'min-h-[6vh] max-h-[8vh]'  // 일반 텍스트 시 작은 높이
+              }`}
               style={{
                 background: isAnalyzing 
                   ? 'linear-gradient(45deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1))' 
@@ -488,40 +517,9 @@ const ScriptDisplay = ({
             </button>
           </div>
 
-          {/* 완료 버튼들 */}
-          {showCompletedButtons && (
-            <div className="flex items-center gap-4 mt-2">
-              <button
-                onClick={() => {
-                  if(!isLoggedIn){
-                    router.push('/login'); //로그인 안했을 경우
-                  } else {
-                    onOpenDubbingListenModal?.(); // 로그인 했을 경우
-                  }
-                }}
-                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 shadow-lg transform hover:scale-105 active:scale-95 font-medium text-sm"
-              >
-                <div className="flex items-center space-x-2">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-                  </svg>
-                  <span>더빙본 들어보기</span>
-                </div>
-              </button>
 
-              <button
-                onClick={onShowResults}
-                className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 shadow-lg transform hover:scale-105 active:scale-95 font-medium text-sm"
-              >
-                <div className="flex items-center space-x-2">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M9 11H7v6h2v-6zm4 0h-2v6h2v-6zm4 0h-2v6h2v-6zm2.5-9H19v2h-1.5v17.5c0 .83-.67 1.5-1.5 1.5H8c-.83 0-1.5-.67-1.5-1.5V4H5V2h4.5c0-.83.67-1.5 1.5-1.5h3c.83 0 1.5.67 1.5 1.5H20v2zm-3 2H8v15.5h10.5V4z"/>
-                  </svg>
-                  <span>결과보기</span>
-                </div>
-              </button>
-            </div>
-          )}
+          {/* 완료 버튼들 - 제거됨, 상단으로 이동 */}
+
         </div>
       </div>
     </div>
