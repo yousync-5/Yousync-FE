@@ -5,6 +5,8 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 import { VideoPlayerRef } from "./VideoPlayer";
 import PronunciationTimingGuide from "./PronunciationTimingGuide";
 import "@/styles/analysis-animations.css";
+import { useRouter } from "next/navigation";
+import { useUser } from "@/hooks/useUser";
 
 interface ScriptDisplayProps {
   captions: Array<{
@@ -73,6 +75,8 @@ const ScriptDisplay = ({
   onShowResults,
   id,
 }: ScriptDisplayProps) => {
+  const {isLoggedIn} = useUser();
+  const router = useRouter();
   // 시간 포맷 함수
   function formatTime(sec?: number) {
     if (typeof sec !== 'number' || isNaN(sec)) return '--:--.--';
@@ -476,10 +480,16 @@ const ScriptDisplay = ({
           {showCompletedButtons && (
             <div className="flex items-center gap-4 mt-2">
               <button
-                onClick={onOpenDubbingListenModal}
+                onClick={() => {
+                  if(!isLoggedIn){
+                    router.push('/login'); //로그인 안했을 경우
+                  } else {
+                    onOpenDubbingListenModal?.(); // 로그인 했을 경우
+                  }
+                }}
                 className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 shadow-lg transform hover:scale-105 active:scale-95 font-medium text-sm"
               >
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center spac ㅁe-x-2">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                   </svg>
