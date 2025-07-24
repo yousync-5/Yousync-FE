@@ -156,11 +156,8 @@ export const NavBar: React.FC<NavBarProps> = ({ animateOnMount }) => {
           </div>
           
           {/* 중앙: 검색창 */}
-          <div className="flex-1 max-w-md sm:max-w-lg lg:max-w-2xl mx-4 sm:mx-6 lg:mx-8">
+          <div className="flex-1 max-w-xs sm:max-w-sm lg:max-w-md mx-4 sm:mx-6 lg:mx-8">
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
-              </div>
               <input
                 ref={inputRef}
                 type="text"
@@ -168,7 +165,7 @@ export const NavBar: React.FC<NavBarProps> = ({ animateOnMount }) => {
                 value={searchQuery}
                 onChange={handleInputChange}
                 onKeyDown={handleInputKeyDown}
-                className="w-full pl-8 sm:pl-10 pr-10 sm:pr-12 py-1.5 sm:py-2 text-sm sm:text-base bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                className="w-full pl-8 sm:pl-10 pr-10 sm:pr-12 py-1.5 sm:py-2 text-sm sm:text-base bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 text-left placeholder:text-center"
               />
               <button
                 type="button"
@@ -187,7 +184,7 @@ export const NavBar: React.FC<NavBarProps> = ({ animateOnMount }) => {
                     serachedMovies.map((movie, idx) => (
                       <div
                         key={movie.id}
-                        className={`p-2 sm:p-3 hover:bg-gray-800 cursor-pointer text-sm sm:text-base ${highlightIndex === idx ? 'bg-emerald-700 text-white' : ''}`}
+                        className={`p-2 sm:p-3 hover:bg-gray-800 cursor-pointer text-sm sm:text-base text-white ${highlightIndex === idx ? 'bg-emerald-700 text-white' : ''}`}
                         onClick={() => clickActor(movie.name)}
                         onMouseEnter={() => setHighlightIndex(idx)}
                       >

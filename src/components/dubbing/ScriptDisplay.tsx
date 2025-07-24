@@ -289,7 +289,7 @@ const ScriptDisplay = ({
           </div>
 
           {/* 중앙: 버튼들 */}
-          <div className="flex items-center justify-center gap-[0.8vw] flex-1 flex-wrap">
+          <div className="flex items-center justify-center gap-[0.8vw] flex-1 flex-wrap min-h-0">
             {/* 재생/정지 버튼 */}
             <button
               onClick={() => {
@@ -325,7 +325,7 @@ const ScriptDisplay = ({
                   <rect x="14" y="4" width="4" height="16" rx="2" />
                 </svg>
               ) : (
-                <svg className="w-[1.6vw] h-[1.6vw] min-w-[18px] min-h-[18px] max-w-[24px] max-h-[24px] ml-1" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-[1.6vw] h-[1.6vw] min-w-[18px] min-h-[18px] max-w-[24px] max-h-[24px] " fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8 5.14v14l11-7-11-7z" />
                 </svg>
               )}
