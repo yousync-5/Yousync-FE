@@ -130,7 +130,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
               if (onEndTimeReached) onEndTimeReached();
             }
           }
-        }, 100); // 100ms마다 시간 체크
+        }, 50); // 100ms → 50ms로 단축하여 더 정확한 동기화
       } else if (event.data === 2) { // 2 = 일시정지
         isPlayingRef.current = false; // 정지 상태 업데이트
         if (intervalRef.current) {

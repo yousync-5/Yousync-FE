@@ -83,16 +83,27 @@ const ScriptDisplay = ({
 
   // HTML 엔티티 디코딩 함수
   const decodeHtmlEntities = (text: string) => {
-    const textarea = document.createElement('textarea');
-    textarea.innerHTML = text;
-    return textarea.value;
+    // 브라우저 환경에서만 실행
+    if (typeof document !== 'undefined') {
+      const textarea = document.createElement('textarea');
+      textarea.innerHTML = text;
+      return textarea.value;
+    }
+    // 서버 환경에서는 기본적인 HTML 엔티티 디코딩
+    return text
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ');
   };
 
   // 스크립트 렌더링 함수
   const renderScriptWithWords = () => {
     if (!currentWords || currentWords.length === 0) {
       return (
-        <div className="text-white font-bold text-center leading-tight tracking-wide" style={{ fontSize: 'clamp(14px, 2vw, 32px)' }}>
+        <div className="text-white font-bold text-center leading-tight tracking-wide" style={{ fontSize: 'clamp(24px, 3.5vw, 48px)' }}>
           <span className="text-gray-400 opacity-70">"</span>
           <span className="bg-gradient-to-br from-white to-gray-300 bg-clip-text text-transparent">
             {decodeHtmlEntities(captions[currentScriptIndex]?.script || "")}
@@ -106,25 +117,42 @@ const ScriptDisplay = ({
       <div className="text-white font-bold text-center leading-tight tracking-wide" style={{ fontSize: 'clamp(14px, 2vw, 32px)' }}>
         <span className="text-gray-400 opacity-70">"</span>
         {currentWords.map((word, index) => {
-          const isCurrentWord = currentVideoTime && 
-            currentVideoTime >= word.start_time && 
-            currentVideoTime <= word.end_time;
+          // 시간 허용 오차 (0.1초) - 네트워크 지연이나 처리 지연 고려
+          const TIME_TOLERANCE = 0.1;
           
-          // 이전 단어와의 시간 간격 계산
+          const isCurrentWord = currentVideoTime && 
+            currentVideoTime >= (word.start_time - TIME_TOLERANCE) && 
+            currentVideoTime <= (word.end_time + TIME_TOLERANCE);
+          
+          // 이전 단어와의 시간 간격 계산 (첫 번째 단어는 스크립트 시작 시간과 비교)
           const prevWord = index > 0 ? currentWords[index - 1] : null;
-          const timeGap = prevWord ? word.start_time - prevWord.end_time : 0;
+          const scriptStartTime = currentWords[0]?.start_time || 0;
+          
+          let timeGap = 0;
+          let gapStartTime = 0;
+          
+          if (index === 0) {
+            // 첫 번째 단어: 영상 시작(0초)부터 첫 번째 단어까지의 간격
+            timeGap = word.start_time - 0; // 영상 시작 기준
+            gapStartTime = 0;
+          } else if (prevWord) {
+            // 나머지 단어: 이전 단어와의 간격
+            timeGap = word.start_time - prevWord.end_time;
+            gapStartTime = prevWord.end_time;
+          }
+          
           const hasLongGap = timeGap >= 2; // 2초 이상 간격
           
           // 카운트다운 계산 (간격 시간 동안)
-          const isInGap = currentVideoTime && prevWord && 
-            currentVideoTime > prevWord.end_time && 
+          const isInGap = currentVideoTime && hasLongGap &&
+            currentVideoTime >= gapStartTime && 
             currentVideoTime < word.start_time;
           const remainingTime = isInGap 
-            ? Math.ceil(word.start_time - currentVideoTime)
-            : 0;
+            ? Math.max(0, Math.ceil(word.start_time - currentVideoTime))
+            : -1; // -1로 설정해서 조건에서 제외
           
           // 전체 스크립트 진행률 계산 (연속적)
-          const scriptStartTime = currentWords[0]?.start_time || 0;
+          //const scriptStartTime = currentWords[0]?.start_time || 0;
           const scriptEndTime = currentWords[currentWords.length - 1]?.end_time || 0;
           const scriptDuration = scriptEndTime - scriptStartTime;
           
@@ -138,15 +166,21 @@ const ScriptDisplay = ({
             ? Math.min(1, Math.max(0, (currentVideoTime - scriptStartTime) / scriptDuration))
             : 0;
           
-          // 현재 단어 내에서의 진행률
+          // 현재 단어 내에서의 진행률 - 더 정확한 계산
           let wordProgress = 0;
-          if (currentVideoTime && currentVideoTime >= word.start_time && currentVideoTime <= word.end_time) {
-            const wordDuration = word.end_time - word.start_time;
-            wordProgress = wordDuration > 0 
-              ? Math.min(1, Math.max(0, (currentVideoTime - word.start_time) / wordDuration))
-              : 1;
-          } else if (currentVideoTime && currentVideoTime > word.end_time) {
-            wordProgress = 1;
+          if (currentVideoTime) {
+            if (currentVideoTime >= (word.start_time - TIME_TOLERANCE) && currentVideoTime <= (word.end_time + TIME_TOLERANCE)) {
+              const wordDuration = word.end_time - word.start_time;
+              if (wordDuration > 0) {
+                const adjustedCurrentTime = Math.max(word.start_time, Math.min(word.end_time, currentVideoTime));
+                wordProgress = (adjustedCurrentTime - word.start_time) / wordDuration;
+                wordProgress = Math.min(1, Math.max(0, wordProgress));
+              } else {
+                wordProgress = 1;
+              }
+            } else if (currentVideoTime > word.end_time) {
+              wordProgress = 1;
+            }
           }
 
           // 내 대사인지 상대방 대사인지에 따라 색상 결정
@@ -171,9 +205,9 @@ const ScriptDisplay = ({
           const colors = getWordColors();
           
           return (
-            <span key={index} style={{ display: 'inline-block', marginRight: '0.6em' }} className="relative">
+            <span key={index} style={{ display: 'inline-block', marginRight: '0.45em' }} className="relative">
               {/* 카운트다운 표시 */}
-              {hasLongGap && isInGap && remainingTime > 0 && (
+              {hasLongGap && isInGap && remainingTime >= 0 && (
                 <div 
                   className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-1 rounded-full animate-pulse"
                   style={{ 
@@ -188,13 +222,10 @@ const ScriptDisplay = ({
               <span
                 className={`relative transition-all duration-100 ${
                   wordProgress > 0
-                    ? `font-extrabold scale-110 inline-block` 
+                    ? `font-extrabold inline-block` 
                     : 'bg-gradient-to-br from-white to-gray-300 bg-clip-text text-transparent'
                 }`}
                 style={{
-                  textShadow: wordProgress > 0
-                    ? colors.shadow
-                    : 'transparent',
                   position: 'relative',
                   display: 'inline-block'
                 }}
@@ -206,12 +237,12 @@ const ScriptDisplay = ({
                       {decodeHtmlEntities(word.word)}
                     </span>
                     
-                    {/* 색깔 글씨 (진행률에 따라 잘림) */}
+                    {/* 색깔 글씨 (진행률에 따라 보임) */}
                     <span
                       className={`absolute inset-0 ${isMyLine ? 'text-green-400' : 'text-blue-400'}`}
                       style={{
-                        clipPath: `inset(0 ${100 - (wordProgress * 100)}% 0 0)`,
-                        textShadow: colors.shadow,
+                        WebkitMask: `linear-gradient(90deg, black 0%, black ${wordProgress * 100}%, transparent ${wordProgress * 100}%, transparent 100%)`,
+                        mask: `linear-gradient(90deg, black 0%, black ${wordProgress * 100}%, transparent ${wordProgress * 100}%, transparent 100%)`,
                         transition: 'none'
                       }}
                     >
@@ -415,7 +446,7 @@ const ScriptDisplay = ({
                   <div className="text-blue-400 font-medium">음성 분석 중...</div>
                 </div>
               ) : (
-                <div className="text-white font-bold text-center leading-tight relative" style={{ fontSize: 'clamp(14px, 2vw, 32px)' }}>
+                <div className="text-white font-bold text-center leading-tight relative" style={{ fontSize: 'clamp(24px, 3.5vw, 48px)' }}>
                   {renderScriptWithWords()}
                 </div>
               )}
