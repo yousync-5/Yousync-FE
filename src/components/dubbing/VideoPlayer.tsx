@@ -130,7 +130,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
               if (onEndTimeReached) onEndTimeReached();
             }
           }
-        }, 100); // 100ms마다 시간 체크
+        }, 50); // 100ms → 50ms로 단축하여 더 정확한 동기화
       } else if (event.data === 2) { // 2 = 일시정지
         isPlayingRef.current = false; // 정지 상태 업데이트
         if (intervalRef.current) {
@@ -144,7 +144,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
 
 
     return (
-      <div className="bg-black rounded-xl overflow-hidden w-full border border-gray-800 shadow-lg shadow-black/50 relative">
+      <div className="bg-black overflow-hidden w-full relative">
         <div className="relative w-full pt-[40%]">
           <YouTube
             videoId={videoId}

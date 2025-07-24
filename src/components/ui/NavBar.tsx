@@ -145,52 +145,49 @@ export const NavBar: React.FC<NavBarProps> = ({ animateOnMount }) => {
   const handleToMain = () => router.push('/');
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-b border-gray-800 shadow-2xl"
-    >
-      <div className="max-w-7xl mx-auto px-2 py-4">
-        <div className="flex items-center w-full">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-b border-gray-800 shadow-2xl">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 py-2 sm:py-4">
+        <div className="flex items-center justify-between w-full">
           {/* 왼쪽: 로고 */}
           <div className="flex-shrink-0">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent animate-pulse cursor-pointer" onClick={handleToMain}>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent animate-pulse cursor-pointer" onClick={handleToMain}>
               YouSync
             </h1>
           </div>
-          {/* 중앙: input */}
-          <div className="flex-1 flex justify-center">
+          
+          {/* 중앙: 검색창 */}
+          <div className="flex-1 max-w-md sm:max-w-lg lg:max-w-2xl mx-4 sm:mx-6 lg:mx-8">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+                <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
               </div>
               <input
                 ref={inputRef}
                 type="text"
-
                 placeholder="배우 검색"
-
                 value={searchQuery}
                 onChange={handleInputChange}
                 onKeyDown={handleInputKeyDown}
-                //className="w-[36rem] pl-10 pr-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 overflow-x-auto whitespace-nowrap"
-                className="w-full max-w-[36rem] pl-10 pr-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 overflow-x-auto whitespace-nowrap"
+                className="w-full pl-8 sm:pl-10 pr-10 sm:pr-12 py-1.5 sm:py-2 text-sm sm:text-base bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
               />
               <button
                 type="button"
                 onClick={handleSearchClick}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-emerald-700/30 focus:bg-emerald-700/40 transition cursor-pointer"
+                className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-emerald-700/30 focus:bg-emerald-700/40 transition cursor-pointer"
                 tabIndex={0}
                 aria-label="검색"
               >
-                <MagnifyingGlassIcon className="h-6 w-6 text-emerald-400 hover:text-emerald-500 transition" />
+                <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-emerald-400 hover:text-emerald-500 transition" />
               </button>
               {showDropdown && (
                 <div ref={dropdownRef} className="absolute top-full left-0 right-0 mt-1 bg-gray-900 border border-gray-700 rounded-lg shadow-lg z-50">
                   {isSearching ? (
-                    <div className="p-4 text-center text-gray-400">검색 중...</div>
+                    <div className="p-3 sm:p-4 text-center text-gray-400 text-sm sm:text-base">검색 중...</div>
                   ) : (
                     serachedMovies.map((movie, idx) => (
                       <div
                         key={movie.id}
-                        className={`p-3 hover:bg-gray-800 cursor-pointer ${highlightIndex === idx ? 'bg-emerald-700 text-white' : ''}`}
+                        className={`p-2 sm:p-3 hover:bg-gray-800 cursor-pointer text-sm sm:text-base ${highlightIndex === idx ? 'bg-emerald-700 text-white' : ''}`}
                         onClick={() => clickActor(movie.name)}
                         onMouseEnter={() => setHighlightIndex(idx)}
                       >
@@ -202,44 +199,57 @@ export const NavBar: React.FC<NavBarProps> = ({ animateOnMount }) => {
               )}
             </div>
           </div>
+          
           {/* 오른쪽: 버튼들 */}
-          <div className="flex-shrink-0 flex items-center space-x-4">
+          <div className="flex-shrink-0 flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
             {isLoggedIn ? (
               <>
                 {user && (
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-3">
                     {user.picture && (
-                      <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full border-2 border-emerald-400/50 hover:border-emerald-400 transition-colors" />
+                      <img 
+                        src={user.picture} 
+                        alt={user.name} 
+                        className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 rounded-full border-2 border-emerald-400/50 hover:border-emerald-400 transition-colors" 
+                      />
                     )}
-                    <span className="text-emerald-300 font-medium hidden sm:block">{user.name}</span>
+                    <span className="text-emerald-300 font-medium text-xs sm:text-sm lg:text-base hidden md:block truncate max-w-20 lg:max-w-none">
+                      {user.name}
+                    </span>
                   </div>
                 )}
                 <button
                   onClick={() => router.push('/mypage')}
-                  className="px-4 py-2 text-emerald-400 hover:text-white border border-emerald-400 hover:bg-emerald-500/80 rounded-full font-semibold transition-colors duration-150"
+                  className="px-2 py-1 sm:px-3 sm:py-1.5 lg:px-4 lg:py-2 text-xs sm:text-sm lg:text-base text-emerald-400 hover:text-white border border-emerald-400 hover:bg-emerald-500/80 rounded-full font-semibold transition-colors duration-150"
                 >
-                  마이페이지
+                  <span className="hidden sm:inline">마이페이지</span>
+                  <span className="sm:hidden">마이</span>
                 </button>
                 <button
                   onClick={handleLogout}
                   disabled={isLoggingOut}
-                  className="px-6 py-2 bg-gradient-to-r from-red-500 via-red-600 to-red-700 hover:from-red-600 hover:via-red-700 hover:to-red-800 text-white rounded-full transition-all duration-200 font-bold shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-2 py-1 sm:px-4 sm:py-1.5 lg:px-6 lg:py-2 text-xs sm:text-sm lg:text-base bg-gradient-to-r from-red-500 via-red-600 to-red-700 hover:from-red-600 hover:via-red-700 hover:to-red-800 text-white rounded-full transition-all duration-200 font-bold shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoggingOut ? '로그아웃 중...' : '로그아웃'}
+                  {isLoggingOut ? (
+                    <>
+                      <span className="hidden sm:inline">로그아웃 중...</span>
+                      <span className="sm:hidden">...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="hidden sm:inline">로그아웃</span>
+                      <span className="sm:hidden">OUT</span>
+                    </>
+                  )}
                 </button>
               </>
             ) : (
-              <>
-                <button
-                  onClick={() => router.push('/login')}
-                  className="px-4 py-2 text-emerald-400 hover:text-white border border-emerald-400 hover:bg-emerald-500/80 rounded-full font-semibold transition-colors duration-150"
-                >
-                  로그인
-                </button>
-                {/* <button className="px-6 py-2 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 hover:from-green-600 hover:via-emerald-600 hover:to-teal-600 text-white rounded-full transition-all duration-200 font-bold shadow-lg hover:shadow-xl transform hover:scale-105">
-                  시작하기
-                </button> */}
-              </>
+              <button
+                onClick={() => router.push('/login')}
+                className="px-2 py-1 sm:px-3 sm:py-1.5 lg:px-4 lg:py-2 text-xs sm:text-sm lg:text-base text-emerald-400 hover:text-white border border-emerald-400 hover:bg-emerald-500/80 rounded-full font-semibold transition-colors duration-150"
+              >
+                로그인
+              </button>
             )}
           </div>
         </div>

@@ -123,21 +123,21 @@ export default function Sidebar({
       initial={{ x: 400 }}
       animate={{ x: isOpen ? 0 : 400 }}
       transition={{ type: "tween", duration: 0.3 }}
-      className="fixed top-0 right-0 h-full w-[400px] z-50 shadow-2xl bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 backdrop-blur-sm border-l border-gray-700 text-gray-100 overflow-y-auto custom-scrollbar"
+      className="fixed top-16 sm:top-20 lg:top-24 right-0 bottom-0 w-[20vw]  z-40 shadow-2xl bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 backdrop-blur-sm border-l border-gray-700 text-gray-100 overflow-y-auto custom-scrollbar"
       style={{ boxShadow: 'rgba(0,0,0,0.3) -5px 0 20px' }}
     >
-      <div className="flex justify-between items-center px-3 py-2 border-b border-gray-700 bg-gray-900/90 sticky top-0 z-10">
-        <span className="font-bold text-xl tracking-tight text-emerald-400 select-none">스크립트 목록</span>
+      <div className="flex justify-between items-center px-2 sm:px-3 py-2 border-b border-gray-700 bg-gray-900/90 sticky top-0 z-10">
+        <span className="font-bold text-lg sm:text-xl tracking-tight text-emerald-400 select-none">스크립트 목록</span>
         <button
           onClick={onClose}
-          className="ml-1 p-1 rounded-full text-gray-400 hover:text-emerald-400 hover:bg-gray-800 transition text-2xl focus:outline-none focus:ring-2 focus:ring-emerald-400"
+          className="ml-1 p-1 rounded-full text-gray-400 hover:text-emerald-400 hover:bg-gray-800 transition text-xl sm:text-2xl focus:outline-none focus:ring-2 focus:ring-emerald-400"
           aria-label="사이드바 닫기"
         >
-          <span className="text-3xl">×</span>
+          <span className="text-2xl sm:text-3xl">×</span>
         </button>
       </div>
       {/* 상단 정보 박스 */}
-      <div className="px-3 py-2 border-b border-gray-800 bg-gray-900/90 flex flex-col gap-1">
+      <div className="px-2 sm:px-3 py-2 border-b border-gray-800 bg-gray-900/90 flex flex-col gap-1">
         <div className="flex items-center gap-1 text-base text-gray-300">
           <span className="font-semibold text-emerald-400">배우명</span>
           <span className="truncate">{actorName}</span>
@@ -246,7 +246,7 @@ export default function Sidebar({
                 <span className="flex-1 leading-relaxed text-base">
                   {isDuet && (
                     <span className={`inline-block px-2 py-0.5 rounded text-sm mr-2 ${isCurrentMyLine ? 'bg-green-900/30 text-green-300' : 'bg-blue-900/30 text-blue-300'}`}>
-                      {isCurrentMyLine ? '나' : '상대방'}
+                      {isCurrentMyLine ? '나' : (caption.actor?.name || '상대배우')}
                     </span>
                   )}
                   {caption.script}
@@ -255,7 +255,7 @@ export default function Sidebar({
               {/* 타임라인 */}
               {typeof (caption as any).start_time === 'number' && typeof (caption as any).end_time === 'number' && (
                 <div className={`text-sm mt-1 ml-4 font-mono transition-colors duration-150 ${isSelected ? 'text-white' : 'text-gray-400'}`}>
-                  {formatTime((caption as any).start_time)} ~ {formatTime((caption as any).end_time)}
+                  {formatTime((caption as any).start_time - (captions[0] as any)?.start_time || 0)} ~ {formatTime((caption as any).end_time - (captions[0] as any)?.start_time || 0)}
                 </div>
               )}
               {index < captions.length - 1 && (

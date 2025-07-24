@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useRef, useCallback, useEffect, useState } from "react";
-import DubbingHeader from "@/components/dubbing/DubbingHeader";
 import VideoPlayer, { VideoPlayerRef } from "@/components/dubbing/VideoPlayer";
 import ScriptDisplay from "@/components/dubbing/ScriptDisplay";
 import ResultContainer from "@/components/result/ResultComponent";
@@ -841,22 +840,16 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
   }
   const currentWords = isReady ? (tokenData?.scripts?.[currentScriptIndex]?.words || []) : [];
   return (
-    <div className="min-h-screen bg-neutral-950 text-white relative overflow-hidden">
+    <div className="min-h-screen bg-neutral-950 text-white relative overflow-hidden pt-16 sm:pt-20 lg:pt-24">
       <Toaster position="top-center" />
-
-      <DubbingHeader
-        title={front_data.movie.title}
-        category={front_data.movie.category}
-        actorName={front_data.captions[0]?.actor?.name || ""}
-      />
 
       {/* 본문 - 사이드바 열릴 때 크기 조절 */}
       <div
-        className={`w-full mx-auto px-2 py-1 transition-all duration-300 ease-in-out ${
-          isSidebarOpen ? 'pr-[400px]' : 'pr-2'
+        className={`px-2 sm:px-4 lg:px-6 py-1 sm:py-2 lg:py-4 transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? 'w-[calc(100%-20vw)]' : 'w-full'
         }`}
       >
-        <div className="grid grid-cols-12 gap-2">
+        <div className="grid grid-cols-12 gap-2 sm:gap-4 lg:gap-6">
           {/* Video - 전체 너비 사용 */}
           <div className="col-span-12 relative">
             <VideoPlayer

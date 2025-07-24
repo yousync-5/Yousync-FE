@@ -27,17 +27,21 @@ export default function DubbingHeader({ title, category, actorName }: DubbingHea
 
   return (
     <header className="bg-black/50 backdrop-blur-sm border-b border-gray-800">
-      <div className="w-full mx-auto px-3 sm:px-4 py-2">
+      <div className="w-full mx-auto px-2 sm:px-4 lg:px-6 py-2 sm:py-3">
         <div className="flex items-center justify-between">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-lg sm:text-xl font-bold truncate">{title}</h1>
-            <p className="text-gray-400 text-xs truncate">{category} - {actorName}</p>
+          <div className="flex-1 min-w-0 mr-2 sm:mr-4">
+            <h1 className="text-base sm:text-lg lg:text-xl font-bold truncate">{title}</h1>
+            <p className="text-gray-400 text-xs sm:text-sm truncate">
+              <span className="hidden sm:inline">{category} - </span>
+              {actorName}
+            </p>
           </div>
           <button
             onClick={handleBackClick}
-            className="ml-2 px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-sm whitespace-nowrap"
+            className="flex-shrink-0 px-2 py-1 sm:px-3 sm:py-1.5 lg:px-4 lg:py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-xs sm:text-sm lg:text-base font-medium"
           >
-            뒤로가기
+            <span className="hidden sm:inline">뒤로가기</span>
+            <span className="sm:hidden">←</span>
           </button>
         </div>
       </div>
