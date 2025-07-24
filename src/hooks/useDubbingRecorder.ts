@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useVoiceRecorder } from './useVoiceRecorder';
 import { useAudioStore } from '@/store/useAudioStore';
 import { useJobIdsStore } from '@/store/useJobIdsStore';
@@ -50,6 +50,8 @@ export function useDubbingRecorder({
   
   const addJobId = useJobIdsStore((state) => state.addJobId);
 
+  const recordingRef = useRef(false);
+
   const startScriptRecording = (scriptIdx: number) => {
     // 스크립트 정보 가져오기
     const caption = captions[scriptIdx];
@@ -60,7 +62,7 @@ export function useDubbingRecorder({
       startRecording(scriptIdx, 0, 0);
     }
   };
-
+  useEffect(() => {recordingRef.current = recording;}, [recording])
   // 단일 문장 업로드 함수
   const uploadScript = async (idx: number) => {
     console.log(`[DEBUG][uploadScript] 업로드 시작 idx=${idx}`);
@@ -241,7 +243,7 @@ export function useDubbingRecorder({
   };
 
   const stopScriptRecording = async (scriptIdx: number) => {
-    if (!recording) {
+    if (!recordingRef.current) {
       console.warn(`[⚠️ 녹음 중지] 문장 ${scriptIdx + 1}번 - 녹음 중이 아니므로 건너뜀`);
       return;
     }

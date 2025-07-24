@@ -55,14 +55,13 @@ const DubbingContainer = ({
 
   // 데이터 준비 여부 체크
   const isReady = !!(front_data && tokenData && serverPitchData);
-
   // 현재 대사가 '내 대사'인지 확인하는 함수 (듀엣 모드에서만 사용)
   const isMyLine = useCallback((scriptIndex: number) => {
     if (!isDuet || !front_data?.captions) return true; // 일반 모드에서는 항상 true
     const currentScript = front_data.captions[scriptIndex];
     // 듀엣 모드에서는 actor.id가 1인 대사가 '내 대사'
     const result = currentScript?.actor?.id === 1;
-    console.log(`[isMyLine] 스크립트 ${scriptIndex}번: ${result ? '내 대사' : '상대방 대사'}, actor.id: ${currentScript?.actor?.id}`);
+    // console.log(`[isMyLine] 스크립트 ${scriptIndex}번: ${result ? '내 대사' : '상대방 대사'}, actor.id: ${currentScript?.actor?.id}`);
     return result;
   }, [isDuet, front_data?.captions]);
 
@@ -111,7 +110,7 @@ const DubbingContainer = ({
     handlePause,
     handleScriptSelect
   } = dubbingState;
-
+  const recordingRef = useRef(recording);
   const videoPlayerRef = useRef<VideoPlayerRef | null>(null);
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const { cleanupMic } = useAudioStream();
@@ -180,6 +179,7 @@ const DubbingContainer = ({
   
   // 카운트다운 완료 후 녹음 시작 함수
   const startRecordingAfterCountdown = useCallback(() => {
+    console.log("1. [🔥 startRecordingAfterCountdown] 카운트다운 완료됨")
     // 카운트다운 숨기기
     setShowCountdown(false);
     
@@ -190,17 +190,18 @@ const DubbingContainer = ({
     
     // 영상을 해당 시점으로 이동
     videoPlayerRef.current.seekTo(currentScript.start_time);
-    
+    console.log(`2. [🎯 seekTo] ${currentScript.start_time}초로 영상 이동`);
     // 영상 재생 시작
     videoPlayerRef.current.playVideo();
 
     // 영상이 실제로 재생되기 시작할 때까지 대기
     const checkVideoPlaying = () => {
+      console.log('3. [🔄 checkVideoPlaying] 호출됨');
       if (!videoPlayerRef?.current) return;
 
       const currentTime = videoPlayerRef.current.getCurrentTime();
       const targetTime = currentScript.start_time;
-
+      console.log(`4. [⏱ currentTime=${currentTime}] vs [🎯 target=${targetTime}]`);
       // 영상이 목표 시간에 도달했는지 확인 (0.1초 허용 오차)
       if (Math.abs(currentTime - targetTime) < 0.1) {
         // 녹음 시작
@@ -219,9 +220,12 @@ const DubbingContainer = ({
           console.log(`[녹음 설정] 마지막 단어 기준 녹음 종료 예정: ${recordingDuration}ms 후`);
           console.log(`[녹음 정보] 스크립트 시작: ${currentScript.start_time}, 마지막 단어 종료: ${lastWord.end_time}`);
           
+          /// 여기서부터 안되는듯
           // 녹음 종료 타이머 설정
-          setTimeout(() => {
-            if (recording) {
+          console.log("ㅇㅇㅇㅇ", recording) // 둘다 false(버그인 경우)
+          setTimeout(() => {// 이게 false여도 실행되는건 클로저 때문이라고, 실제로 false가 아님(이전 값을 캡쳐)
+            console.log(">>>>", recordingRef.current) // 항상 최신 값
+            if (recordingRef.current) {
               console.log(`[녹음 종료] 마지막 단어 종료 시점에 녹음 종료`);
               stopScriptRecording(currentScriptIndex);
             }
@@ -246,7 +250,9 @@ const DubbingContainer = ({
     // 영상 재생 시작 후 체크 시작 (브라우저 렉 고려)
     setTimeout(checkVideoPlaying, 100);
   }, [currentScriptIndex, front_data, recording, startScriptRecording, stopScriptRecording, tokenData, videoPlayerRef, setShowCountdown]);
-
+  useEffect(() => {
+    recordingRef.current = recording;
+  }, [recording]);
   // 컴포넌트가 언마운트될 때 구간 반복 인터벌 정리
   useEffect(() => {
     return () => {

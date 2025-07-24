@@ -254,6 +254,7 @@ export default function MovieDetailModal({
   const handleMouseLeave = () => {
     setIsHovering(false);
   };
+  const isSmallScreen = typeof window !== "undefined" && window.innerWidth < 640;
 
   return (
     <div className="fixed inset-0 z-51 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -308,8 +309,11 @@ export default function MovieDetailModal({
           {!shouldPlay && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
               <div className="text-white text-center">
-                
-                <p className="text-lg">마우스를 1.5초간 올려두면 재생됩니다</p>
+                {/* 작은 화면일 때 */}
+                {/* <p className="text-lg block sm:hidden">화면을 터치하면 재생됩니다</p> */}
+                {/* 큰 화면일 때 */}
+                {/* <p className="text-lg hidden sm:block">마우스를 1.5초간 올려두면 재생됩니다</p> */}
+              {isSmallScreen ? "터치하면 재생됩니다" : "마우스를 1.5초간 올려두면 재생됩니다"}
               </div>
             </div>
           )}
