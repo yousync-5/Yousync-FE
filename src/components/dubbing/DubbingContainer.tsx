@@ -839,8 +839,8 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
 
       {/* 본문 - 사이드바 열릴 때 크기 조절 */}
       <div
-        className={`w-full mx-auto px-2 sm:px-4 lg:px-6 py-1 sm:py-2 lg:py-4 transition-all duration-300 ease-in-out ${
-          isSidebarOpen ? 'pr-[280px] sm:pr-[320px] lg:pr-[400px]' : 'pr-2 sm:pr-4 lg:pr-6'
+        className={`px-2 sm:px-4 lg:px-6 py-1 sm:py-2 lg:py-4 transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? 'w-[calc(100%-20vw)]' : 'w-full'
         }`}
       >
         <div className="grid grid-cols-12 gap-2 sm:gap-4 lg:gap-6">

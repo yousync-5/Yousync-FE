@@ -123,7 +123,7 @@ export default function Sidebar({
       initial={{ x: 400 }}
       animate={{ x: isOpen ? 0 : 400 }}
       transition={{ type: "tween", duration: 0.3 }}
-      className="fixed top-16 sm:top-20 lg:top-24 right-0 bottom-0 w-[280px] sm:w-[320px] lg:w-[400px] z-40 shadow-2xl bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 backdrop-blur-sm border-l border-gray-700 text-gray-100 overflow-y-auto custom-scrollbar"
+      className="fixed top-16 sm:top-20 lg:top-24 right-0 bottom-0 w-[20vw]  z-40 shadow-2xl bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 backdrop-blur-sm border-l border-gray-700 text-gray-100 overflow-y-auto custom-scrollbar"
       style={{ boxShadow: 'rgba(0,0,0,0.3) -5px 0 20px' }}
     >
       <div className="flex justify-between items-center px-2 sm:px-3 py-2 border-b border-gray-700 bg-gray-900/90 sticky top-0 z-10">
