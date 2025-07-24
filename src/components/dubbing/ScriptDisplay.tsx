@@ -5,6 +5,8 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 import { VideoPlayerRef } from "./VideoPlayer";
 import PronunciationTimingGuide from "./PronunciationTimingGuide";
 import "@/styles/analysis-animations.css";
+import { useRouter } from "next/navigation";
+import { useUser } from "@/hooks/useUser";
 
 interface ScriptDisplayProps {
   captions: Array<{
@@ -73,6 +75,8 @@ const ScriptDisplay = ({
   onShowResults,
   id,
 }: ScriptDisplayProps) => {
+  const {isLoggedIn} = useUser();
+  const router = useRouter();
   // 시간 포맷 함수
   function formatTime(sec?: number) {
     if (typeof sec !== 'number' || isNaN(sec)) return '--:--.--';
@@ -513,7 +517,9 @@ const ScriptDisplay = ({
             </button>
           </div>
 
+
           {/* 완료 버튼들 - 제거됨, 상단으로 이동 */}
+
         </div>
       </div>
     </div>
