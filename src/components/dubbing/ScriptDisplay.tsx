@@ -110,21 +110,120 @@ const ScriptDisplay = ({
             currentVideoTime >= word.start_time && 
             currentVideoTime <= word.end_time;
           
+          // 이전 단어와의 시간 간격 계산
+          const prevWord = index > 0 ? currentWords[index - 1] : null;
+          const timeGap = prevWord ? word.start_time - prevWord.end_time : 0;
+          const hasLongGap = timeGap >= 2; // 2초 이상 간격
+          
+          // 카운트다운 계산 (간격 시간 동안)
+          const isInGap = currentVideoTime && prevWord && 
+            currentVideoTime > prevWord.end_time && 
+            currentVideoTime < word.start_time;
+          const remainingTime = isInGap 
+            ? Math.ceil(word.start_time - currentVideoTime)
+            : 0;
+          
+          // 전체 스크립트 진행률 계산 (연속적)
+          const scriptStartTime = currentWords[0]?.start_time || 0;
+          const scriptEndTime = currentWords[currentWords.length - 1]?.end_time || 0;
+          const scriptDuration = scriptEndTime - scriptStartTime;
+          
+          // 현재 단어의 상대적 위치 계산
+          const wordStartOffset = (word.start_time - scriptStartTime) / scriptDuration;
+          const wordEndOffset = (word.end_time - scriptStartTime) / scriptDuration;
+          const wordWidth = wordEndOffset - wordStartOffset;
+          
+          // 전체 진행률 (0~1)
+          const overallProgress = currentVideoTime && scriptDuration > 0
+            ? Math.min(1, Math.max(0, (currentVideoTime - scriptStartTime) / scriptDuration))
+            : 0;
+          
+          // 현재 단어 내에서의 진행률
+          let wordProgress = 0;
+          if (currentVideoTime && currentVideoTime >= word.start_time && currentVideoTime <= word.end_time) {
+            const wordDuration = word.end_time - word.start_time;
+            wordProgress = wordDuration > 0 
+              ? Math.min(1, Math.max(0, (currentVideoTime - word.start_time) / wordDuration))
+              : 1;
+          } else if (currentVideoTime && currentVideoTime > word.end_time) {
+            wordProgress = 1;
+          }
+
+          // 내 대사인지 상대방 대사인지에 따라 색상 결정
+          const getWordColors = () => {
+            if (isMyLine) {
+              // 내 대사 - 초록색 계열
+              return {
+                gradient: 'from-emerald-200 to-green-300',
+                shadow: '0 0 20px rgba(16, 185, 129, 0.6), 0 0 40px rgba(16, 185, 129, 0.3)',
+                fillColor: '#22c55e' // green-500
+              };
+            } else {
+              // 상대방 대사 - 파랑/보라색 계열
+              return {
+                gradient: 'from-blue-200 to-indigo-300',
+                shadow: '0 0 20px rgba(59, 130, 246, 0.6), 0 0 40px rgba(99, 102, 241, 0.3)',
+                fillColor: '#6366f1' // indigo-500
+              };
+            }
+          };
+
+          const colors = getWordColors();
+          
           return (
-            <span
-              key={index}
-              className={`transition-all duration-200 ${
-                isCurrentWord 
-                  ? 'bg-gradient-to-br from-yellow-300 to-orange-400 bg-clip-text text-transparent font-extrabold scale-110 inline-block' 
-                  : 'bg-gradient-to-br from-white to-gray-300 bg-clip-text text-transparent'
-              }`}
-              style={{
-                textShadow: isCurrentWord 
-                  ? '0 0 20px rgba(255, 193, 7, 0.8), 0 0 40px rgba(255, 193, 7, 0.4)' 
-                  : 'transparent'
-              }}
-            >
-              {decodeHtmlEntities(word.word)}{index < currentWords.length - 1 ? ' ' : ''}
+            <span key={index} style={{ display: 'inline-block', marginRight: '0.6em' }} className="relative">
+              {/* 카운트다운 표시 */}
+              {hasLongGap && isInGap && remainingTime > 0 && (
+                <div 
+                  className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-1 rounded-full animate-pulse"
+                  style={{ 
+                    fontSize: 'clamp(10px, 1vw, 14px)',
+                    zIndex: 10
+                  }}
+                >
+                  {remainingTime}
+                </div>
+              )}
+              
+              <span
+                className={`relative transition-all duration-100 ${
+                  wordProgress > 0
+                    ? `font-extrabold scale-110 inline-block` 
+                    : 'bg-gradient-to-br from-white to-gray-300 bg-clip-text text-transparent'
+                }`}
+                style={{
+                  textShadow: wordProgress > 0
+                    ? colors.shadow
+                    : 'transparent',
+                  position: 'relative',
+                  display: 'inline-block'
+                }}
+              >
+                {wordProgress > 0 ? (
+                  <span className="relative inline-block">
+                    {/* 배경 글씨 (회색) */}
+                    <span className="text-gray-400">
+                      {decodeHtmlEntities(word.word)}
+                    </span>
+                    
+                    {/* 색깔 글씨 (진행률에 따라 잘림) */}
+                    <span
+                      className={`absolute inset-0 ${isMyLine ? 'text-green-400' : 'text-blue-400'}`}
+                      style={{
+                        clipPath: `inset(0 ${100 - (wordProgress * 100)}% 0 0)`,
+                        textShadow: colors.shadow,
+                        transition: 'none'
+                      }}
+                    >
+                      {decodeHtmlEntities(word.word)}
+                    </span>
+                  </span>
+                ) : (
+                  <span className="text-white">
+                    {decodeHtmlEntities(word.word)}
+                  </span>
+                )}
+              </span>
             </span>
           );
         })}
@@ -148,7 +247,7 @@ const ScriptDisplay = ({
                   ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium' 
                   : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium'
               }`}>
-                {isMyLine ? '나' : '상대방'}
+                {isMyLine ? '나' : (captions[currentScriptIndex]?.actor?.name || '상대배우')}
               </span>
             )}
           </div>
@@ -242,7 +341,7 @@ const ScriptDisplay = ({
           <div className="flex items-center justify-end flex-1" style={{ fontSize: 'clamp(10px, 1vw, 16px)' }}>
             {playbackRange && (
               <span className="text-gray-300 font-medium">
-                🎧 {formatTime(playbackRange.startTime)} ~ {playbackRange.endTime ? formatTime(playbackRange.endTime) : '끝'}
+                {formatTime(playbackRange.startTime - captions[0]?.start_time || 0)} ~ {playbackRange.endTime ? formatTime(playbackRange.endTime - captions[0]?.start_time || 0) : '끝'}
               </span>
             )}
             {(recordingCompleted || isAnalyzing) && !analysisResult && (
@@ -254,10 +353,34 @@ const ScriptDisplay = ({
           </div>
         </div>
 
+        {/* 스크립트 진행바 */}
+        <div className="relative w-full h-[1vh] min-h-[8px] max-h-[16px] bg-gray-800/90 rounded-lg overflow-hidden shadow-inner border border-gray-700/30 mt-[1vh]">
+          <div
+            className={`absolute top-0 left-0 h-full ${
+              isDuet && !isMyLine
+                ? 'bg-gradient-to-r from-blue-600 via-indigo-500 to-violet-500'
+                : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-green-500'
+            } transition-all duration-500 ease-out`}
+            style={{ 
+              width: `${((currentScriptIndex + 1) / captions.length) * 100}%`,
+              boxShadow: isDuet && !isMyLine 
+                ? '0 0 10px rgba(59, 130, 246, 0.5)' 
+                : '0 0 10px rgba(16, 185, 129, 0.5)'
+            }}
+          >
+            <span 
+              className="absolute right-2 font-bold text-white drop-shadow-md flex items-center h-full" 
+              style={{ fontSize: 'clamp(8px, 0.8vw, 12px)' }}
+            >
+              {Math.round(((currentScriptIndex + 1) / captions.length) * 100)}%
+            </span>
+          </div>
+        </div>
+
         {/* 스크립트 본문 영역 */}
-        <div className="flex flex-col items-center flex-1 justify-center gap-[1vh]">
+        <div className="flex flex-col items-center flex-1 justify-center gap-[1vh] mt-[1vh]">
           {/* 스크립트 본문 + 내비게이션 */}
-          <div className="flex items-center gap-[1vw] w-full h-full">
+          <div className="flex items-center gap-[1.5vw] w-full h-full">
             {/* 왼쪽 네비게이션 버튼 */}
             <button
               onClick={() => {
@@ -279,7 +402,7 @@ const ScriptDisplay = ({
 
             {/* 중앙 스크립트 박스 */}
             <div 
-              className="bg-gray-800/80 rounded-xl p-[0.2vw] flex-1 shadow-inner border border-gray-700/50 flex items-center justify-center relative overflow-hidden h-full min-h-[6vh]"
+              className="bg-gray-800/80 rounded-xl p-[0.2vw] flex-1 shadow-inner border border-gray-700/50 flex items-center justify-center relative overflow-visible h-full min-h-[10vh] py-[2vh]"
               style={{
                 background: isAnalyzing 
                   ? 'linear-gradient(45deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1))' 
@@ -292,7 +415,7 @@ const ScriptDisplay = ({
                   <div className="text-blue-400 font-medium">음성 분석 중...</div>
                 </div>
               ) : (
-                <div className="text-white font-bold text-center leading-tight" style={{ fontSize: 'clamp(14px, 2vw, 32px)' }}>
+                <div className="text-white font-bold text-center leading-tight relative" style={{ fontSize: 'clamp(14px, 2vw, 32px)' }}>
                   {renderScriptWithWords()}
                 </div>
               )}

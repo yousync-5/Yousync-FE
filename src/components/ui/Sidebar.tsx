@@ -246,7 +246,7 @@ export default function Sidebar({
                 <span className="flex-1 leading-relaxed text-base">
                   {isDuet && (
                     <span className={`inline-block px-2 py-0.5 rounded text-sm mr-2 ${isCurrentMyLine ? 'bg-green-900/30 text-green-300' : 'bg-blue-900/30 text-blue-300'}`}>
-                      {isCurrentMyLine ? '나' : '상대방'}
+                      {isCurrentMyLine ? '나' : (caption.actor?.name || '상대배우')}
                     </span>
                   )}
                   {caption.script}
@@ -255,7 +255,7 @@ export default function Sidebar({
               {/* 타임라인 */}
               {typeof (caption as any).start_time === 'number' && typeof (caption as any).end_time === 'number' && (
                 <div className={`text-sm mt-1 ml-4 font-mono transition-colors duration-150 ${isSelected ? 'text-white' : 'text-gray-400'}`}>
-                  {formatTime((caption as any).start_time)} ~ {formatTime((caption as any).end_time)}
+                  {formatTime((caption as any).start_time - (captions[0] as any)?.start_time || 0)} ~ {formatTime((caption as any).end_time - (captions[0] as any)?.start_time || 0)}
                 </div>
               )}
               {index < captions.length - 1 && (
