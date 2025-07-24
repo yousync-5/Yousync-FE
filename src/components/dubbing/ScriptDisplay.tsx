@@ -104,18 +104,15 @@ const ScriptDisplay = ({
     if (!currentWords || currentWords.length === 0) {
       return (
         <div className="text-white font-bold text-center leading-tight tracking-wide" style={{ fontSize: 'clamp(24px, 3.5vw, 48px)' }}>
-          <span className="text-gray-400 opacity-70">"</span>
           <span className="bg-gradient-to-br from-white to-gray-300 bg-clip-text text-transparent">
             {decodeHtmlEntities(captions[currentScriptIndex]?.script || "")}
           </span>
-          <span className="text-gray-400 opacity-70">"</span>
         </div>
       );
     }
 
     return (
       <div className="text-white font-bold text-center leading-tight tracking-wide" style={{ fontSize: 'clamp(14px, 2vw, 32px)' }}>
-        <span className="text-gray-400 opacity-70">"</span>
         {currentWords.map((word, index) => {
           // 시간 허용 오차 (0.1초) - 네트워크 지연이나 처리 지연 고려
           const TIME_TOLERANCE = 0.1;
@@ -259,7 +256,6 @@ const ScriptDisplay = ({
             </span>
           );
         })}
-        <span className="text-gray-400 opacity-70">"</span>
       </div>
     );
   };

@@ -217,17 +217,17 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                     <button
                       onClick={() => {
                         openModal(String(heroVideos[currentIndex].id))}}
-                      className="flex items-center gap-2 px-8 py-4 bg-white text-black rounded-full font-bold hover:bg-green-100 transition-all duration-200 transform hover:scale-105 shadow-lg"
+                      className="flex items-center gap-2 px-8 py-4 bg-transparent text-white rounded-full font-bold hover:bg-white/20 transition-all duration-200 transform hover:scale-105 shadow-lg border-2 border-white"
                     >
-                      <PlayIcon className="w-6 h-6" />
-                      재생하기
+                      <PlayIcon className="w-6 h-6 text-white" />
+                      <span className="text-white font-bold">재생하기</span>
                     </button>
                     <button
-                      className="flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-full font-bold hover:bg-white/20 transition-all duration-200 transform hover:scale-105 border border-white/20"
+                      className="flex items-center gap-2 px-8 py-4 bg-transparent text-white rounded-full font-bold hover:bg-white/20 transition-all duration-200 transform hover:scale-105 border-2 border-white"
                       onClick={() => {router.push(`/actor/${encodeURIComponent(heroVideos[currentIndex].actor_name)}`)}}
                     >
-                      <InformationCircleIcon className="w-6 h-6" />
-                      배우 정보
+                      <InformationCircleIcon className="w-6 h-6 text-white" />
+                      <span className="text-white font-bold">배우 정보</span>
                     </button>
                   </div>
                 </div>
