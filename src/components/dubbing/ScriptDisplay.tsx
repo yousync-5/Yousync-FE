@@ -450,7 +450,7 @@ const ScriptDisplay = ({
                 <PronunciationTimingGuide
                   captions={captions}
                   currentScriptIndex={currentScriptIndex}
-                  currentVideoTime={currentVideoTime}
+                  currentVideoTime={currentVideoTime || 0}
                   currentWords={currentWords}
                   showAnalysisResult={showAnalysisResult}
                   analysisResult={analysisResult}
