@@ -132,9 +132,10 @@ const ScriptDisplay = ({
           let gapStartTime = 0;
           
           if (index === 0) {
-            // 첫 번째 단어: 영상 시작(0초)부터 첫 번째 단어까지의 간격
-            timeGap = word.start_time - 0; // 영상 시작 기준
-            gapStartTime = 0;
+            // 첫 번째 단어: 스크립트 시작 지점부터 첫 번째 단어까지의 간격
+            const scriptStartTime = captions[currentScriptIndex]?.start_time || 0;
+            timeGap = word.start_time - scriptStartTime;
+            gapStartTime = scriptStartTime;
           } else if (prevWord) {
             // 나머지 단어: 이전 단어와의 간격
             timeGap = word.start_time - prevWord.end_time;
@@ -264,8 +265,8 @@ const ScriptDisplay = ({
   };
 
   return (
-    <div className={`bg-gray-900/80 backdrop-blur-sm rounded-xl w-full  flex flex-col relative border ${isDuet && !isMyLine ? 'border-blue-800' : 'border-gray-800'} shadow-lg`}>
-      <div className={`bg-gradient-to-br ${isDuet &&  !isMyLine ? 'from-[#0f1a2a] to-[#1e2b3b]' : 'from-[#0f172a] to-[#1e293b]'} rounded-xl p-[0.8vw] shadow-xl text-white border ${isDuet && !isMyLine ? 'border-blue-700/50' : 'border-gray-700/50'} h-full flex flex-col justify-between`}>
+    <div className={`bg-gray-900/80 backdrop-blur-sm rounded-xl w-full flex flex-col relative border ${isDuet && !isMyLine ? 'border-blue-800' : 'border-gray-800'} shadow-lg`}>
+      <div className={`bg-gradient-to-br ${isDuet &&  !isMyLine ? 'from-[#0f1a2a] to-[#1e2b3b]' : 'from-[#0f172a] to-[#1e293b]'} rounded-xl p-[0.6vw] shadow-xl text-white border ${isDuet && !isMyLine ? 'border-blue-700/50' : 'border-gray-700/50'} h-full flex flex-col justify-between min-h-[12vh] max-h-[16vh] sm:min-h-[14vh] sm:max-h-[18vh] lg:min-h-[16vh] lg:max-h-[20vh]`}>
         
         {/* 상단 통합 영역: 스크립트 번호(좌) + 버튼들(중) + 시간 정보(우) */}
         <div className="flex items-center justify-between w-full  py-[0.3vh]">
@@ -409,9 +410,9 @@ const ScriptDisplay = ({
         </div>
 
         {/* 스크립트 본문 영역 */}
-        <div className="flex flex-col items-center flex-1 justify-center gap-[1vh] mt-[1vh]">
+        <div className="flex flex-col items-center flex-1 justify-center gap-[0.5vh] mt-[0.5vh]">
           {/* 스크립트 본문 + 내비게이션 */}
-          <div className="flex items-center gap-[1.5vw] w-full h-full">
+          <div className="flex items-center gap-[1.2vw] w-full h-full">
             {/* 왼쪽 네비게이션 버튼 */}
             <button
               onClick={() => {
@@ -420,7 +421,7 @@ const ScriptDisplay = ({
                 }
               }}
               disabled={currentScriptIndex === 0 || recording || recordingCompleted}
-              className={`p-[0.8vw] rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95 ${
+              className={`p-[0.6vw] rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95 ${
                 currentScriptIndex === 0 
                   ? 'bg-gray-800/50 text-gray-500 cursor-not-allowed' 
                   : isDuet && !isMyLine
@@ -428,12 +429,12 @@ const ScriptDisplay = ({
                     : 'bg-emerald-900/50 backdrop-blur-sm text-green-400 hover:bg-emerald-800/70 hover:text-green-300 shadow-lg border border-emerald-700/30'
               }`}
             >
-              <ChevronLeftIcon className="w-[1.5vw] h-[1.5vw] min-w-[16px] min-h-[16px] max-w-[24px] max-h-[24px]" />
+              <ChevronLeftIcon className="w-[1.2vw] h-[1.2vw] min-w-[14px] min-h-[14px] max-w-[20px] max-h-[20px]" />
             </button>
 
             {/* 중앙 스크립트 박스 */}
             <div 
-              className="bg-gray-800/80 rounded-xl p-[0.2vw] flex-1 shadow-inner border border-gray-700/50 flex items-center justify-center relative overflow-visible h-full min-h-[10vh] py-[2vh]"
+              className="bg-gray-800/80 rounded-xl p-[0.5vw] flex-1 shadow-inner border border-gray-700/50 flex items-center justify-center relative overflow-visible min-h-[6vh] max-h-[8vh] sm:min-h-[7vh] sm:max-h-[9vh] lg:min-h-[8vh] lg:max-h-[10vh] py-[1vh]"
               style={{
                 background: isAnalyzing 
                   ? 'linear-gradient(45deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1))' 
@@ -445,8 +446,19 @@ const ScriptDisplay = ({
                   <div className="animate-spin w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full mx-auto mb-2"></div>
                   <div className="text-blue-400 font-medium">음성 분석 중...</div>
                 </div>
+              ) : showAnalysisResult && analysisResult ? (
+                <PronunciationTimingGuide
+                  captions={captions}
+                  currentScriptIndex={currentScriptIndex}
+                  currentVideoTime={currentVideoTime}
+                  currentWords={currentWords}
+                  showAnalysisResult={showAnalysisResult}
+                  analysisResult={analysisResult}
+                  recording={recording}
+                  id={id}
+                />
               ) : (
-                <div className="text-white font-bold text-center leading-tight relative" style={{ fontSize: 'clamp(24px, 3.5vw, 48px)' }}>
+                <div className="text-white font-bold text-center leading-tight relative" style={{ fontSize: 'clamp(16px, 2.5vw, 32px)' }}>
                   {renderScriptWithWords()}
                 </div>
               )}
@@ -460,7 +472,7 @@ const ScriptDisplay = ({
                 }
               }}
               disabled={currentScriptIndex === captions.length - 1 || recording || recordingCompleted}
-              className={`p-[0.8vw] rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95 ${
+              className={`p-[0.6vw] rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95 ${
                 currentScriptIndex === captions.length - 1 
                   ? 'bg-gray-800/50 text-gray-500 cursor-not-allowed' 
                   : isDuet && !isMyLine
@@ -468,7 +480,7 @@ const ScriptDisplay = ({
                     : 'bg-emerald-900/50 backdrop-blur-sm text-green-400 hover:bg-emerald-800/70 hover:text-green-300 shadow-lg border border-emerald-700/30'
               }`}
             >
-              <ChevronRightIcon className="w-[1.5vw] h-[1.5vw] min-w-[16px] min-h-[16px] max-w-[24px] max-h-[24px]" />
+              <ChevronRightIcon className="w-[1.2vw] h-[1.2vw] min-w-[14px] min-h-[14px] max-w-[20px] max-h-[20px]" />
             </button>
           </div>
 
