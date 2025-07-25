@@ -157,6 +157,14 @@ const DubbingContainer = ({
   const { cleanupMic } = useAudioStream();
   const { user } = useUser();
 
+  // 시간 포맷 함수
+  const formatTime = (sec?: number) => {
+    if (typeof sec !== 'number' || isNaN(sec)) return '--:--.--';
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${String(m).padStart(2, '0')}:${s.toFixed(2).padStart(5, '0')}`;
+  };
+
 
 
   // zustand에서 multiJobIds 읽기
@@ -1144,7 +1152,9 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
                       </p>
                       
                       <div className="flex justify-between items-center mt-2 text-xs text-gray-400">
-                        <span>{caption.start_time?.toFixed(1)}s - {caption.end_time?.toFixed(1)}s</span>
+                        <span>
+                          {formatTime((caption.start_time || 0) - (front_data.captions[0]?.start_time || 0))} ~ {formatTime((caption.end_time || 0) - (front_data.captions[0]?.start_time || 0))}
+                        </span>
                         {hasResult && (
                           <span className="text-green-400 font-medium">분석완료</span>
                         )}
