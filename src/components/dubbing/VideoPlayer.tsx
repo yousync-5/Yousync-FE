@@ -29,9 +29,18 @@ export interface VideoPlayerRef {
   getIsPlaying: () => boolean;
 }
 
+// YouTube 플레이어 내부 타입 정의
+interface YouTubePlayer {
+  seekTo: (time: number) => void;
+  playVideo: () => void;
+  pauseVideo: () => void;
+  getCurrentTime: () => number;
+  getPlayerState: () => number;
+}
+
 const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
   ({ videoId, onTimeUpdate, startTime = 0, endTime, disableAutoPause = false, onEndTimeReached, onPause, onPlay, overlayType = 'header', overlayHeight = 48, onOpenSidebar }, ref) => {
-    const playerRef = useRef<{ seekTo: (time: number) => void; playVideo: () => void; pauseVideo: () => void; getCurrentTime: () => number } | null>(null);
+    const playerRef = useRef<YouTubePlayer | null>(null);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const initialStartTimeRef = useRef(startTime);
     const isPlayingRef = useRef<boolean>(false);
@@ -58,8 +67,13 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
         console.log('[VideoPlayer] seekTo 호출:', time, 'playerRef.current:', !!playerRef.current);
         if (playerRef.current) {
           try {
-            playerRef.current.seekTo(time);
-            console.log('[VideoPlayer] seekTo 성공');
+            // YouTube 플레이어가 준비되었는지 확인
+            if (typeof playerRef.current.seekTo === 'function') {
+              playerRef.current.seekTo(time);
+              console.log('[VideoPlayer] seekTo 성공');
+            } else {
+              console.warn('[VideoPlayer] seekTo 메서드가 준비되지 않았습니다.');
+            }
           } catch (error) {
             console.error('[VideoPlayer] seekTo 에러:', error);
           }
@@ -71,15 +85,49 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
         console.log('[VideoPlayer] playVideo 호출, playerRef.current:', !!playerRef.current);
         if (playerRef.current) {
           try {
-            playerRef.current.playVideo();
-            isPlayingRef.current = true;
-            console.log('[VideoPlayer] playVideo 성공');
-            // 강제로 onPlay 콜백 호출
-            if (onPlay) {
-              setTimeout(() => {
-                console.log('[VideoPlayer] onPlay 콜백 호출');
-                onPlay();
-              }, 100);
+            // YouTube 플레이어가 준비되었는지 더 안전하게 확인
+            if (typeof playerRef.current.playVideo === 'function') {
+              // getPlayerState 메서드가 있는지 확인 후 사용
+              const player = playerRef.current as any;
+              if (typeof player.getPlayerState === 'function') {
+                const playerState = player.getPlayerState();
+                console.log('[VideoPlayer] playVideo - 현재 플레이어 상태:', playerState);
+                
+                // 플레이어가 정지 상태이거나 일시정지 상태일 때만 재생
+                if (playerState === 2 || playerState === 5 || playerState === -1) { // 2: 일시정지, 5: 정지, -1: 시작안됨
+                  playerRef.current.playVideo();
+                  isPlayingRef.current = true;
+                  console.log('[VideoPlayer] playVideo 성공');
+                  // 강제로 onPlay 콜백 호출
+                  if (onPlay) {
+                    setTimeout(() => {
+                      console.log('[VideoPlayer] onPlay 콜백 호출');
+                      onPlay();
+                    }, 100);
+                  }
+                } else if (playerState === 1) {
+                  console.log('[VideoPlayer] 이미 재생 중입니다');
+                  isPlayingRef.current = true;
+                } else {
+                  // 상태에 관계없이 재생 시도
+                  playerRef.current.playVideo();
+                  isPlayingRef.current = true;
+                  console.log('[VideoPlayer] 강제 playVideo 실행');
+                }
+              } else {
+                // getPlayerState가 없으면 그냥 재생 시도
+                playerRef.current.playVideo();
+                isPlayingRef.current = true;
+                console.log('[VideoPlayer] getPlayerState 없음, 직접 playVideo 실행');
+                if (onPlay) {
+                  setTimeout(() => {
+                    console.log('[VideoPlayer] onPlay 콜백 호출');
+                    onPlay();
+                  }, 100);
+                }
+              }
+            } else {
+              console.warn('[VideoPlayer] YouTube 플레이어 메서드가 준비되지 않았습니다.');
             }
           } catch (error) {
             console.error('[VideoPlayer] playVideo 에러:', error);
@@ -92,15 +140,44 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
         console.log('[VideoPlayer] pauseVideo 호출, playerRef.current:', !!playerRef.current);
         if (playerRef.current) {
           try {
-            playerRef.current.pauseVideo();
-            isPlayingRef.current = false;
-            console.log('[VideoPlayer] pauseVideo 성공');
-            // 강제로 onPause 콜백 호출
-            if (onPause) {
-              setTimeout(() => {
-                console.log('[VideoPlayer] onPause 콜백 호출');
-                onPause();
-              }, 100);
+            // YouTube 플레이어가 준비되었는지 더 안전하게 확인
+            if (typeof playerRef.current.pauseVideo === 'function') {
+              // getPlayerState 메서드가 있는지 확인 후 사용
+              const player = playerRef.current as any;
+              if (typeof player.getPlayerState === 'function') {
+                const playerState = player.getPlayerState();
+                console.log('[VideoPlayer] pauseVideo - 현재 플레이어 상태:', playerState);
+                
+                // 플레이어가 재생 중이거나 버퍼링 중일 때만 정지
+                if (playerState === 1 || playerState === 3) { // 1: 재생중, 3: 버퍼링
+                  playerRef.current.pauseVideo();
+                  isPlayingRef.current = false;
+                  console.log('[VideoPlayer] pauseVideo 성공');
+                  // 강제로 onPause 콜백 호출
+                  if (onPause) {
+                    setTimeout(() => {
+                      console.log('[VideoPlayer] onPause 콜백 호출');
+                      onPause();
+                    }, 100);
+                  }
+                } else {
+                  console.log('[VideoPlayer] 플레이어가 재생 상태가 아니므로 정지하지 않음');
+                  isPlayingRef.current = false;
+                }
+              } else {
+                // getPlayerState가 없으면 그냥 정지 시도
+                playerRef.current.pauseVideo();
+                isPlayingRef.current = false;
+                console.log('[VideoPlayer] getPlayerState 없음, 직접 pauseVideo 실행');
+                if (onPause) {
+                  setTimeout(() => {
+                    console.log('[VideoPlayer] onPause 콜백 호출');
+                    onPause();
+                  }, 100);
+                }
+              }
+            } else {
+              console.warn('[VideoPlayer] pauseVideo 메서드가 준비되지 않았습니다.');
             }
           } catch (error) {
             console.error('[VideoPlayer] pauseVideo 에러:', error);
@@ -112,9 +189,15 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
       getCurrentTime: () => {
         if (playerRef.current) {
           try {
-            const time = playerRef.current.getCurrentTime();
-            console.log('[VideoPlayer] getCurrentTime:', time);
-            return time;
+            // YouTube 플레이어가 준비되었는지 확인
+            if (typeof playerRef.current.getCurrentTime === 'function') {
+              const time = playerRef.current.getCurrentTime();
+              console.log('[VideoPlayer] getCurrentTime:', time);
+              return time;
+            } else {
+              console.warn('[VideoPlayer] getCurrentTime 메서드가 준비되지 않았습니다.');
+              return 0;
+            }
           } catch (error) {
             console.error('[VideoPlayer] getCurrentTime 에러:', error);
             return 0;
@@ -151,9 +234,9 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
       // 자동 재생 비활성화 - 아무 동작 하지 않음
     }, [showOverlay, playerReady]);
 
-    const onReady = (event: { target: { seekTo: (time: number) => void; playVideo: () => void; pauseVideo: () => void; getCurrentTime: () => number } }) => {
+    const onReady = (event: { target: any }) => {
       console.log('[VideoPlayer] onReady 호출됨');
-      playerRef.current = event.target;
+      playerRef.current = event.target as YouTubePlayer;
       setPlayerReady(true);
       
       // 플레이어 메서드들이 사용 가능한지 확인
@@ -184,12 +267,36 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
           if (playerRef.current) {
             console.log('[VideoPlayer] 첫 프레임 로드 완료, 정지');
             try {
-              playerRef.current.pauseVideo();
+              // YouTube 플레이어가 준비되었는지 더 안전하게 확인
+              if (typeof playerRef.current.pauseVideo === 'function') {
+                // getPlayerState 메서드가 있는지 확인 후 사용
+                const player = playerRef.current as any;
+                if (typeof player.getPlayerState === 'function') {
+                  const playerState = player.getPlayerState();
+                  console.log('[VideoPlayer] 현재 플레이어 상태:', playerState);
+                  
+                  // 플레이어가 재생 중이거나 버퍼링 중일 때만 정지
+                  if (playerState === 1 || playerState === 3) { // 1: 재생중, 3: 버퍼링
+                    playerRef.current.pauseVideo();
+                    console.log('[VideoPlayer] 첫 프레임 정지 완료');
+                  } else {
+                    console.log('[VideoPlayer] 플레이어가 재생 상태가 아니므로 정지하지 않음');
+                  }
+                } else {
+                  // getPlayerState가 없으면 그냥 정지 시도
+                  playerRef.current.pauseVideo();
+                  console.log('[VideoPlayer] getPlayerState 없음, 직접 pauseVideo 실행');
+                }
+              } else {
+                console.warn('[VideoPlayer] pauseVideo 메서드가 준비되지 않았습니다.');
+              }
             } catch (error) {
               console.error('[VideoPlayer] 첫 프레임 로드 후 정지 에러:', error);
             }
+          } else {
+            console.warn('[VideoPlayer] playerRef.current가 null입니다.');
           }
-        }, 300);
+        }, 800); // 지연 시간을 800ms로 더 증가
       } catch (error) {
         console.error('[VideoPlayer] 첫 프레임 로드 재생 에러:', error);
       }

@@ -1,11 +1,17 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useState } from 'react';
 
 export default function FloatingRequestButton() {
   const router = useRouter();
+  const pathname = usePathname();
   const [isHovered, setIsHovered] = useState(false);
+
+  // 메인페이지(/home)에서만 버튼을 표시
+  if (pathname !== '/home') {
+    return null;
+  }
 
   const handleClick = () => {
     router.push('/uploadrequest');
