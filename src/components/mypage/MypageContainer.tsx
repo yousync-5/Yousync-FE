@@ -208,8 +208,23 @@ const MypageContainer: React.FC = () => {
                       key={bookmark.id}
                       className="group bg-neutral-800 rounded-xl overflow-hidden border border-neutral-700 hover:border-neutral-600 transition-all duration-300 cursor-pointer"
                       onClick={() => {
-                        // 토큰 클릭 시 결과 페이지로 이동
-                        window.location.href = `/result?token_id=${bookmark.token.id}`;
+                        // 북마크 클릭 시 모달창 열기
+                        if (!bookmark.token.youtube_url) {
+                          toast.error('YouTube URL 정보가 없습니다.');
+                          return;
+                        }
+                        const youtubeId = extractYoutubeVideoId(bookmark.token.youtube_url);
+                        if (!youtubeId) {
+                          toast.error('유효하지 않은 YouTube URL입니다.');
+                          return;
+                        }
+                        const foundToken = tokens.find(t => t.youtubeId === youtubeId);
+                        if (foundToken) {
+                          setSelectedToken(foundToken);
+                          setModalOpen(true);
+                        } else {
+                          toast.error('해당 영상 정보를 찾을 수 없습니다.');
+                        }
                       }}
                     >
                       {/* 썸네일 */}
