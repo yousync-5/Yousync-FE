@@ -5,14 +5,19 @@ import { NavBar } from "./NavBar";
 import { usePathname } from "next/navigation";
 
 /**
- * 모든 페이지에 NavBar를 고정적으로 렌더링하는 컴포넌트
+ * 조건부로 NavBar를 렌더링하는 컴포넌트
  * 
- * 방문 여부와 상관없이 항상 NavBar를 표시합니다.
+ * 초기페이지(/)에서는 NavBar를 숨기고, 다른 페이지에서는 표시합니다.
  */
 const ConditionalNavBar: React.FC = () => {
   const pathname = usePathname();
 
-  // 항상 NavBar 표시 (애니메이션 효과 제거)
+  // 초기페이지(/)에서는 NavBar 숨기기
+  if (pathname === '/') {
+    return null;
+  }
+
+  // 다른 페이지에서는 NavBar 표시
   return <NavBar animateOnMount={false} />;
 };
 
