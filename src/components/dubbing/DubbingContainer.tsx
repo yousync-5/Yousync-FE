@@ -128,8 +128,15 @@ const DubbingContainer = ({
     handleRecordingComplete,
     handlePlay,
     handlePause,
-    handleScriptSelect
+    handleScriptSelect,
+    resetState
   } = dubbingState;
+
+  // 새로운 영상에 진입할 때마다 모든 상태 초기화 (진행도 0%부터 시작)
+  useEffect(() => {
+    console.log('[DubbingContainer] 새로운 영상 진입 - 모든 상태 초기화');
+    resetState();
+  }, [id, resetState]);
 
   // 컴포넌트가 언마운트될 때 구간 반복 인터벌 정리
   useEffect(() => {
@@ -1003,8 +1010,12 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
           {/* 진행률 표시 */}
           <div className="mb-4 px-2">
             <ProgressBar
-              progress={(currentScriptIndex + 1) / (front_data?.captions?.length || 1) * 100}
-              label={`진행률 (${currentScriptIndex + 1}/${front_data?.captions?.length})`}
+              progress={(() => {
+                const keys = Object.keys(latestResultByScript || {});
+                const count = keys.length;
+                return (count / (front_data?.captions?.length || 1)) * 100;
+              })()}
+              label={`분석 완료 (${Object.keys(latestResultByScript || {}).length}/${front_data?.captions?.length})`}
               color="emerald"
               size="md"
               isDuet={isDuet}
@@ -1197,8 +1208,12 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
             {/* 진행률 표시 */}
             <div className="mb-4 px-4">
               <ProgressBar
-                progress={(currentScriptIndex + 1) / (front_data?.captions?.length || 1) * 100}
-                label={`진행률 (${currentScriptIndex + 1}/${front_data?.captions?.length})`}
+                progress={(() => {
+                  const keys = Object.keys(latestResultByScript || {});
+                  const count = keys.length;
+                  return (count / (front_data?.captions?.length || 1)) * 100;
+                })()}
+                label={`분석 완료 (${Object.keys(latestResultByScript || {}).length}/${front_data?.captions?.length})`}
                 color="emerald"
                 size="md"
                 isDuet={isDuet}
@@ -1289,7 +1304,18 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
           onScriptSelect={customHandleScriptSelect}
           actorName={front_data.captions[0]?.actor?.name || ""}
           movieTitle={front_data.movie.title}
-          analyzedCount={Object.keys(latestResultByScript || {}).length}
+          analyzedCount={(() => {
+            const keys = Object.keys(latestResultByScript || {});
+            const count = keys.length;
+            console.log('🔍 [진행도 디버깅]', {
+              영상ID: id,
+              latestResultByScript키들: keys,
+              분석완료개수: count,
+              전체문장수: front_data.captions.length,
+              진행률: `${count}/${front_data.captions.length} = ${Math.round((count / front_data.captions.length) * 100)}%`
+            });
+            return count;
+          })()}
           totalCount={front_data.captions.length}
           recording={recording}
           recordedScripts={recordingCompleted ? Array(front_data.captions.length).fill(false).map((_, i) => i === currentScriptIndex) : []}
