@@ -324,7 +324,7 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                             <div
                               key={`duet-${index}`}
                               className="relative bg-gray-900 border-2 border-gray-800 rounded-2xl sm:rounded-3xl overflow-hidden hover:border-blue-400 hover:shadow-2xl transition-all duration-300 cursor-pointer flex-shrink-0 transform hover:scale-105 aspect-video"
-                              style={{ minWidth: "200px", maxWidth: "200px" }}
+                              style={{ minWidth: "280px", maxWidth: "280px" }}
                               onClick={() => {
                                 const scene = duetScenes[index];
                                 setSelectedDuet({ scene, pair: scene.duet_pair[0] });
