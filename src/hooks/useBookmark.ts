@@ -38,15 +38,12 @@ export function useBookmark(): UseBookmarkResult {
     return !!accessToken && !!user;
   };
 
-  // 컴포넌트 마운트 시 북마크 데이터 로드 (앱 전체에서 한 번만 실행)
+  // 컴포넌트 마운트 시 북마크 데이터 로드 (필요시에만 실행)
   useEffect(() => {
     if (cachedBookmarks.length > 0) {
       setBookmarks(cachedBookmarks);
     }
-    else if (isLoggedIn() && (Date.now() - lastFetchTime > CACHE_DURATION || cachedBookmarks.length === 0)) {
-      getBookmarks();
-    }
-    
+    // 홈 화면에서 자동 로드 제거 - 모달에서만 필요시 로드
   }, []);
 
   // 북마크 추가 함수 (Optimistic UI 적용)
@@ -59,6 +56,7 @@ export function useBookmark(): UseBookmarkResult {
 
     // 이미 북마크된 경우 중복 요청 방지
     if (isBookmarked(token_id)) {
+      console.log('이미 북마크된 항목입니다.');
       return;
     }
 
@@ -81,9 +79,16 @@ export function useBookmark(): UseBookmarkResult {
       setIsSuccess(true);
     } catch (e) {
       console.error('북마크 추가 실패:', e);
-      // 실패 시 원래 상태로 롤백
-      cachedBookmarks = originalBookmarks;
       
+      // 409 에러 (이미 존재)인 경우 성공으로 처리
+      if (axios.isAxiosError(e) && e.response?.status === 409) {
+        console.log('이미 북마크된 항목입니다. (서버에서 확인됨)');
+        setIsSuccess(true);
+        return; // 롤백하지 않고 현재 상태 유지
+      }
+      
+      // 다른 에러의 경우 원래 상태로 롤백
+      cachedBookmarks = originalBookmarks;
       setBookmarks(cachedBookmarks);
       setIsError(true);
     } finally {
@@ -101,6 +106,7 @@ export function useBookmark(): UseBookmarkResult {
 
     // 북마크되지 않은 경우 중복 요청 방지
     if (!isBookmarked(token_id)) {
+      console.log('북마크되지 않은 항목입니다.');
       return true;
     }
 
@@ -124,9 +130,16 @@ export function useBookmark(): UseBookmarkResult {
       return true;
     } catch (e) {
       console.error('북마크 삭제 실패:', e);
-      // 실패 시 원래 상태로 롤백
-      cachedBookmarks = originalBookmarks;
       
+      // 404 에러 (이미 삭제됨)인 경우 성공으로 처리
+      if (axios.isAxiosError(e) && e.response?.status === 404) {
+        console.log('이미 삭제된 북마크입니다. (서버에서 확인됨)');
+        setIsSuccess(true);
+        return true; // 롤백하지 않고 현재 상태 유지
+      }
+      
+      // 다른 에러의 경우 원래 상태로 롤백
+      cachedBookmarks = originalBookmarks;
       setBookmarks(cachedBookmarks);
       setIsError(true);
       return false;
@@ -181,31 +194,15 @@ export function useBookmark(): UseBookmarkResult {
   };
   // 북마크 상태 변경 감지를 위한 useEffect
   useEffect(() => {
-    // 컴포넌트 마운트 시 초기 북마크 데이터 로드
-    if (isLoggedIn() && cachedBookmarks.length === 0) {
-      // 비동기 함수 실행
-      const loadBookmarks = async () => {
-        try {
-          await getBookmarks();
-        } catch (err) {
-          // 에러 발생 시 조용히 실패 (UI는 계속 작동)
-          console.warn('초기 북마크 로드 실패:', err);
-        }
-      };
-      
-      loadBookmarks();
-    }
-    
+    // 홈 화면에서 자동 로드 제거 - 필요시에만 로드
     // 인증 상태 변경 이벤트 리스너 추가
     const handleAuthChange = () => {
       if (!isLoggedIn()) {
         // 로그아웃 시 캐시 초기화
         cachedBookmarks = [];
         setBookmarks([]);
-      } else if (cachedBookmarks.length === 0) {
-        // 로그인 시 북마크 다시 로드
-        getBookmarks().catch(console.warn);
       }
+      // 로그인 시 자동 로드 제거 - 모달에서 필요시에만 로드
     };
     
     window.addEventListener('auth-change', handleAuthChange);

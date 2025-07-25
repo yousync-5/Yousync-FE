@@ -33,6 +33,9 @@ const SentenceAnalysis: React.FC<SentenceAnalysisProps> = ({ finalResults }) => 
         result.word_analysis.forEach((word: any, wordIdx: number) => {
           console.log(`[🔍 문장 ${idx + 1} 단어 ${wordIdx + 1}]`, {
             word: word.word,
+            word_type: typeof word.word,
+            word_is_object: typeof word.word === 'object',
+            word_keys: typeof word.word === 'object' ? Object.keys(word.word || {}) : 'N/A',
             text_status: word.text_status,
             mfcc_similarity: word.mfcc_similarity,
             word_score: word.word_score,
@@ -54,11 +57,17 @@ const SentenceAnalysis: React.FC<SentenceAnalysisProps> = ({ finalResults }) => 
           const n = word_analysis?.length ?? 0;
           
           // MFCC Similarity 평균 계산
-          const mfccValues = word_analysis?.map((w: any) => w.mfcc_similarity).filter((v: number) => !isNaN(v) && v !== null && v !== undefined) || [];
+          const mfccValues = word_analysis?.map((w: any) => {
+            const score = typeof w.mfcc_similarity === 'number' ? w.mfcc_similarity : 0;
+            return score;
+          }).filter((v: number) => !isNaN(v) && v !== null && v !== undefined) || [];
           const mfccAvg = mfccValues.length > 0 ? (mfccValues.reduce((acc: number, val: number) => acc + val, 0) / mfccValues.length) : 0;
           
           // Word Score 평균 계산
-          const wordScoreValues = word_analysis?.map((w: any) => w.word_score).filter((v: number) => !isNaN(v) && v !== null && v !== undefined) || [];
+          const wordScoreValues = word_analysis?.map((w: any) => {
+            const score = typeof w.word_score === 'number' ? w.word_score : 0;
+            return score;
+          }).filter((v: number) => !isNaN(v) && v !== null && v !== undefined) || [];
           const wordScoreAvg = wordScoreValues.length > 0 ? (wordScoreValues.reduce((acc: number, val: number) => acc + val, 0) / wordScoreValues.length) : 0;
           
           // 디버깅 로그
@@ -83,17 +92,24 @@ const SentenceAnalysis: React.FC<SentenceAnalysisProps> = ({ finalResults }) => 
                   </div>
                   <div>
                     <div className="flex flex-wrap gap-1">
-                      {result.word_analysis?.map((w: any, i: number) => (
-                        <span
-                          key={i}
-                          style={{
-                            color: getGradientColor(w.word_score),
-                            fontWeight: 600
-                          }}
-                        >
-                          {w.word}
-                        </span>
-                      ))}
+                      {result.word_analysis?.map((w: any, i: number) => {
+                        // word가 객체인 경우 처리
+                        const wordText = typeof w.word === 'string' ? w.word : 
+                                        typeof w.word === 'object' && w.word?.word ? w.word.word :
+                                        JSON.stringify(w.word);
+                        
+                        return (
+                          <span
+                            key={i}
+                            style={{
+                              color: getGradientColor(typeof w.word_score === 'number' ? w.word_score : 0),
+                              fontWeight: 600
+                            }}
+                          >
+                            {wordText}
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

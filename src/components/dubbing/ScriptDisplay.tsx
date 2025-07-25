@@ -448,9 +448,6 @@ const ScriptDisplay = ({
                   onClick={onOpenDubbingListenModal}
                   className="px-2 py-1 sm:px-[0.8vw] sm:py-[0.5vh] h-8 sm:h-[2.5vw] rounded-lg sm:rounded-xl flex items-center justify-center gap-1 transition-all duration-200 border-2 border-purple-400/30 shadow-[0_4px_15px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-1px_0_rgba(0,0,0,0.2)] transform hover:scale-110 hover:shadow-[0_6px_20px_rgba(0,0,0,0.4),inset_0_2px_0_rgba(255,255,255,0.3),inset_0_-2px_0_rgba(0,0,0,0.3)] active:scale-95 active:shadow-[0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(0,0,0,0.2),inset_0_-1px_0_rgba(255,255,255,0.1)] bg-gradient-to-br from-purple-700/70 to-indigo-800/70 backdrop-blur-sm hover:from-purple-600/80 hover:to-indigo-700/80"
                 >
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 drop-shadow-sm" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-                  </svg>
                   <span className="text-xs sm:text-[0.8vw] font-medium whitespace-nowrap drop-shadow-sm">더빙영상</span>
                 </button>
 
@@ -459,9 +456,6 @@ const ScriptDisplay = ({
                   onClick={onShowResults}
                   className="px-2 py-1 sm:px-[0.8vw] sm:py-[0.5vh] h-8 sm:h-[2.5vw] rounded-lg sm:rounded-xl flex items-center justify-center gap-1 transition-all duration-200 border-2 border-emerald-400/30 shadow-[0_4px_15px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.2),inset_0_-1px_0_rgba(0,0,0,0.2)] transform hover:scale-110 hover:shadow-[0_6px_20px_rgba(0,0,0,0.4),inset_0_2px_0_rgba(255,255,255,0.3),inset_0_-2px_0_rgba(0,0,0,0.3)] active:scale-95 active:shadow-[0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(0,0,0,0.2),inset_0_-1px_0_rgba(255,255,255,0.1)] bg-gradient-to-br from-emerald-700/70 to-teal-800/70 backdrop-blur-sm hover:from-emerald-600/80 hover:to-teal-700/80"
                 >
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4 drop-shadow-sm" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M9 11H7v6h2v-6zm4 0h-2v6h2v-6zm4 0h-2v6h2v-6zm2.5-9H19v2h-1.5v17.5c0 .83-.67 1.5-1.5 1.5H8c-.83 0-1.5-.67-1.5-1.5V4H5V2h4.5c0-.83.67-1.5 1.5-1.5h3c.83 0 1.5.67 1.5 1.5H20v2zm-3 2H8v15.5h10.5V4z"/>
-                  </svg>
                   <span className="text-xs sm:text-[0.8vw] font-medium whitespace-nowrap drop-shadow-sm">결과보기</span>
                 </button>
               </>

@@ -345,7 +345,6 @@ const MypageContainer: React.FC = () => {
             </div>
             {approvedTokens.length === 0 ? (
               <div className="text-center py-12 text-gray-400">
-                <div className="text-4xl mb-4">✅</div>
                 <p>아직 승인된 영상이 없습니다.</p>
                 <p className="text-sm mt-2">심사 후 승인된 영상이 여기에 표시됩니다.</p>
               </div>

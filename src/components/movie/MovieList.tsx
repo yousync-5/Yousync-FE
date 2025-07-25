@@ -1,6 +1,7 @@
 // src/components/movie/MovieList.tsx
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import MovieItem from "./MovieItem";
+import { useRef } from "react";
 
 interface MovieListProps {
   sectionId: string;
@@ -25,18 +26,18 @@ export default function MovieList({
   onStop,
   customRender,
 }: MovieListProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
   // 가로 스크롤 함수들
   const scrollLeft = () => {
-    const container = document.getElementById(sectionId);
-    if (container) {
-      container.scrollBy({ left: -400, behavior: "smooth" });
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -400, behavior: "smooth" });
     }
   };
 
   const scrollRight = () => {
-    const container = document.getElementById(sectionId);
-    if (container) {
-      container.scrollBy({ left: 400, behavior: "smooth" });
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 400, behavior: "smooth" });
     }
   };
 
@@ -60,6 +61,7 @@ export default function MovieList({
 
       {/* Videos Row */}
       <div
+        ref={scrollContainerRef}
         id={sectionId}
         className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 pt-4 pl-4"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}

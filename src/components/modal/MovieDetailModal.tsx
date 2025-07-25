@@ -3,9 +3,11 @@
 import React, { MouseEvent, useRef, useEffect, useState } from "react";
 import dynamic from 'next/dynamic';
 import { FaMicrophone, FaUser, FaTag, FaClock } from "react-icons/fa";
+import { BookmarkIcon } from '@heroicons/react/24/solid';
 import { useRouter } from "next/navigation";
 import type { TokenDetailResponse } from "@/types/pitch";
 import { tokenApi } from "@/services/api";
+import { useBookmark } from '@/hooks/useBookmark';
 
 const YouTube = dynamic(() => import('react-youtube'), { ssr: false });
 
@@ -26,6 +28,10 @@ export default function MovieDetailModal({
   const playerRef = useRef<any>(null);
   const [isDubbingLoading, setIsDubbingLoading] = useState(false);
   
+  // 북마크 관련 상태 및 훅
+  const { isLoading: bookmarkLoading, addBookmark, removeBookmark, getBookmarks, isLoggedIn, isBookmarked } = useBookmark();
+  const [bookmarked, setBookmarked] = useState(false);
+  
   // 마우스 호버 관련 상태 추가
   const [isHovering, setIsHovering] = useState(false);
   const [shouldPlay, setShouldPlay] = useState(false);
@@ -35,6 +41,47 @@ export default function MovieDetailModal({
   // tokenData가 있을 때만 접근
   const startTime = Number(tokenData?.start_time) || 0;
   const endTime = Number(tokenData?.end_time) || undefined;
+
+  // 모달이 열릴 때 해당 영상의 북마크 상태 확인
+  useEffect(() => {
+    if (isOpen && tokenData && isLoggedIn()) {
+      // 북마크 목록이 없으면 먼저 로드
+      getBookmarks().then(() => {
+        setBookmarked(isBookmarked(Number(tokenData.id)));
+      }).catch(() => {
+        // 에러 시 캐시된 데이터로 확인
+        setBookmarked(isBookmarked(Number(tokenData.id)));
+      });
+    } else {
+      setBookmarked(false);
+    }
+  }, [isOpen, tokenData, isLoggedIn]);
+
+  // 북마크 클릭 핸들러
+  const handleBookmarkClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!isLoggedIn()) {
+      alert('북마크 기능은 로그인 후 이용 가능합니다.');
+      return;
+    }
+    
+    if (!tokenData) return;
+    
+    try {
+      if (!bookmarked) {
+        await addBookmark(Number(tokenData.id));
+        setBookmarked(true);
+      } else {
+        const success = await removeBookmark(Number(tokenData.id));
+        if (success) {
+          setBookmarked(false);
+        }
+      }
+    } catch (error) {
+      console.error('북마크 처리 중 오류 발생:', error);
+    }
+  };
 
   // 반복 재생: 영상이 끝나면 startTime으로 이동 후 재생
   const handlePlayerReady = (event: any) => {
@@ -336,14 +383,34 @@ export default function MovieDetailModal({
               재생 시간: {(Number(tokenData.end_time) - Number(tokenData.start_time)).toFixed(2)}초
             </div>
           </div>
-          <button
-            onClick={handleDubbingClick}
-            disabled={isDubbingLoading}
-            className={`flex items-center gap-3 px-8 py-3 rounded-full text-white text-lg font-bold shadow-lg transition-all duration-200 focus:outline-none ${isDubbingLoading ? 'bg-emerald-500 animate-pulse cursor-not-allowed' : 'bg-emerald-500 hover:bg-emerald-600'}`}
-          >
-            <FaMicrophone className="text-2xl" />
-            더빙하기
-          </button>
+          <div className="flex items-center gap-4">
+            {/* 북마크 버튼 */}
+            <button
+              onClick={handleBookmarkClick}
+              disabled={bookmarkLoading}
+              className={`flex items-center gap-2 px-4 py-3 rounded-full text-white font-bold shadow-lg transition-all duration-200 focus:outline-none ${
+                bookmarkLoading 
+                  ? 'bg-gray-500 cursor-not-allowed' 
+                  : bookmarked 
+                    ? 'bg-yellow-500 hover:bg-yellow-600' 
+                    : 'bg-gray-600 hover:bg-gray-700'
+              }`}
+              title={isLoggedIn() ? (bookmarked ? "북마크 삭제" : "북마크 추가") : "로그인 필요"}
+            >
+              <BookmarkIcon className="w-5 h-5" />
+              {bookmarked ? '북마크됨' : '북마크'}
+            </button>
+            
+            {/* 더빙하기 버튼 */}
+            <button
+              onClick={handleDubbingClick}
+              disabled={isDubbingLoading}
+              className={`flex items-center gap-3 px-8 py-3 rounded-full text-white text-lg font-bold shadow-lg transition-all duration-200 focus:outline-none ${isDubbingLoading ? 'bg-emerald-500 animate-pulse cursor-not-allowed' : 'bg-emerald-500 hover:bg-emerald-600'}`}
+            >
+              <FaMicrophone className="text-2xl" />
+              더빙하기
+            </button>
+          </div>
         </div>
       </div>
     </div>
