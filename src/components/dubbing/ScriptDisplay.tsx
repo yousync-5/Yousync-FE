@@ -75,7 +75,7 @@ const ScriptDisplay = ({
   onShowResults,
   id,
 }: ScriptDisplayProps) => {
-  const {isLoggedIn} = useUser();
+  const {isLoggedIn, user} = useUser();
   const router = useRouter();
   // 시간 포맷 함수
   function formatTime(sec?: number) {
@@ -168,22 +168,7 @@ const ScriptDisplay = ({
             ? Math.min(1, Math.max(0, (currentVideoTime - scriptStartTime) / scriptDuration))
             : 0;
           
-          // 현재 단어 내에서의 진행률 - 더 정확한 계산
-          let wordProgress = 0;
-          if (currentVideoTime) {
-            if (currentVideoTime >= (word.start_time - TIME_TOLERANCE) && currentVideoTime <= (word.end_time + TIME_TOLERANCE)) {
-              const wordDuration = word.end_time - word.start_time;
-              if (wordDuration > 0) {
-                const adjustedCurrentTime = Math.max(word.start_time, Math.min(word.end_time, currentVideoTime));
-                wordProgress = (adjustedCurrentTime - word.start_time) / wordDuration;
-                wordProgress = Math.min(1, Math.max(0, wordProgress));
-              } else {
-                wordProgress = 1;
-              }
-            } else if (currentVideoTime > word.end_time) {
-              wordProgress = 1;
-            }
-          }
+
 
           // 내 대사인지 상대방 대사인지에 따라 색상 결정
           const getWordColors = () => {
@@ -223,8 +208,8 @@ const ScriptDisplay = ({
               
               <span
                 className={`relative transition-all duration-100 ${
-                  wordProgress > 0
-                    ? `font-extrabold inline-block` 
+                  isCurrentWord
+                    ? `font-extrabold inline-block ${isMyLine ? 'text-green-400' : 'text-blue-400'}` 
                     : 'bg-gradient-to-br from-white to-gray-300 bg-clip-text text-transparent'
                 }`}
                 style={{
@@ -232,30 +217,9 @@ const ScriptDisplay = ({
                   display: 'inline-block'
                 }}
               >
-                {wordProgress > 0 ? (
-                  <span className="relative inline-block">
-                    {/* 배경 글씨 (회색) */}
-                    <span className="text-gray-400">
-                      {decodeHtmlEntities(word.word)}
-                    </span>
-                    
-                    {/* 색깔 글씨 (진행률에 따라 보임) */}
-                    <span
-                      className={`absolute inset-0 ${isMyLine ? 'text-green-400' : 'text-blue-400'}`}
-                      style={{
-                        WebkitMask: `linear-gradient(90deg, black 0%, black ${wordProgress * 100}%, transparent ${wordProgress * 100}%, transparent 100%)`,
-                        mask: `linear-gradient(90deg, black 0%, black ${wordProgress * 100}%, transparent ${wordProgress * 100}%, transparent 100%)`,
-                        transition: 'none'
-                      }}
-                    >
-                      {decodeHtmlEntities(word.word)}
-                    </span>
-                  </span>
-                ) : (
-                  <span className="text-white">
-                    {decodeHtmlEntities(word.word)}
-                  </span>
-                )}
+                <span className={isCurrentWord ? (isMyLine ? 'text-green-400' : 'text-blue-400') : 'text-white'}>
+                  {decodeHtmlEntities(word.word)}
+                </span>
               </span>
             </span>
           );
@@ -268,18 +232,17 @@ const ScriptDisplay = ({
     <div className={`bg-gray-900/80 backdrop-blur-sm rounded-lg sm:rounded-xl w-full flex flex-col relative border ${isDuet && !isMyLine ? 'border-blue-800' : 'border-gray-800'} shadow-lg`}>
       <div className={`bg-gradient-to-br ${isDuet &&  !isMyLine ? 'from-[#0f1a2a] to-[#1e2b3b]' : 'from-[#0f172a] to-[#1e293b]'} rounded-lg sm:rounded-xl p-2 sm:p-[0.6vw] shadow-xl text-white border ${isDuet && !isMyLine ? 'border-blue-700/50' : 'border-gray-700/50'} flex flex-col justify-between min-h-[10vh] sm:min-h-[12vh]`}>
         
-        {/* 상단 통합 영역: 스크립트 번호(좌) + 버튼들(중) + 시간 정보(우) */}
+        {/* 상단 통합 영역: 배우 정보(좌) + 버튼들(중) + 시간 정보(우) */}
         <div className="flex items-center justify-between w-full py-1 sm:py-[0.3vh]">
-          {/* 왼쪽: 스크립트 번호 */}
+          {/* 왼쪽: 배우 정보 */}
           <div className="flex items-center flex-1" style={{ fontSize: 'clamp(10px, 1.2vw, 20px)' }}>
-            <span className="text-teal-300 font-mono">{currentScriptIndex + 1}</span>&nbsp;/ <span className="font-mono">{captions.length}</span>
             {isDuet && (
-              <span className={`ml-1 sm:ml-2 px-1 sm:px-2 py-0.5 rounded-lg text-xs ${
+              <span className={`px-1 sm:px-2 py-0.5 rounded-lg text-xs ${
                 isMyLine 
                   ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white font-medium' 
                   : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium'
               }`}>
-                {isMyLine ? '나' : (captions[currentScriptIndex]?.actor?.name || '상대배우')}
+                {isMyLine ? (user?.name || '나') : (captions[currentScriptIndex]?.actor?.name || '상대배우')}
               </span>
             )}
           </div>
@@ -422,29 +385,7 @@ const ScriptDisplay = ({
           </div>
         </div>
 
-        {/* 스크립트 진행바 */}
-        <div className="relative w-full h-2 sm:h-[1vh] sm:min-h-[8px] sm:max-h-[16px] bg-gray-800/90 rounded-lg overflow-hidden shadow-inner border border-gray-700/30 mt-2 sm:mt-[1vh]">
-          <div
-            className={`absolute top-0 left-0 h-full ${
-              isDuet && !isMyLine
-                ? 'bg-gradient-to-r from-blue-600 via-indigo-500 to-violet-500'
-                : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-green-500'
-            } transition-all duration-500 ease-out`}
-            style={{ 
-              width: `${((currentScriptIndex + 1) / captions.length) * 100}%`,
-              boxShadow: isDuet && !isMyLine 
-                ? '0 0 10px rgba(59, 130, 246, 0.5)' 
-                : '0 0 10px rgba(16, 185, 129, 0.5)'
-            }}
-          >
-            <span 
-              className="absolute right-1 sm:right-2 font-bold text-white drop-shadow-md flex items-center h-full" 
-              style={{ fontSize: 'clamp(6px, 0.8vw, 12px)' }}
-            >
-              {Math.round(((currentScriptIndex + 1) / captions.length) * 100)}%
-            </span>
-          </div>
-        </div>
+
 
         {/* 스크립트 본문 영역 */}
         <div className="flex flex-col items-center flex-1 justify-center gap-1 sm:gap-[0.5vh] mt-1 sm:mt-[0.5vh]">

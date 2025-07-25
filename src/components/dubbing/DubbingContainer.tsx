@@ -14,6 +14,7 @@ import { useDubbingState } from "@/hooks/useDubbingState";
 import { useBackgroundAudio } from "@/hooks/useBackgroundAudio";
 import DubbingListenModal from "@/components/result/DubbingListenModal";
 import Sidebar from "@/components/ui/Sidebar";
+import ProgressBar from "@/components/ui/ProgressBar";
 import { useTokenStore } from '@/store/useTokenStore';
 import { useDubbingRecorder } from '@/hooks/useDubbingRecorder';
 import { useUser } from "@/hooks/useUser";
@@ -154,6 +155,7 @@ const DubbingContainer = ({
   const videoPlayerRef = useRef<VideoPlayerRef | null>(null);
   const resultsRef = useRef<HTMLDivElement | null>(null);
   const { cleanupMic } = useAudioStream();
+  const { user } = useUser();
 
 
 
@@ -990,6 +992,17 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
       {/* 모바일 레이아웃 (640px 이하) - 스크립트 컨트롤만 */}
       <div className="block sm:hidden">
         <div className="px-2 py-2">
+          {/* 진행률 표시 */}
+          <div className="mb-4 px-2">
+            <ProgressBar
+              progress={(currentScriptIndex + 1) / (front_data?.captions?.length || 1) * 100}
+              label={`진행률 (${currentScriptIndex + 1}/${front_data?.captions?.length})`}
+              color="emerald"
+              size="md"
+              isDuet={isDuet}
+              isMyLine={isMyLine(currentScriptIndex)}
+            />
+          </div>
           <div className="mb-2">
             <ScriptDisplay
               captions={front_data.captions}
@@ -1109,7 +1122,7 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
                                 ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white' 
                                 : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
                             }`}>
-                              {isMyLine(index) ? '내 대사' : caption.actor?.name || '상대방'}
+                              {isMyLine(index) ? (user?.name || '나') : caption.actor?.name || '상대방'}
                             </span>
                           )}
                         </div>
@@ -1169,7 +1182,19 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
         >
           {/* VideoPlayer는 모바일 레이아웃의 것을 공통으로 사용 */}
 
-          <div className="mt-0 sm:mt-1 col-span-12 flex-shrink-0">
+          {/* Script Display - 동적 마진 */}
+          <div className="mt-1 col-span-12 flex-shrink-0">
+            {/* 진행률 표시 */}
+            <div className="mb-4 px-4">
+              <ProgressBar
+                progress={(currentScriptIndex + 1) / (front_data?.captions?.length || 1) * 100}
+                label={`진행률 (${currentScriptIndex + 1}/${front_data?.captions?.length})`}
+                color="emerald"
+                size="md"
+                isDuet={isDuet}
+                isMyLine={isMyLine(currentScriptIndex)}
+              />
+            </div>
             <ScriptDisplay
               captions={front_data.captions}
               currentScriptIndex={currentScriptIndex}
