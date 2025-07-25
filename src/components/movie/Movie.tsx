@@ -195,6 +195,13 @@ export default function Movie({
   const featuredVideo = videos[0];
   const heroVideos = latestTokens.slice(0, 5);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
+
+  // 스와이프 감지를 위한 최소 거리
+  const minSwipeDistance = 50;
 
   // 5초마다 자동으로 오른쪽(다음)으로 이동
   useEffect(() => {
@@ -216,6 +223,45 @@ export default function Movie({
     setDirection(idx > currentIndex ? 1 : -1);
     setCurrentIndex(idx)
   };
+
+  // 스와이프 핸들러 함수들
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+    setIsDragging(true);
+    setDragOffset(0);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (!touchStart) return;
+    
+    const currentTouch = e.targetTouches[0].clientX;
+    const diff = currentTouch - touchStart;
+    
+    setTouchEnd(currentTouch);
+    setDragOffset(diff);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) {
+      setIsDragging(false);
+      setDragOffset(0);
+      return;
+    }
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      goToNext();
+    } else if (isRightSwipe) {
+      goToPrev();
+    }
+    
+    setIsDragging(false);
+    setDragOffset(0);
+  };
   //슬라이드가 왼쪽/오른쪽으로 이동하는지 구분
   const [direction, setDirection] = useState(0); // -1: 왼쪽, 1: 오른쪽
 
@@ -232,22 +278,65 @@ export default function Movie({
       <div className="pt-24">
         {/* Hero Banner */}
         {heroVideos.length > 0 && (
-          <div className="relative h-[40vh] sm:h-[70vh] min-h-[300px] sm:min-h-[500px] mb-4 sm:mb-8">
+          <div 
+            className="relative h-[40vh] sm:h-[70vh] min-h-[300px] sm:min-h-[500px] mb-4 sm:mb-8"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+          >
             {/* 유튜브 썸네일 배경 */}
-            <div className="absolute inset-0">
+            <div className="absolute inset-0 overflow-hidden">
+              {/* 이전 이미지 (오른쪽으로 드래그할 때 보임) */}
+              {isDragging && dragOffset > 0 && (
+                <motion.img
+                  src={`https://img.youtube.com/vi/${heroVideos[currentIndex === 0 ? heroVideos.length - 1 : currentIndex - 1].youtubeId}/maxresdefault.jpg`}
+                  alt="이전 배너"
+                  className="w-full h-full object-cover object-center absolute inset-0"
+                  style={{ 
+                    filter: 'brightness(1)',
+                    transform: `translateX(${dragOffset - window.innerWidth}px)`
+                  }}
+                />
+              )}
+              
+              {/* 현재 이미지 */}
               <AnimatePresence initial={false} custom={direction}>
                 <motion.img
                   key={currentIndex}
                   src={`https://img.youtube.com/vi/${heroVideos[currentIndex].youtubeId}/maxresdefault.jpg`}
                   alt="배너 배경"
                   className="w-full h-full object-cover object-center absolute inset-0"
-                  style={{ filter: 'brightness(1)' }}
+                  style={{ 
+                    filter: 'brightness(1)',
+                    transform: isDragging ? `translateX(${dragOffset}px)` : undefined
+                  }}
                   initial={{ x: direction > 0 ? 300 : -300, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
+                  animate={{ 
+                    x: isDragging ? dragOffset : 0, 
+                    opacity: 1 
+                  }}
                   exit={{ x: direction > 0 ? -300 : 300, opacity: 0 }}
-                  transition={{ type: "spring", stiffness: 500, damping: 40 }}
+                  transition={{ 
+                    type: isDragging ? "tween" : "spring", 
+                    stiffness: 500, 
+                    damping: 40,
+                    duration: isDragging ? 0 : undefined
+                  }}
                 />
               </AnimatePresence>
+              
+              {/* 다음 이미지 (왼쪽으로 드래그할 때 보임) */}
+              {isDragging && dragOffset < 0 && (
+                <motion.img
+                  src={`https://img.youtube.com/vi/${heroVideos[currentIndex === heroVideos.length - 1 ? 0 : currentIndex + 1].youtubeId}/maxresdefault.jpg`}
+                  alt="다음 배너"
+                  className="w-full h-full object-cover object-center absolute inset-0"
+                  style={{ 
+                    filter: 'brightness(1)',
+                    transform: `translateX(${dragOffset + window.innerWidth}px)`
+                  }}
+                />
+              )}
               {/* 기존 어두운 오버레이 */}
               <div className="absolute inset-0 bg-black/60"></div>
             </div>
