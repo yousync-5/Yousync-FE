@@ -5,6 +5,7 @@ import QueryProvider from './providers/QueryProvider'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import React, { ReactNode } from 'react'
 import ConditionalNavBar from '@/components/ui/ConditionalNavBar'
+import FloatingRequestButton from '@/components/ui/FloatingRequestButton'
 const inter = Inter({ subsets: ['latin'] });
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -14,6 +15,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <QueryProvider>
             <ConditionalNavBar />
             {children}
+            <FloatingRequestButton />
           </QueryProvider>
         </GoogleOAuthProvider>
       </body>
