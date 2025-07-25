@@ -921,11 +921,11 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
 
       {/* 공통 VideoPlayer - 모든 화면 크기에서 사용 */}
       <div className="pt-16 sm:pt-20 lg:pt-24">
-        <div className={`px-2 py-2 sm:px-4 lg:px-6 sm:py-1 lg:py-4 transition-all duration-300 ease-in-out ${
+        <div className={`px-2 py-0 sm:px-4 lg:px-6 sm:py-1 lg:py-2 transition-all duration-300 ease-in-out ${
           isSidebarOpen ? 'sm:w-[calc(100%-20vw)]' : 'sm:w-full'
         }`}>
           {/* Video - 모든 화면 크기에서 전체 너비 */}
-          <div className="relative mb-2">
+          <div className="relative mb-0">
             <VideoPlayer
               videoId={front_data.movie.youtube_url.split("v=")[1]}
               onTimeUpdate={handleTimeUpdate}
@@ -1161,7 +1161,7 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
       </div>
 
       {/* 데스크톱 레이아웃 (640px 초과) */}
-      <div className="hidden sm:block pt-16 sm:pt-20 lg:pt-24">
+      <div className="hidden sm:block">
         <div
           className={`px-2 sm:px-4 lg:px-6 py-1 sm:py-2 lg:py-4 transition-all duration-300 ease-in-out ${
             isSidebarOpen ? 'w-[calc(100%-20vw)]' : 'w-full'
@@ -1169,7 +1169,7 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
         >
           {/* VideoPlayer는 모바일 레이아웃의 것을 공통으로 사용 */}
 
-          <div className="mt-1 col-span-12 flex-shrink-0">
+          <div className="mt-0 sm:mt-1 col-span-12 flex-shrink-0">
             <ScriptDisplay
               captions={front_data.captions}
               currentScriptIndex={currentScriptIndex}
