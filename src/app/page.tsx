@@ -71,14 +71,14 @@ export default function LandingPage() {
        {/* 우측 하단 + 버튼 */}
     {step !== "main" && (<div 
       className="fixed z-50"
-      style={{ bottom: '2rem', right: '2rem' }}
+      style={{ bottom: '1rem', right: '1rem' }}
     >
       <Link
         href="/uploadrequest"
-        className="w-16 h-16 rounded-full bg-gradient-to-r from-emerald-400 via-green-500 to-emerald-400 text-black font-bold shadow-lg flex items-center justify-center text-3xl"
+        className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-r from-emerald-400 via-green-500 to-emerald-400 text-black font-bold shadow-lg flex items-center justify-center text-xl sm:text-3xl"
         aria-label="게시판 열기"
       >
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <svg width="24" height="24" viewBox="0 0 32 32" fill="none" className="sm:w-8 sm:h-8">
           <rect x="14" y="6" width="4" height="20" rx="2" fill="currentColor" />
           <rect x="6" y="14" width="20" height="4" rx="2" fill="currentColor" />
         </svg>

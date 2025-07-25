@@ -174,7 +174,7 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
       <div className="pt-24">
         {/* Hero Banner */}
         {heroVideos.length > 0 && (
-          <div className="relative h-[70vh] min-h-[500px] mb-8">
+          <div className="relative h-[40vh] sm:h-[70vh] min-h-[300px] sm:min-h-[500px] mb-4 sm:mb-8">
             {/* 유튜브 썸네일 배경 */}
             <div className="absolute inset-0">
               <AnimatePresence initial={false} custom={direction}>
@@ -197,36 +197,36 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
               {/* 좌측 화살표 */}
               <button
                 onClick={goToPrev}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/70 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl"
+                className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/70 text-white rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-lg sm:text-2xl"
                 aria-label="이전 비디오"
               >
-                <ChevronLeftIcon className="w-6 h-6" />
+                <ChevronLeftIcon className="w-4 h-4 sm:w-6 sm:h-6" />
               </button>
               {/* 비디오 정보 */}
               <div className="max-w-7xl mx-auto px-2 w-full">
                 <div className="max-w-2xl">
-                  <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 drop-shadow-lg">
+                  <h1 className="text-2xl sm:text-5xl md:text-7xl font-bold text-white mb-2 sm:mb-4 drop-shadow-lg">
                     {heroVideos[currentIndex].actor_name}
                   </h1>
-                  <p className="text-xl text-white/90 mb-8 max-w-lg">
+                  <p className="text-sm sm:text-xl text-white/90 mb-4 sm:mb-8 max-w-lg">
                     YouSync와 함께하는 {heroVideos[currentIndex].actor_name}의 최신 더빙 영상입니다.
-                    <br />
+                    <br className="hidden sm:block" />
                     다양한 장르의 영화를 즐겨보세요!
                   </p>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 sm:gap-4">
                     <button
                       onClick={() => {
                         openModal(String(heroVideos[currentIndex].id))}}
-                      className="flex items-center gap-2 px-8 py-4 bg-transparent text-white rounded-full font-bold hover:bg-white/20 transition-all duration-200 transform hover:scale-105 shadow-lg border-2 border-white"
+                      className="flex items-center gap-1 sm:gap-2 px-4 sm:px-8 py-2 sm:py-4 bg-transparent text-white rounded-full font-bold hover:bg-white/20 transition-all duration-200 transform hover:scale-105 shadow-lg border-2 border-white text-sm sm:text-base"
                     >
-                      <PlayIcon className="w-6 h-6 text-white" />
+                      <PlayIcon className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
                       <span className="text-white font-bold">재생하기</span>
                     </button>
                     <button
-                      className="flex items-center gap-2 px-8 py-4 bg-transparent text-white rounded-full font-bold hover:bg-white/20 transition-all duration-200 transform hover:scale-105 border-2 border-white"
+                      className="flex items-center gap-1 sm:gap-2 px-4 sm:px-8 py-2 sm:py-4 bg-transparent text-white rounded-full font-bold hover:bg-white/20 transition-all duration-200 transform hover:scale-105 border-2 border-white text-sm sm:text-base"
                       onClick={() => {router.push(`/actor/${encodeURIComponent(heroVideos[currentIndex].actor_name)}`)}}
                     >
-                      <InformationCircleIcon className="w-6 h-6 text-white" />
+                      <InformationCircleIcon className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
                       <span className="text-white font-bold">배우 정보</span>
                     </button>
                   </div>
@@ -235,53 +235,53 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
               {/* 우측 화살표 */}
               <button
                 onClick={goToNext}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/70 text-white rounded-full w-10 h-10 flex items-center justify-center text-2xl"
+                className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 bg-black/40 hover:bg-black/70 text-white rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-lg sm:text-2xl"
                 aria-label="다음 비디오"
               >
-                <ChevronRightIcon className="w-6 h-6" />
+                <ChevronRightIcon className="w-4 h-4 sm:w-6 sm:h-6" />
               </button>
             </div>
             {/* 인디케이터 */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+            <div className="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 flex gap-1 sm:gap-2 z-20">
               {heroVideos.map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => goToIndex(idx)}
-                  className={`w-3 h-3 rounded-full transition-all duration-200 ${currentIndex === idx ? 'bg-white scale-125' : 'bg-gray-500 opacity-60'}`}
+                  className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-200 ${currentIndex === idx ? 'bg-white scale-125' : 'bg-gray-500 opacity-60'}`}
                   aria-label={`비디오 ${idx + 1}번`}
                 />
               ))}
             </div>
-            <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/70 to-transparent"></div>
+            <div className="absolute bottom-0 left-0 right-0 h-16 sm:h-32 bg-gradient-to-t from-black/70 to-transparent"></div>
           </div>
         )}
-        <div className="max-w-7xl mx-auto px-2">
+        <div className="max-w-7xl mx-auto px-1 sm:px-2">
           
           {isLoading && (
-            <div className="flex items-center justify-center py-20">
+            <div className="flex items-center justify-center py-10 sm:py-20">
               <div className="flex flex-col items-center space-y-4">
-                <div className="animate-spin w-8 h-8 border-3 border-green-400 border-t-transparent rounded-full" />
-                <div className="text-gray-500 font-medium">영화를 불러오는 중...</div>
+                <div className="animate-spin w-6 h-6 sm:w-8 sm:h-8 border-2 sm:border-3 border-green-400 border-t-transparent rounded-full" />
+                <div className="text-gray-500 font-medium text-sm sm:text-base">영화를 불러오는 중...</div>
               </div>
             </div>
           )}
           {error && (
-            <div className="flex items-center justify-center py-20">
-              <div className="text-red-400 font-medium">에러 발생: {error.toString()}</div>
+            <div className="flex items-center justify-center py-10 sm:py-20">
+              <div className="text-red-400 font-medium text-sm sm:text-base">에러 발생: {error.toString()}</div>
             </div>
           )}
           {!isLoading && !error && (
-            <div className="space-y-12">
+            <div className="space-y-6 sm:space-y-12">
               {sections.map((section) => (
                 <div key={section.id} className="relative group">
-                  <div className="mb-6">
-                    <div className="flex items-center gap-3 mb-2">
+                  <div className="mb-3 sm:mb-6">
+                    <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
                       {section.icon}
-                      <h2 className="text-3xl font-bold bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent">
+                      <h2 className="text-xl sm:text-3xl font-bold bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent">
                         {section.title}
                       </h2>
                     </div>
-                    <p className="text-gray-500 ml-9 font-medium">{section.subtitle}</p>
+                    <p className="text-gray-500 ml-6 sm:ml-9 font-medium text-sm sm:text-base">{section.subtitle}</p>
                   </div>
                   {/* MovieList만! */}
                   <MovieList
@@ -296,20 +296,20 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                   />
                   {/* 싱크 컬렉션 아래에만 듀엣 더빙 섹션 삽입 */}
                   {section.id === "sync-collection" && (
-                    <div className="relative group mt-16">
-                      <div className="mb-6">
-                        <div className="flex items-center gap-3 mb-2">
-                          <UserGroupIcon className="w-6 h-6 text-blue-400" />
-                          <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                    <div className="relative group mt-8 sm:mt-16">
+                      <div className="mb-3 sm:mb-6">
+                        <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+                          <UserGroupIcon className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
+                          <h2 className="text-xl sm:text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                             배우와 듀엣 더빙
                           </h2>
                         </div>
-                        <p className="text-gray-500 ml-9 font-medium">실제 배우와 함께 명장면을 연기해보세요!</p>
+                        <p className="text-gray-500 ml-6 sm:ml-9 font-medium text-sm sm:text-base">실제 배우와 함께 명장면을 연기해보세요!</p>
                       </div>
                       {duetScenesLoading ? (
-                        <div className="text-gray-400 text-lg py-8">듀엣 더빙 목록을 불러오는 중...</div>
+                        <div className="text-gray-400 text-base sm:text-lg py-4 sm:py-8">듀엣 더빙 목록을 불러오는 중...</div>
                       ) : duetScenesError ? (
-                        <div className="text-red-400 text-lg py-8">듀엣 더빙 목록을 불러오지 못했습니다.</div>
+                        <div className="text-red-400 text-base sm:text-lg py-4 sm:py-8">듀엣 더빙 목록을 불러오지 못했습니다.</div>
                       ) : (
                         <MovieList
                           sectionId="duet-dubbing"
@@ -323,8 +323,8 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                           customRender={(video, index) => (
                             <div
                               key={`duet-${index}`}
-                              className="relative bg-gray-900 border-2 border-gray-800 rounded-3xl overflow-hidden hover:border-blue-400 hover:shadow-2xl transition-all duration-300 cursor-pointer flex-shrink-0 transform hover:scale-105 aspect-video"
-                              style={{ minWidth: "280px", maxWidth: "280px" }}
+                              className="relative bg-gray-900 border-2 border-gray-800 rounded-2xl sm:rounded-3xl overflow-hidden hover:border-blue-400 hover:shadow-2xl transition-all duration-300 cursor-pointer flex-shrink-0 transform hover:scale-105 aspect-video"
+                              style={{ minWidth: "200px", maxWidth: "200px" }}
                               onClick={() => {
                                 const scene = duetScenes[index];
                                 setSelectedDuet({ scene, pair: scene.duet_pair[0] });
@@ -332,16 +332,16 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                             >
                               {/* 듀엣 전용 오버레이 */}
                               <div className="absolute inset-0 z-10 flex flex-col justify-between pointer-events-none">
-                                <div className="flex justify-between p-3">
-                                  <div className="flex items-center gap-1 bg-blue-500/80 text-white px-2 py-1 rounded-full text-xs font-bold shadow">
+                                <div className="flex justify-between p-2 sm:p-3">
+                                  <div className="flex items-center gap-1 bg-blue-500/80 text-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-bold shadow">
                                     {duetScenes[index].duet_pair[0].actor_name}
                                   </div>
-                                  <div className="flex items-center gap-1 bg-green-500/80 text-white px-2 py-1 rounded-full text-xs font-bold shadow">
+                                  <div className="flex items-center gap-1 bg-green-500/80 text-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-bold shadow">
                                     {duetScenes[index].duet_pair[1].actor_name}
                                   </div>
                                 </div>
-                                <div className="flex justify-center mb-3">
-                                  <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">듀엣 더빙</span>
+                                <div className="flex justify-center mb-2 sm:mb-3">
+                                  <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 text-white px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-bold shadow-lg">듀엣 더빙</span>
                                 </div>
                               </div>
                               {/* 유튜브 썸네일 */}
@@ -352,18 +352,18 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
                                 draggable={false}
                               />
                               {/* 카드 설명 영역 */}
-                              <div className="p-6 relative z-20 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
-                                <h3 className="font-bold mb-2 text-white text-lg">
+                              <div className="p-3 sm:p-6 relative z-20 bg-gradient-to-t from-black/80 via-black/30 to-transparent">
+                                <h3 className="font-bold mb-1 sm:mb-2 text-white text-sm sm:text-lg">
                                   {duetScenes[index].scene_title}
                                 </h3>
-                                <p className="text-sm text-gray-300 font-medium mb-3">
+                                <p className="text-xs sm:text-sm text-gray-300 font-medium mb-2 sm:mb-3">
                                   {duetScenes[index].duet_pair[0].actor_name} & {duetScenes[index].duet_pair[1].actor_name}
                                 </p>
                                 <button
-                                  className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-colors shadow-lg bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 text-white hover:brightness-110"
+                                  className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1 sm:py-2 rounded-full text-xs sm:text-sm font-bold transition-colors shadow-lg bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 text-white hover:brightness-110"
                                   style={{ pointerEvents: 'auto' }}
                                 >
-                                  <PlayIcon className="w-4 h-4" />
+                                  <PlayIcon className="w-3 h-3 sm:w-4 sm:h-4" />
                                   듀엣 시작
                                 </button>
                               </div>

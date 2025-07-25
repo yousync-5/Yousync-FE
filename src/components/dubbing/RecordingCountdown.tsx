@@ -61,31 +61,32 @@ const RecordingCountdown: React.FC<RecordingCountdownProps> = ({
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.5, opacity: 0 }}
-          className="flex flex-col items-center"
+          className="flex flex-col items-center px-4"
         >
-          <div className="mb-6 relative" style={{ height: '12rem' }}>
-            <span style={{ 
-              fontSize: '12rem', 
-              fontWeight: 'bold', 
-              lineHeight: '1', 
-              color: 'white',
-              display: 'inline-block'
-            }}>
+          {/* 카운트다운 숫자 - 반응형 */}
+          <div className="mb-4 sm:mb-6 relative flex items-baseline">
+            <span 
+              className="font-bold text-white inline-block leading-none"
+              style={{ 
+                fontSize: 'clamp(6rem, 15vw, 12rem)',
+                lineHeight: '0.9'
+              }}
+            >
               {integerPart}
             </span>
-            <span style={{ 
-              fontSize: '6rem', 
-              fontWeight: 'bold', 
-              lineHeight: '1', 
-              color: 'white',
-              position: 'absolute',
-              bottom: '0',
-              marginLeft: '0.2rem'
-            }}>
+            <span 
+              className="font-bold text-white ml-1 sm:ml-2"
+              style={{ 
+                fontSize: 'clamp(3rem, 7.5vw, 6rem)',
+                lineHeight: '0.9'
+              }}
+            >
               .{decimalPart}
             </span>
           </div>
-          <div className="w-96 h-8 bg-gray-700 rounded-full overflow-hidden">
+          
+          {/* 진행바 - 반응형 */}
+          <div className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg h-4 sm:h-6 md:h-8 bg-gray-700 rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-emerald-500"
               initial={{ width: '100%' }}
@@ -98,7 +99,12 @@ const RecordingCountdown: React.FC<RecordingCountdownProps> = ({
               }}
             />
           </div>
-          <div className="text-4xl text-white mt-6 font-semibold">
+          
+          {/* 상태 텍스트 - 반응형 */}
+          <div 
+            className="text-white mt-3 sm:mt-4 md:mt-6 font-semibold text-center"
+            style={{ fontSize: 'clamp(1.25rem, 4vw, 2.5rem)' }}
+          >
             {timeLeft <= 0.1 ? "녹음 시작!" : "녹음 준비 중..."}
           </div>
         </motion.div>

@@ -35,33 +35,96 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const initialStartTimeRef = useRef(startTime);
     const isPlayingRef = useRef<boolean>(false);
+    const [isMobile, setIsMobile] = useState(false);
+
+    // 모바일 디바이스 감지
+    useEffect(() => {
+      const checkMobile = () => {
+        const userAgent = navigator.userAgent || navigator.vendor;
+        const isMobileDevice = /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+        const isSmallScreen = window.innerWidth <= 768;
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        setIsMobile(isMobileDevice || (isSmallScreen && isTouchDevice));
+      };
+      
+      checkMobile();
+      window.addEventListener('resize', checkMobile);
+      return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     // 외부에서 호출할 수 있는 메서드들
     useImperativeHandle(ref, () => ({
       seekTo: (time: number) => {
+        console.log('[VideoPlayer] seekTo 호출:', time, 'playerRef.current:', !!playerRef.current);
         if (playerRef.current) {
-          playerRef.current.seekTo(time);
+          try {
+            playerRef.current.seekTo(time);
+            console.log('[VideoPlayer] seekTo 성공');
+          } catch (error) {
+            console.error('[VideoPlayer] seekTo 에러:', error);
+          }
+        } else {
+          console.error('[VideoPlayer] seekTo 실패: playerRef.current가 null');
         }
       },
       playVideo: () => {
+        console.log('[VideoPlayer] playVideo 호출, playerRef.current:', !!playerRef.current);
         if (playerRef.current) {
-          playerRef.current.playVideo();
-          isPlayingRef.current = true;
+          try {
+            playerRef.current.playVideo();
+            isPlayingRef.current = true;
+            console.log('[VideoPlayer] playVideo 성공');
+            // 강제로 onPlay 콜백 호출
+            if (onPlay) {
+              setTimeout(() => {
+                console.log('[VideoPlayer] onPlay 콜백 호출');
+                onPlay();
+              }, 100);
+            }
+          } catch (error) {
+            console.error('[VideoPlayer] playVideo 에러:', error);
+          }
+        } else {
+          console.error('[VideoPlayer] playVideo 실패: playerRef.current가 null');
         }
       },
       pauseVideo: () => {
+        console.log('[VideoPlayer] pauseVideo 호출, playerRef.current:', !!playerRef.current);
         if (playerRef.current) {
-          playerRef.current.pauseVideo();
-          isPlayingRef.current = false;
+          try {
+            playerRef.current.pauseVideo();
+            isPlayingRef.current = false;
+            console.log('[VideoPlayer] pauseVideo 성공');
+            // 강제로 onPause 콜백 호출
+            if (onPause) {
+              setTimeout(() => {
+                console.log('[VideoPlayer] onPause 콜백 호출');
+                onPause();
+              }, 100);
+            }
+          } catch (error) {
+            console.error('[VideoPlayer] pauseVideo 에러:', error);
+          }
+        } else {
+          console.error('[VideoPlayer] pauseVideo 실패: playerRef.current가 null');
         }
       },
       getCurrentTime: () => {
         if (playerRef.current) {
-          return playerRef.current.getCurrentTime();
+          try {
+            const time = playerRef.current.getCurrentTime();
+            console.log('[VideoPlayer] getCurrentTime:', time);
+            return time;
+          } catch (error) {
+            console.error('[VideoPlayer] getCurrentTime 에러:', error);
+            return 0;
+          }
         }
+        console.error('[VideoPlayer] getCurrentTime 실패: playerRef.current가 null');
         return 0;
       },
       getIsPlaying: () => {
+        console.log('[VideoPlayer] getIsPlaying:', isPlayingRef.current);
         return isPlayingRef.current;
       }
     }));
@@ -89,26 +152,52 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
     }, [showOverlay, playerReady]);
 
     const onReady = (event: { target: { seekTo: (time: number) => void; playVideo: () => void; pauseVideo: () => void; getCurrentTime: () => number } }) => {
+      console.log('[VideoPlayer] onReady 호출됨');
       playerRef.current = event.target;
       setPlayerReady(true);
       
+      // 플레이어 메서드들이 사용 가능한지 확인
+      console.log('[VideoPlayer] 플레이어 메서드 확인:', {
+        seekTo: typeof event.target.seekTo,
+        playVideo: typeof event.target.playVideo,
+        pauseVideo: typeof event.target.pauseVideo,
+        getCurrentTime: typeof event.target.getCurrentTime
+      });
+      
       // 시작 시간이 설정되어 있으면 해당 시간으로 이동
       if (startTime > 0) {
-        event.target.seekTo(startTime);
+        console.log('[VideoPlayer] 시작 시간으로 이동:', startTime);
+        try {
+          event.target.seekTo(startTime);
+        } catch (error) {
+          console.error('[VideoPlayer] 시작 시간 이동 에러:', error);
+        }
       }
       
       // 영상을 잠시 재생했다가 정지하여 첫 프레임이 보이도록 함
-      event.target.playVideo();
-      
-      // 약간의 지연 후에 정지 (첫 프레임이 로드될 시간을 줌)
-      setTimeout(() => {
-        if (playerRef.current) {
-          playerRef.current.pauseVideo();
-        }
-      }, 300); // 300ms 지연으로 첫 프레임이 로드될 시간을 충분히 줌
+      console.log('[VideoPlayer] 첫 프레임 로드를 위한 재생/정지');
+      try {
+        event.target.playVideo();
+        
+        // 약간의 지연 후에 정지 (첫 프레임이 로드될 시간을 줌)
+        setTimeout(() => {
+          if (playerRef.current) {
+            console.log('[VideoPlayer] 첫 프레임 로드 완료, 정지');
+            try {
+              playerRef.current.pauseVideo();
+            } catch (error) {
+              console.error('[VideoPlayer] 첫 프레임 로드 후 정지 에러:', error);
+            }
+          }
+        }, 300);
+      } catch (error) {
+        console.error('[VideoPlayer] 첫 프레임 로드 재생 에러:', error);
+      }
     };
 
     const onStateChange = (event: { data: number }) => {
+      console.log('[VideoPlayer] 상태 변경:', event.data);
+      
       // 기존 인터벌 정리
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -117,27 +206,46 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
 
       // 재생 중일 때만 시간 업데이트
       if (event.data === 1) { // 1 = 재생 중
-        isPlayingRef.current = true; // 재생 상태 업데이트
-        if (typeof onPlay === 'function') onPlay();
+        console.log('[VideoPlayer] 재생 시작');
+        isPlayingRef.current = true;
+        if (typeof onPlay === 'function') {
+          onPlay();
+        }
+        
         intervalRef.current = setInterval(() => {
           if (playerRef.current && onTimeUpdate) {
             const currentTime = playerRef.current.getCurrentTime();
             onTimeUpdate(currentTime);
             // endTime 체크 후 자동 정지
             if (endTime !== undefined && currentTime >= endTime) {
+              console.log('[VideoPlayer] endTime 도달, 정지');
               playerRef.current.pauseVideo();
-              isPlayingRef.current = false; // 정지 상태 업데이트
+              isPlayingRef.current = false;
               if (onEndTimeReached) onEndTimeReached();
             }
           }
-        }, 50); // 100ms → 50ms로 단축하여 더 정확한 동기화
+        }, 50);
       } else if (event.data === 2) { // 2 = 일시정지
-        isPlayingRef.current = false; // 정지 상태 업데이트
+        console.log('[VideoPlayer] 일시정지');
+        isPlayingRef.current = false;
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
           intervalRef.current = null;
         }
-        if (typeof onPause === 'function') onPause();
+        if (typeof onPause === 'function') {
+          onPause();
+        }
+      } else if (event.data === 0) { // 0 = 종료
+        console.log('[VideoPlayer] 재생 종료');
+        isPlayingRef.current = false;
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      } else if (event.data === 3) { // 3 = 버퍼링
+        console.log('[VideoPlayer] 버퍼링 중');
+      } else if (event.data === 5) { // 5 = 동영상 신호
+        console.log('[VideoPlayer] 동영상 신호');
       }
     };
 
@@ -145,7 +253,7 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
 
     return (
       <div className="bg-black overflow-hidden w-full relative">
-        <div className="relative w-full pt-[40%]">
+        <div className={`relative w-full ${isMobile ? 'pt-[56.25%]' : 'pt-[40%]'}`}>
           <YouTube
             videoId={videoId}
             className="absolute top-0 left-0 w-full h-full"
@@ -156,14 +264,17 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
               height: "100%",
               playerVars: {
                 autoplay: 0,
-                controls: 0,
+                controls: 0, // 모든 디바이스에서 컨트롤 숨김
                 modestbranding: 1,
                 rel: 0,
                 showinfo: 0,
                 iv_load_policy: 3,
-                disablekb: 1,
-                fs: 0,
-                start: initialStartTimeRef.current, // 시작 시간 설정
+                disablekb: 1, // 모든 디바이스에서 키보드 컨트롤 비활성화
+                fs: 0, // 모든 디바이스에서 전체화면 비활성화
+                start: initialStartTimeRef.current,
+                playsinline: 1, // iOS에서 인라인 재생 허용
+                enablejsapi: 1, // JavaScript API 활성화
+                origin: typeof window !== 'undefined' ? window.location.origin : undefined,
               },
             }}
           />
@@ -178,10 +289,17 @@ const VideoPlayer = forwardRef<VideoPlayerRef, VideoPlayerProps>(
         {onOpenSidebar && (
           <button
             onClick={onOpenSidebar}
-            className="absolute top-2 right-2 flex items-center justify-center w-8 h-8 bg-gray-800/80 text-gray-300 rounded-md hover:bg-gray-700 hover:text-white transition-all duration-200 z-30"
+            className={`absolute top-2 right-2 flex items-center justify-center ${
+              isMobile ? 'w-10 h-10' : 'w-8 h-8'
+            } bg-gray-800/80 text-gray-300 rounded-md hover:bg-gray-700 hover:text-white transition-all duration-200 z-30`}
             title="전체 스크립트 보기"
           >
-            <svg width="50" height="50" viewBox="0 2 28 28" fill="none">
+            <svg 
+              width={isMobile ? "24" : "20"} 
+              height={isMobile ? "24" : "20"} 
+              viewBox="0 2 28 28" 
+              fill="none"
+            >
               <g stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="5,8 8,11 13,6" />
                 <line x1="16" y1="8" x2="23" y2="8" />

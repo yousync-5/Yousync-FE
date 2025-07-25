@@ -51,26 +51,6 @@ const DubbingContainer = ({
 }: DubbingContainerProps) => {
   // 듀엣 모드에서 자동 스크립트 전환 여부를 결정하는 플래그
   const [allowAutoScriptChange, setAllowAutoScriptChange] = useState(false);
-  
-  // 화면 크기 상태 (500px 기준)
-  const [isMobile, setIsMobile] = useState(false);
-
-  // 화면 크기 감지
-  useEffect(() => {
-    const checkScreenSize = () => {
-      setIsMobile(window.innerWidth <= 500);
-    };
-
-    // 초기 체크
-    checkScreenSize();
-
-    // 리사이즈 이벤트 리스너
-    window.addEventListener('resize', checkScreenSize);
-
-    return () => {
-      window.removeEventListener('resize', checkScreenSize);
-    };
-  }, []);
 
   // 데이터 준비 여부 체크
   const isReady = !!(front_data && tokenData && serverPitchData);
@@ -914,13 +894,13 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
   }
   
   const currentWords = isReady ? (tokenData?.scripts?.[currentScriptIndex]?.words || []) : [];
-
+  
   return (
     <div className="min-h-screen bg-neutral-950 text-white relative overflow-hidden">
       <Toaster position="top-center" />
 
-      {/* 모바일 레이아웃 (640px 이하) */}
-      <div className="block sm:hidden pt-16">
+      {/* 모바일 레이아웃 (400px 이하) */}
+      <div className="block sm:hidden">
         <div className="px-2 py-2">
           {/* Video - 모바일에서 전체 너비 */}
           <div className="relative mb-2">
@@ -1153,7 +1133,7 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
         </div>
       </div>
 
-      {/* 데스크톱 레이아웃 (640px 초과) */}
+      {/* 데스크톱 레이아웃 (400px 초과) */}
       <div className="hidden sm:block pt-16 sm:pt-20 lg:pt-24">
         <div
           className={`px-2 sm:px-4 lg:px-6 py-1 sm:py-2 lg:py-4 transition-all duration-300 ease-in-out ${
@@ -1326,7 +1306,427 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
       />
     </div>
   );
+  
+  // VideoPlayer 컴포넌트를 한 번만 정의
+  const videoPlayerComponent = (
+    <VideoPlayer
+      videoId={front_data.movie.youtube_url.split("v=")[1]}
+      onTimeUpdate={handleTimeUpdate}
+      startTime={getCurrentScriptPlaybackRange().startTime}
+      endTime={getCurrentScriptPlaybackRange().endTime}
+      disableAutoPause={true}
+      ref={videoPlayerRef}
+      
+      onEndTimeReached={() => {
+        // 녹음 중이면 녹음부터 중지
+        if (recording) {
+          const currentWords = tokenData?.scripts?.[currentScriptIndex]?.words || [];
+          if (currentWords.length > 0) {
+            const lastWord = currentWords[currentWords.length - 1];
+            const currentTime = videoPlayerRef.current?.getCurrentTime() || 0;
+            if (currentTime >= lastWord.end_time) {
+              console.log(`[녹음 종료] 마지막 단어 종료 시점에 도달하여 녹음 종료`);
+              stopScriptRecording(currentScriptIndex);
+            }
+          } else {
+            stopScriptRecording(currentScriptIndex);
+          }
+          videoPlayerRef.current?.pauseVideo();
+          return;
+        }
 
+        // 현재 스크립트가 '내 대사'인 경우, 일시정지
+        if (isMyLine(currentScriptIndex)) {
+          videoPlayerRef.current?.pauseVideo();
+          return;
+        }
+
+        // 다음 스크립트 인덱스 확인
+        const nextScriptIndex = currentScriptIndex + 1;
+        
+        // 다음 스크립트가 없으면 일시정지
+        if (nextScriptIndex >= front_data.captions.length) {
+          videoPlayerRef.current?.pauseVideo();
+          return;
+        }
+        
+        // 다음 스크립트가 '내 대사'인지 확인
+        const isNextMyLine = isMyLine(nextScriptIndex);
+        
+        // 다음 스크립트가 '내 대사'이면 다음 스크립트 시작점에서 일시정지
+        if (isNextMyLine) {
+          console.log('[자동 전환] 상대방 대사 -> 내 대사: 내 대사 시작점에서 일시정지');
+          setCurrentScriptIndex(nextScriptIndex);
+          videoPlayerRef.current?.pauseVideo();
+          setTimeout(() => {
+            if (videoPlayerRef.current && front_data.captions[nextScriptIndex]) {
+              videoPlayerRef.current.seekTo(front_data.captions[nextScriptIndex].start_time);
+            }
+          }, 100);
+          return;
+        }
+        
+        // 다음 스크립트가 '상대방 대사'이면 자동으로 다음 스크립트로 전환하고 계속 재생
+        console.log('[자동 전환] 상대방 대사 -> 상대방 대사: 자동 전환 후 계속 재생');
+        setCurrentScriptIndex(nextScriptIndex);
+      }}
+      
+      onPlay={customHandlePlay}
+      onPause={customHandlePause}
+      onOpenSidebar={() => setIsSidebarOpen(true)}
+    />
+  );
+
+  return (
+    <div className="min-h-screen bg-neutral-950 text-white relative overflow-hidden">
+      <Toaster position="top-center" />
+
+      {/* 모바일 레이아웃 (640px 이하) */}
+      <div className="block sm:hidden pt-16">
+        <div className="px-2 py-2">
+          {/* Video - 모바일에서 전체 너비 */}
+          <div className="relative mb-2">
+            {videoPlayerComponent}
+            {/* 녹음 카운트다운 컴포넌트 - 비디오 위에 표시 */}
+            {showCountdown && (
+              <div className="absolute inset-0">
+                <RecordingCountdown 
+                  isVisible={showCountdown} 
+                  onComplete={startRecordingAfterCountdown}
+                  duration={1500}
+                />
+              </div>
+            )}
+          </div>
+                console.log('[자동 전환] 상대방 대사 -> 상대방 대사: 자동 전환 후 계속 재생');
+                setCurrentScriptIndex(nextScriptIndex);
+              }}
+              
+              onPlay={customHandlePlay}
+              onPause={customHandlePause}
+              onOpenSidebar={() => setIsSidebarOpen(true)}
+            />
+            {/* 녹음 카운트다운 컴포넌트 - 비디오 위에 표시 */}
+            {showCountdown && (
+              <div className="absolute inset-0">
+                <RecordingCountdown 
+                  isVisible={showCountdown} 
+                  onComplete={startRecordingAfterCountdown}
+                  duration={1500}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Script Display - 모바일에서 비디오 아래 */}
+          <div className="mb-2">
+            <ScriptDisplay
+              captions={front_data.captions}
+              currentScriptIndex={currentScriptIndex}
+              onScriptChange={handleScriptChangeWithPlaybackControl}
+              currentVideoTime={currentVideoTime}
+              playbackRange={getCurrentScriptPlaybackRange()}
+              videoPlayerRef={videoPlayerRef}
+              currentWords={currentWords}
+              recording={recording}
+              recordingCompleted={recordingCompleted}
+              isAnalyzing={isAnalyzing}
+              showAnalysisResult={showAnalysisResult}
+              analysisResult={analysisResult}
+              isVideoPlaying={isVideoPlaying}
+              onPlay={customHandlePlay}
+              onPause={customHandlePause}
+              onMicClick={handleMicClick}
+              isLooping={isLooping}
+              isDuet={isDuet}
+              isMyLine={isMyLine(currentScriptIndex)}
+              onLoopToggle={() => {
+                setIsLooping(!isLooping);
+                if (isDuet) {
+                  setAllowAutoScriptChange(false);
+                }
+                if (!isLooping) {
+                  if (videoPlayerRef?.current && front_data.captions[currentScriptIndex]) {
+                    const startTime = front_data.captions[currentScriptIndex].start_time;
+                    const endTime = front_data.captions[currentScriptIndex].end_time;
+                    const currentTime = videoPlayerRef.current.getCurrentTime();
+                    if (currentTime < startTime || currentTime >= endTime) {
+                      videoPlayerRef.current.seekTo(startTime);
+                    }
+                    videoPlayerRef.current.playVideo();
+                    window.loopIntervalId = setInterval(() => {
+                      if (!videoPlayerRef.current) {
+                        clearInterval(window.loopIntervalId);
+                        return;
+                      }
+                      const currentTime = videoPlayerRef.current.getCurrentTime();
+                      if (currentTime >= endTime - 0.1) {
+                        videoPlayerRef.current.seekTo(startTime);
+                        videoPlayerRef.current.playVideo();
+                      }
+                    }, 200);
+                  }
+                } else {
+                  if (window.loopIntervalId) {
+                    clearInterval(window.loopIntervalId);
+                    window.loopIntervalId = undefined;
+                  }
+                }
+              }}
+              showCompletedButtons={shouldShowCompletedButtons()}
+              onOpenDubbingListenModal={() => setIsDubbingListenModalOpen(true)}
+              onShowResults={handleViewResults}
+              id={id}
+            />
+          </div>
+
+          {/* 모바일 스크립트 사이드바 - 아래쪽에 위치 */}
+          {isSidebarOpen && (
+            <div className="bg-gradient-to-br from-gray-900/95 to-black/95 backdrop-blur-xl rounded-lg p-4 mb-2 border border-gray-700/50 shadow-2xl">
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full shadow-lg"></div>
+                  <h3 className="text-lg font-bold text-white">스크립트 목록</h3>
+                  <div className="bg-gray-800/50 px-2 py-1 rounded-full">
+                    <span className="text-xs text-gray-300 font-medium">
+                      {Object.keys(latestResultByScript || {}).length}/{front_data.captions.length}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-gray-700/50 rounded-lg"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="max-h-60 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+                {front_data.captions.map((caption: any, index: number) => {
+                  const scriptKey = caption.script.toLowerCase().replace(/[^a-z0-9]/g, '');
+                  const hasResult = !!latestResultByScript[scriptKey];
+                  const isCurrentScript = index === currentScriptIndex;
+                  
+                  return (
+                    <div
+                      key={index}
+                      onClick={() => customHandleScriptSelect(index)}
+                      className={`group relative p-3 rounded-xl cursor-pointer transition-all duration-300 border ${
+                        isCurrentScript
+                          ? isDuet && !isMyLine(index)
+                            ? 'bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border-blue-500/50 shadow-lg shadow-blue-500/20'
+                            : 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 border-green-500/50 shadow-lg shadow-green-500/20'
+                          : hasResult
+                            ? 'bg-gradient-to-r from-purple-600/10 to-pink-600/10 border-purple-500/30 hover:border-purple-400/50'
+                            : recording && index === currentScriptIndex
+                              ? 'bg-gradient-to-r from-red-600/20 to-rose-600/20 border-red-500/50 animate-pulse'
+                              : 'bg-gray-800/30 border-gray-700/30 hover:bg-gray-700/40 hover:border-gray-600/50'
+                      } transform hover:scale-[1.02] active:scale-[0.98]`}
+                    >
+                      {/* 상태 표시 */}
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                            isCurrentScript ? 'bg-white/20 text-white' : 'bg-gray-700/50 text-gray-400'
+                          }`}>
+                            #{index + 1}
+                          </span>
+                          
+                          {isDuet && (
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                              isMyLine(index) 
+                                ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white' 
+                                : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
+                            }`}>
+                              {isMyLine(index) ? '내 대사' : caption.actor?.name || '상대방'}
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-1">
+                          {recording && index === currentScriptIndex && (
+                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                          )}
+                          {hasResult && (
+                            <div className="w-2 h-2 bg-green-500 rounded-full shadow-lg shadow-green-500/50"></div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* 스크립트 텍스트 */}
+                      <p className={`text-sm leading-relaxed line-clamp-3 ${
+                        isCurrentScript ? 'text-white font-medium' : 'text-gray-300'
+                      }`}>
+                        {caption.script}
+                      </p>
+                      
+                      {/* 시간 정보 */}
+                      <div className="flex justify-between items-center mt-2 text-xs text-gray-400">
+                        <span>{caption.start_time?.toFixed(1)}s - {caption.end_time?.toFixed(1)}s</span>
+                        {hasResult && (
+                          <span className="text-green-400 font-medium">분석완료</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* 결과 섹션 - 모바일 */}
+          {showResults && (
+            <div ref={resultsRef} className="result-container">
+              <div className="animate-fade-in-up">
+                <ResultContainer
+                  finalResults={finalResults}
+                  latestResultByScript={latestResultByScript}
+                  hasAnalysisResults={hasAnalysisResults}
+                  showResults={showResults}
+                  showCompleted={showCompleted}
+                  onViewResults={handleViewResults}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 데스크톱 레이아웃 (640px 초과) */}
+      <div className="hidden sm:block pt-16 sm:pt-20 lg:pt-24">
+        {/* 본문 - 사이드바 열릴 때 크기 조절 */}
+        <div
+          className={`px-2 sm:px-4 lg:px-6 py-1 sm:py-2 lg:py-4 transition-all duration-300 ease-in-out ${
+            isSidebarOpen ? 'w-[calc(100%-20vw)]' : 'w-full'
+          }`}
+        >
+          <div className="grid grid-cols-12 gap-2 sm:gap-4 lg:gap-6">
+            {/* Video - 전체 너비 사용 */}
+            <div className="col-span-12 relative">
+              {videoPlayerComponent}
+              {/* 녹음 카운트다운 컴포넌트 - 비디오 위에 표시 */}
+              {showCountdown && (
+                <div className="absolute inset-0">
+                  <RecordingCountdown 
+                    isVisible={showCountdown} 
+                    onComplete={startRecordingAfterCountdown}
+                    duration={1500}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Script Display - 동적 마진 */}
+          <div className="mt-1 col-span-12 flex-shrink-0">
+            <ScriptDisplay
+              captions={front_data.captions}
+              currentScriptIndex={currentScriptIndex}
+              onScriptChange={handleScriptChangeWithPlaybackControl}
+              currentVideoTime={currentVideoTime}
+              playbackRange={getCurrentScriptPlaybackRange()}
+              videoPlayerRef={videoPlayerRef}
+              currentWords={currentWords}
+              recording={recording}
+              recordingCompleted={recordingCompleted}
+              isAnalyzing={isAnalyzing}
+              showAnalysisResult={showAnalysisResult}
+              analysisResult={analysisResult}
+              isVideoPlaying={isVideoPlaying}
+              onPlay={customHandlePlay}
+              onPause={customHandlePause}
+              onMicClick={handleMicClick}
+              isLooping={isLooping}
+              isDuet={isDuet}
+              isMyLine={isMyLine(currentScriptIndex)}
+              onLoopToggle={() => {
+                setIsLooping(!isLooping);
+                if (isDuet) {
+                  setAllowAutoScriptChange(false);
+                }
+                if (!isLooping) {
+                  if (videoPlayerRef?.current && front_data.captions[currentScriptIndex]) {
+                    const startTime = front_data.captions[currentScriptIndex].start_time;
+                    const endTime = front_data.captions[currentScriptIndex].end_time;
+                    const currentTime = videoPlayerRef.current.getCurrentTime();
+                    if (currentTime < startTime || currentTime >= endTime) {
+                      videoPlayerRef.current.seekTo(startTime);
+                    }
+                    videoPlayerRef.current.playVideo();
+                    window.loopIntervalId = setInterval(() => {
+                      if (!videoPlayerRef.current) {
+                        clearInterval(window.loopIntervalId);
+                        return;
+                      }
+                      const currentTime = videoPlayerRef.current.getCurrentTime();
+                      if (currentTime >= endTime - 0.1) {
+                        videoPlayerRef.current.seekTo(startTime);
+                        videoPlayerRef.current.playVideo();
+                      }
+                    }, 200);
+                  }
+                } else {
+                  if (window.loopIntervalId) {
+                    clearInterval(window.loopIntervalId);
+                    window.loopIntervalId = undefined;
+                  }
+                }
+              }}
+              showCompletedButtons={shouldShowCompletedButtons()}
+              onOpenDubbingListenModal={() => setIsDubbingListenModalOpen(true)}
+              onShowResults={handleViewResults}
+              id={id}
+            />
+          </div>
+
+          {/* 결과 섹션을 기존 레이아웃 안에 통합 */}
+          {showResults && (
+            <div ref={resultsRef} className="result-container mt-2">
+              <div className="animate-fade-in-up">
+                <ResultContainer
+                  finalResults={finalResults}
+                  latestResultByScript={latestResultByScript}
+                  hasAnalysisResults={hasAnalysisResults}
+                  showResults={showResults}
+                  showCompleted={showCompleted}
+                  onViewResults={handleViewResults}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar - 오른쪽 고정 (데스크톱만) */}
+        <Sidebar
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          captions={front_data.captions}
+          currentScriptIndex={currentScriptIndex}
+          onScriptSelect={customHandleScriptSelect}
+          actorName={front_data.captions[0]?.actor?.name || ""}
+          movieTitle={front_data.movie.title}
+          analyzedCount={Object.keys(latestResultByScript || {}).length}
+          totalCount={front_data.captions.length}
+          recording={recording}
+          recordedScripts={recordingCompleted ? Array(front_data.captions.length).fill(false).map((_, i) => i === currentScriptIndex) : []}
+          latestResultByScript={latestResultByScript}
+          recordingCompleted={recordingCompleted}
+          isDuet={isDuet}
+          isMyLine={isMyLine}
+        />
+      </div>
+
+      {/* 더빙본 들어보기 모달 */}
+      <DubbingListenModal
+        open={isDubbingListenModalOpen}
+        onClose={() => setIsDubbingListenModalOpen(false)}
+        tokenId={id}
+        modalId={modalId}
+      />
+    </div>
+  );
 }
 
 export default DubbingContainer;
