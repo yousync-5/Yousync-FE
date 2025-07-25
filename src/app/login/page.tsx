@@ -22,7 +22,7 @@ export default function LoginPage() {
       await authService.googleLogin(credentialResponse.credential);
       
       // 로그인 성공 시 홈으로 이동
-      router.push("/");
+      router.push("/home");
     } catch (error) {
       console.error("로그인 실패:", error);
       if (error instanceof Error) {
@@ -84,7 +84,7 @@ export default function LoginPage() {
                 로그인하지 않아도 일부 기능을 체험할 수 있습니다.
               </p>
               <button
-                onClick={() => router.push('/')} 
+                onClick={() => router.push('/home')} 
                 className="text-emerald-300 hover:text-white text-sm underline transition font-medium"
               >
                 홈으로 돌아가기

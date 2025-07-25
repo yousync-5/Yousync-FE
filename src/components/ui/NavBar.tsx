@@ -67,10 +67,10 @@ export const NavBar: React.FC<NavBarProps> = ({ animateOnMount }) => {
     setIsLoggingOut(true);
     try {
       await authService.logout();
-      router.push('/');
+      router.push('/home');
     } catch (error) {
       console.error('로그아웃 중 오류 발생:', error);
-      router.push('/');
+      router.push('/home');
     } finally {
       setIsLoggingOut(false);
     }
@@ -229,7 +229,7 @@ export const NavBar: React.FC<NavBarProps> = ({ animateOnMount }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleToMain = () => router.push('/');
+  const handleToMain = () => router.push('/home');
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-md border-b border-gray-800 shadow-2xl">
