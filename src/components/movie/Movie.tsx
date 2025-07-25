@@ -16,6 +16,9 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   FilmIcon,
+  BoltIcon,
+  FaceSmileIcon,
+  BookOpenIcon,
 } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import DuetDetailModal from "@/components/modal/DuetDetailModal";
@@ -25,6 +28,12 @@ interface MovieProps {
   popularTokens: TokenDetailResponse[];
   latestTokens: TokenDetailResponse[];
   romanticTokens: TokenDetailResponse[];
+  actionTokens: TokenDetailResponse[];
+  comedyTokens: TokenDetailResponse[];
+  animationTokens: TokenDetailResponse[];
+  fantasyTokens: TokenDetailResponse[];
+  dramaTokens: TokenDetailResponse[];
+  syncCollectionTokens: TokenDetailResponse[];
   isLoading: boolean;
   error: string | null;
   onOpenModal?: (youtubeId: string) => void;
@@ -33,7 +42,24 @@ interface MovieProps {
   duetScenesError?: any;
 }
 
-export default function Movie({ tokens, popularTokens, latestTokens, romanticTokens, isLoading, error, onOpenModal, duetScenes = [], duetScenesLoading = false, duetScenesError = null }: MovieProps) {
+export default function Movie({ 
+  tokens, 
+  popularTokens, 
+  latestTokens, 
+  romanticTokens, 
+  actionTokens,
+  comedyTokens,
+  animationTokens,
+  fantasyTokens,
+  dramaTokens,
+  syncCollectionTokens,
+  isLoading, 
+  error, 
+  onOpenModal, 
+  duetScenes = [], 
+  duetScenesLoading = false, 
+  duetScenesError = null 
+}: MovieProps) {
   
   const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -103,7 +129,7 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
       title: "싱크 컬렉션",
       subtitle: "짧고 강한 더빙 숏츠",
       icon: <VideoCameraIcon className="w-6 h-6 text-purple-500" />,
-      videos: videos.slice(0, Math.min(10, videos.length)),
+      videos: syncCollectionTokens.map(({ id, youtubeId, actor_name }) => ({ videoId: String(id), youtubeId, actor_name })),
       isPlayable: false,
       isShorts: true,
     },
@@ -116,13 +142,30 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
       isPlayable: false,
     },
     {
-      id: "animation-dubbing",
-      title: "코미디 더빙",
-      subtitle: "재미있는 애니메이션 더빙",
-      icon: <FilmIcon className="w-6 h-6 text-green-500" />,
-      videos: romanticTokens.map(({ id, youtubeId, actor_name }) => ({ videoId: String(id), youtubeId, actor_name })),
+      id: "action-dubbing",
+      title: "액션 더빙",
+      subtitle: "흥미진진한 액션 더빙",
+      icon: <BoltIcon className="w-6 h-6 text-green-500" />,
+      videos: actionTokens.map(({ id, youtubeId, actor_name }) => ({ videoId: String(id), youtubeId, actor_name })),
       isPlayable: false,
     },
+    {
+      id: "animation-dubbing",
+      title: "애니메이션 더빙",
+      subtitle: "재미있는 애니메이션 더빙",
+      icon: <SparklesIcon className="w-6 h-6 text-yellow-500" />,
+      videos: animationTokens.map(({ id, youtubeId, actor_name }) => ({ videoId: String(id), youtubeId, actor_name })),
+      isPlayable: false,
+    },
+    {
+      id: "comedy-dubbing",
+      title: "코미디 더빙",
+      subtitle: "재미있는 코미디 더빙",
+      icon: <FaceSmileIcon className="w-6 h-6 text-blue-500" />,
+      videos: comedyTokens.map(({ id, youtubeId, actor_name }) => ({ videoId: String(id), youtubeId, actor_name })),
+      isPlayable: false,
+    },
+
     {
       id: "trending-collabo",
       title: "로맨틱 더빙",
@@ -131,7 +174,22 @@ export default function Movie({ tokens, popularTokens, latestTokens, romanticTok
       videos: romanticTokens.map(({ id, youtubeId, actor_name }) => ({ videoId: String(id), youtubeId, actor_name })),
       isPlayable: false,
     },
-   
+    {
+      id: "fantasy-dubbing",
+      title: "판타지 더빙",
+      subtitle: "판타지 연기",
+      icon: <span className="w-7 h-7">🧙‍♂️</span>,
+      videos: fantasyTokens.map(({ id, youtubeId, actor_name }) => ({ videoId: String(id), youtubeId, actor_name })),
+      isPlayable: false,
+    },
+    {
+      id: "drama-dubbing",
+      title: "드라마 더빙",
+      subtitle: "드라마 연기",
+      icon: <BookOpenIcon className="w-6 h-6 text-yellow-500" />,
+      videos: dramaTokens.map(({ id, youtubeId, actor_name }) => ({ videoId: String(id), youtubeId, actor_name })),
+      isPlayable: false,
+    },
   ];
 
   const featuredVideo = videos[0];

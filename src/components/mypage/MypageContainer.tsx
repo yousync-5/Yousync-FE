@@ -13,6 +13,7 @@ import { toast } from 'react-hot-toast';
 import { useVideos } from '@/hooks/useVideos';
 import MovieDetailModal from '@/components/modal/MovieDetailModal';
 import type { TokenDetailResponse } from '@/types/pitch';
+import MypageListenModal from './MypageListenModal';
 
 const MypageContainer: React.FC = () => {
   const { data, loading, error, refetch } = useMyPageOverview();
@@ -24,6 +25,9 @@ const MypageContainer: React.FC = () => {
   const [selectedToken, setSelectedToken] = useState<TokenDetailResponse | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const itemsPerPage = 6; // 페이지당 표시할 항목 수
+  const [dubbingModalOpen, setDubbingModalOpen] = useState(false);
+  const [dubbingTokenId, setDubbingTokenId] = useState<number | null>(null);
+  const [dubbingYoutubeId, setDubbingYoutubeId] = useState<string | null>(null);
 
   // 북마크 정렬 및 페이지네이션 계산
   const sortedBookmarks = data ? [...data.recent_bookmarks].sort((a, b) => b.id - a.id) : [];
@@ -297,7 +301,10 @@ const MypageContainer: React.FC = () => {
                       className="group bg-neutral-800 rounded-xl overflow-hidden border border-neutral-700 hover:border-neutral-600 transition-all duration-300 cursor-pointer"
                       onClick={() => {
                         // 토큰 클릭 시 결과 페이지로 이동
-                        window.location.href = `/result?token_id=${token.token_id}`;
+                        // window.location.href = `/result?token_id=${token.token_id}`;
+                        setDubbingTokenId(token.token_id);
+                        setDubbingYoutubeId(token.youtube_url ?? null);
+                        setDubbingModalOpen(true);
                       }}
                     >
                       <div className="relative aspect-[16/9] w-full overflow-hidden flex items-center justify-center bg-black">
@@ -396,6 +403,14 @@ const MypageContainer: React.FC = () => {
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
           tokenData={selectedToken}
+        />
+      )}
+      {dubbingModalOpen && dubbingTokenId && (
+        <MypageListenModal 
+          open={dubbingModalOpen}
+          onClose={() => setDubbingModalOpen(false)}
+          tokenId={String(dubbingTokenId)}
+          modalId={extractYoutubeVideoId(dubbingYoutubeId ?? "") ?? undefined}
         />
       )}
     </div>
