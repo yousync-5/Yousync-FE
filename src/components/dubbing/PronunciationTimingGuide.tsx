@@ -187,7 +187,7 @@ export default function PronunciationTimingGuide({
       )}
       {/* 자막 텍스트 - 단어 게이지를 여러 줄로 분할 */}
       <div className="text-center w-full">
-        <div className="text-2xl font-bold leading-tight text-emerald-100">
+        <div className="text-sm sm:text-base md:text-lg lg:text-xl font-bold leading-tight text-emerald-100">
           {showContent && displayAnalysisResult?.word_analysis && displayAnalysisResult.word_analysis.length > 0 ? (
             // 분석 결과가 있을 때만 표시
             <div className={`transition-all duration-300 ease-out ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}> 
@@ -204,7 +204,7 @@ export default function PronunciationTimingGuide({
                       }}
                     >
                       <span className="text-emerald-100 mb-1">{decodeHtmlEntities(word.word)}</span>
-                      <div className="w-20 h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <div className="w-12 h-1 sm:w-16 sm:h-1.5 md:w-20 md:h-2 bg-gray-700 rounded-full overflow-hidden">
                         <div
                           className="h-full transition-all duration-300 ease-out"
                           style={{

@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import Loader from './Loader';
+import { useUser } from '@/hooks/useUser';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -49,6 +50,7 @@ export default function Sidebar({
   isDuet = false,
   isMyLine,
 }: SidebarProps) {
+  const { user } = useUser();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [detailIndex, setDetailIndex] = useState<number | null>(null); // 클릭 시 세부 정보 표시용
 
@@ -246,7 +248,7 @@ export default function Sidebar({
                 <span className="flex-1 leading-relaxed text-base">
                   {isDuet && (
                     <span className={`inline-block px-2 py-0.5 rounded text-sm mr-2 ${isCurrentMyLine ? 'bg-green-900/30 text-green-300' : 'bg-blue-900/30 text-blue-300'}`}>
-                      {isCurrentMyLine ? '나' : (caption.actor?.name || '상대배우')}
+                      {isCurrentMyLine ? (user?.name || '나') : (caption.actor?.name || '상대배우')}
                     </span>
                   )}
                   {caption.script}
