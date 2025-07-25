@@ -289,8 +289,8 @@ const ScriptDisplay = ({
             {/* 재생/정지 버튼 */}
             <button
               onClick={() => {
-                console.log('[ScriptDisplay] 재생/정지 버튼 클릭, isVideoPlaying:', isVideoPlaying);
-                console.log('[ScriptDisplay] videoPlayerRef 상태:', !!videoPlayerRef?.current);
+                console.log('[ScriptDisplay] 재생/정지 버튼 클릭');
+                console.log('[ScriptDisplay] videoPlayerRef?.current:', !!videoPlayerRef?.current);
                 
                 if (!videoPlayerRef?.current) {
                   console.error('[ScriptDisplay] videoPlayerRef.current가 null입니다');
@@ -306,27 +306,19 @@ const ScriptDisplay = ({
                   const startTime = currentScript?.start_time || 0;
                   const endTime = currentScript?.end_time || 0;
                   
-                  try {
-                    const currentTime = videoPlayerRef.current.getCurrentTime();
-                    console.log('[ScriptDisplay] 현재 시간:', currentTime, '시작 시간:', startTime, '종료 시간:', endTime);
-                    
-                    if (currentTime < startTime || currentTime >= endTime) {
-                      console.log('[ScriptDisplay] 시간 이동:', startTime);
-                      videoPlayerRef.current.seekTo(startTime);
-                      
-                      // 시간 이동 후 약간의 지연을 두고 재생
-                      setTimeout(() => {
-                        if (videoPlayerRef?.current) {
-                          console.log('[ScriptDisplay] 시간 이동 후 재생 시작');
-                          videoPlayerRef.current.playVideo();
-                        }
-                      }, 200);
-                    } else {
-                      console.log('[ScriptDisplay] 바로 재생 시작');
-                      videoPlayerRef.current.playVideo();
-                    }
-                  } catch (error) {
-                    console.error('[ScriptDisplay] 재생 처리 중 에러:', error);
+                  const currentTime = videoPlayerRef.current.getCurrentTime();
+                  console.log('[ScriptDisplay] 현재 시간:', currentTime, '시작 시간:', startTime);
+                  
+                  if (currentTime < startTime || currentTime >= endTime) {
+                    console.log('[ScriptDisplay] 시간 이동:', startTime);
+                    videoPlayerRef.current.seekTo(startTime);
+                    setTimeout(() => {
+                      if (videoPlayerRef?.current) {
+                        videoPlayerRef.current.playVideo();
+                      }
+                    }, 200);
+                  } else {
+                    videoPlayerRef.current.playVideo();
                   }
                 }
               }}

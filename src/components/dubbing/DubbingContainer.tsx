@@ -919,10 +919,12 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
     <div className="min-h-screen bg-neutral-950 text-white relative overflow-hidden">
       <Toaster position="top-center" />
 
-      {/* 모바일 레이아웃 (640px 이하) */}
-      <div className="block sm:hidden pt-16">
-        <div className="px-2 py-2">
-          {/* Video - 모바일에서 전체 너비 */}
+      {/* 공통 VideoPlayer - 모든 화면 크기에서 사용 */}
+      <div className="pt-16 sm:pt-20 lg:pt-24">
+        <div className={`px-2 py-2 sm:px-4 lg:px-6 sm:py-1 lg:py-4 transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? 'sm:w-[calc(100%-20vw)]' : 'sm:w-full'
+        }`}>
+          {/* Video - 모든 화면 크기에서 전체 너비 */}
           <div className="relative mb-2">
             <VideoPlayer
               videoId={front_data.movie.youtube_url.split("v=")[1]}
@@ -982,7 +984,12 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
               </div>
             )}
           </div>
+        </div>
+      </div>
 
+      {/* 모바일 레이아웃 (640px 이하) - 스크립트 컨트롤만 */}
+      <div className="block sm:hidden">
+        <div className="px-2 py-2">
           <div className="mb-2">
             <ScriptDisplay
               captions={front_data.captions}
@@ -1160,67 +1167,7 @@ const getCurrentScriptPlaybackRange = useCallback(() => {
             isSidebarOpen ? 'w-[calc(100%-20vw)]' : 'w-full'
           }`}
         >
-          <div className="grid grid-cols-12 gap-2 sm:gap-4 lg:gap-6">
-            <div className="col-span-12 relative">
-              <VideoPlayer
-                videoId={front_data.movie.youtube_url.split("v=")[1]}
-                onTimeUpdate={handleTimeUpdate}
-                startTime={getCurrentScriptPlaybackRange().startTime}
-                endTime={getCurrentScriptPlaybackRange().endTime}
-                disableAutoPause={true}
-                ref={videoPlayerRef}
-                onEndTimeReached={() => {
-                  if (recording) {
-                    const currentWords = tokenData?.scripts?.[currentScriptIndex]?.words || [];
-                    if (currentWords.length > 0) {
-                      const lastWord = currentWords[currentWords.length - 1];
-                      const currentTime = videoPlayerRef.current?.getCurrentTime() || 0;
-                      if (currentTime >= lastWord.end_time) {
-                        stopScriptRecording(currentScriptIndex);
-                      }
-                    } else {
-                      stopScriptRecording(currentScriptIndex);
-                    }
-                    videoPlayerRef.current?.pauseVideo();
-                    return;
-                  }
-                  if (isMyLine(currentScriptIndex)) {
-                    videoPlayerRef.current?.pauseVideo();
-                    return;
-                  }
-                  const nextScriptIndex = currentScriptIndex + 1;
-                  if (nextScriptIndex >= front_data.captions.length) {
-                    videoPlayerRef.current?.pauseVideo();
-                    return;
-                  }
-                  const isNextMyLine = isMyLine(nextScriptIndex);
-                  if (isNextMyLine) {
-                    setCurrentScriptIndex(nextScriptIndex);
-                    videoPlayerRef.current?.pauseVideo();
-                    setTimeout(() => {
-                      if (videoPlayerRef.current && front_data.captions[nextScriptIndex]) {
-                        videoPlayerRef.current.seekTo(front_data.captions[nextScriptIndex].start_time);
-                      }
-                    }, 100);
-                    return;
-                  }
-                  setCurrentScriptIndex(nextScriptIndex);
-                }}
-                onPlay={customHandlePlay}
-                onPause={customHandlePause}
-                onOpenSidebar={() => setIsSidebarOpen(true)}
-              />
-              {showCountdown && (
-                <div className="absolute inset-0">
-                  <RecordingCountdown 
-                    isVisible={showCountdown} 
-                    onComplete={startRecordingAfterCountdown}
-                    duration={1500}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
+          {/* VideoPlayer는 모바일 레이아웃의 것을 공통으로 사용 */}
 
           <div className="mt-1 col-span-12 flex-shrink-0">
             <ScriptDisplay
