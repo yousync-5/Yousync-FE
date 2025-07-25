@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import MovieDetailModal from "@/components/modal/MovieDetailModal";
-import { useVideos, usePopularVideos, useLatestVideos, useRomanticVideos, useDuetScenes } from "@/hooks/useVideos";
+import { useVideos, usePopularVideos, useLatestVideos, useRomanticVideos, useDuetScenes, useActionVideos, useComedyVideos, useAnimationVideos, useFantasyVideos, useDramaVideos, useSyncCollection } from "@/hooks/useVideos";
 import Movie from "@/components/movie/Movie";
 import type { TokenDetailResponse } from "@/types/pitch";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -15,6 +15,13 @@ export default function HomeClient() {
   const { data: popularTokens = [] } = usePopularVideos();
   const { data: latestTokens = [] } = useLatestVideos();
   const { data: romanticTokens = [] } = useRomanticVideos();
+  // 추가한 장르별 hook
+  const {data: actionTokens = []} = useActionVideos();
+  const { data: comedyTokens = [] } = useComedyVideos();
+  const { data: animationTokens = [] } = useAnimationVideos();
+  const { data: fantasyTokens = [] } = useFantasyVideos();
+  const { data: dramaTokens = [] } = useDramaVideos();
+  const { data: syncCollectionTokens = [] } = useSyncCollection();
   const { data: duetScenes = [], isLoading: duetScenesLoading, error: duetScenesError } = useDuetScenes();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -65,26 +72,33 @@ export default function HomeClient() {
               <span className="text-white text-sm">영화 목록을 불러오는 중...</span>
             </div>
           </div>
+
         )}
         {error && (
           <div className="flex items-center justify-center min-h-[200px]">
             <div className="text-red-500 text-sm">에러 발생: {error.toString()}</div>
           </div>
         )}
-        {!isLoading && !error && (
-          <Movie
-            tokens={tokens}
-            popularTokens={popularTokens}
-            latestTokens={latestTokens}
-            romanticTokens={romanticTokens}
-            isLoading={isLoading}
-            error={error}
-            duetScenes={duetScenes}
-            duetScenesLoading={duetScenesLoading}
-            duetScenesError={duetScenesError}
-            onOpenModal={openModal}
-          />
-        )}
+       {!isLoading && !error && (
+        <Movie
+          tokens={tokens}
+          popularTokens={popularTokens}
+          latestTokens={latestTokens}
+          romanticTokens={romanticTokens}
+          actionTokens={actionTokens}
+          comedyTokens={comedyTokens}
+          animationTokens={animationTokens}
+          fantasyTokens={fantasyTokens}
+          dramaTokens={dramaTokens}
+          syncCollectionTokens={syncCollectionTokens}
+          isLoading={isLoading}
+          error={error}
+          duetScenes={duetScenes}
+          duetScenesLoading={duetScenesLoading}
+          duetScenesError={duetScenesError}
+          onOpenModal={openModal}
+        />
+      )}
       </div>
 
       {/* 데스크톱 레이아웃 (400px 초과) */}
@@ -102,21 +116,28 @@ export default function HomeClient() {
             <div className="text-red-500 text-lg">에러 발생: {error.toString()}</div>
           </div>
         )}
-        {!isLoading && !error && (
-          <Movie
-            tokens={tokens}
-            popularTokens={popularTokens}
-            latestTokens={latestTokens}
-            romanticTokens={romanticTokens}
-            isLoading={isLoading}
-            error={error}
-            duetScenes={duetScenes}
-            duetScenesLoading={duetScenesLoading}
-            duetScenesError={duetScenesError}
-            onOpenModal={openModal}
-          />
-        )}
+         {!isLoading && !error && (
+        <Movie
+          tokens={tokens}
+          popularTokens={popularTokens}
+          latestTokens={latestTokens}
+          romanticTokens={romanticTokens}
+          actionTokens={actionTokens}
+          comedyTokens={comedyTokens}
+          animationTokens={animationTokens}
+          fantasyTokens={fantasyTokens}
+          dramaTokens={dramaTokens}
+          syncCollectionTokens={syncCollectionTokens}
+          isLoading={isLoading}
+          error={error}
+          duetScenes={duetScenes}
+          duetScenesLoading={duetScenesLoading}
+          duetScenesError={duetScenesError}
+          onOpenModal={openModal}
+        />
+      )}
       </div>
+
 
       {selectedVideoId && selectedTokenData && (
         <MovieDetailModal
